@@ -6,11 +6,11 @@ import { addResource, capacity, usedStorage } from './inventory.js';
 import { makeZombie } from './zombie.js';
 import { toast } from './ui.js';
 import { blobPath } from './world.js';
+import { ASSETS } from './assets.js';
 
 let fullToastCd = 0;
 
 // Masuk mode daratan. Membuat world daratan sekali lalu dipakai ulang saat revisit
-// (resource yang sudah diambil tetap hilang; zombie respawn tiap kunjungan).
 export function enterIsland(island) {
   island.visited = true;
   if (!island.landState) island.landState = buildLand(island);
@@ -48,12 +48,12 @@ function buildLand(island) {
   const trees = [];
   for (let i = 0, nT = 8 + island.difficulty * 3; i < nT; i++) {
     const p = place(r * 0.7);
-    trees.push({ x: p.x, y: p.y, s: 10 + rng() * 9 });
+    trees.push({ x: p.x, y: p.y, s: 12 + rng() * 8 });
   }
   const rocks = [];
   for (let i = 0, nR = 4 + island.difficulty * 2; i < nR; i++) {
     const p = place(r * 0.66);
-    rocks.push({ x: p.x, y: p.y, s: 5 + rng() * 6 });
+    rocks.push({ x: p.x, y: p.y, s: 8 + rng() * 6 });
   }
 
   // resource tersebar; jangan terlalu dekat titik dock/spawn
@@ -140,6 +140,7 @@ export function updateLand(dt, move) {
       z.x += dx / d * z.speed * dt;
       z.y += dy / d * z.speed * dt;
       z.chasing = true;
+      z.face = Math.atan2(dy, dx);
     } else {
       // wander acak
       z.chasing = false;
@@ -150,6 +151,7 @@ export function updateLand(dt, move) {
       }
       z.x += Math.cos(z.wanderA) * z.speed * 0.45 * dt;
       z.y += Math.sin(z.wanderA) * z.speed * 0.45 * dt;
+      z.face = z.wanderA;
     }
     clampToIsland(z, L);
 
@@ -200,7 +202,7 @@ export function tryAttack() {
   const p = L.player;
   if (p.attackCd > 0) return;
   p.attackCd = CFG.PLAYER.ATTACK_COOLDOWN;
-  p.swing = 0.18;
+  p.swing = 0.22;
 
   let best = null, bd = Infinity;
   for (const z of L.zombies) {
@@ -261,28 +263,40 @@ export function drawLand(ctx, vw, vh) {
   const L = G.land;
   if (!L) return;
 
-  ctx.fillStyle = '#0a2f4d';
+  // Background laut sekitar pulau
+  ctx.fillStyle = '#061a29';
   ctx.fillRect(0, 0, vw, vh);
 
   ctx.save();
   ctx.translate(vw / 2 - G.cam.x, vh / 2 - G.cam.y);
 
-  // pasir + rumput
-  blobPath(ctx, 0, 0, L.shape, 1);
-  ctx.fillStyle = '#dcc487';
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(120,95,45,0.7)';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-  blobPath(ctx, 0, 0, L.shape, 0.78);
-  ctx.fillStyle = '#4c9a4f';
+  // Air dangkal halo
+  ctx.fillStyle = 'rgba(30, 95, 130, 0.35)';
+  ctx.beginPath();
+  ctx.arc(0, 0, L.r * 1.15, 0, Math.PI * 2);
   ctx.fill();
 
-  // dock (dermaga) di bawah
-  ctx.fillStyle = '#8a5a2b';
+  // Pasir pantai
+  blobPath(ctx, 0, 0, L.shape, 1);
+  ctx.fillStyle = '#deca8e';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(140, 110, 60, 0.7)';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // Rumput daratan
+  blobPath(ctx, 0, 0, L.shape, 0.78);
+  ctx.fillStyle = '#2e6e3f';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(20, 60, 30, 0.5)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Dock (dermaga kayu) di bawah
+  ctx.fillStyle = '#6b4522';
   ctx.fillRect(-16, L.r * 0.70, 32, L.r * 0.36);
-  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
-  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+  ctx.lineWidth = 1.5;
   for (let yy = L.r * 0.74; yy < L.r * 1.04; yy += 8) {
     ctx.beginPath();
     ctx.moveTo(-16, yy);
@@ -290,111 +304,122 @@ export function drawLand(ctx, vw, vh) {
     ctx.stroke();
   }
 
-  // dekorasi: pohon & batu
-  for (const t of L.trees) {
-    ctx.fillStyle = '#6b4226';
-    ctx.beginPath();
-    ctx.arc(t.x, t.y + 3, 3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#2e7d32';
-    ctx.beginPath();
-    ctx.arc(t.x, t.y, t.s, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#388e3c';
-    ctx.beginPath();
-    ctx.arc(t.x - t.s * 0.2, t.y - t.s * 0.2, t.s * 0.62, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  // Dekorasi: Batu (menggunakan ASSETS.rock jika ada)
   for (const rk of L.rocks) {
-    ctx.fillStyle = '#8d99ae';
-    ctx.beginPath();
-    ctx.arc(rk.x, rk.y, rk.s, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#a5b1c2';
-    ctx.beginPath();
-    ctx.arc(rk.x - rk.s * 0.25, rk.y - rk.s * 0.25, rk.s * 0.55, 0, Math.PI * 2);
-    ctx.fill();
+    const rockImg = ASSETS.rock;
+    if (rockImg && rockImg.complete && rockImg.naturalWidth > 0) {
+      const sz = rk.s * 2.2;
+      ctx.drawImage(rockImg, rk.x - sz / 2, rk.y - sz / 2, sz, sz);
+    } else {
+      ctx.fillStyle = '#52606d';
+      ctx.beginPath();
+      ctx.arc(rk.x, rk.y, rk.s, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
-  // resource di tanah
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+  // Dekorasi: Pohon (menggunakan ASSETS.tree jika ada)
+  for (const t of L.trees) {
+    const treeImg = ASSETS.tree;
+    if (treeImg && treeImg.complete && treeImg.naturalWidth > 0) {
+      const sz = t.s * 2.6;
+      ctx.drawImage(treeImg, t.x - sz / 2, t.y - sz / 2, sz, sz);
+    } else {
+      ctx.fillStyle = '#1c4627';
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, t.s, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Resource di tanah (menggunakan ASSETS[res.type])
   for (const res of L.resources) {
     if (res.taken) continue;
-    const bob = Math.sin(G.time * 2.5 + res.x * 0.13) * 2;
-    const def = CFG.RESOURCES[res.type];
-    ctx.fillStyle = def.color;
-    ctx.strokeStyle = 'rgba(0,0,0,0.45)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.roundRect ? ctx.roundRect(res.x - 9, res.y - 9 + bob, 18, 18, 4) : ctx.rect(res.x - 9, res.y - 9 + bob, 18, 18);
-    ctx.fill();
-    ctx.stroke();
-    ctx.font = '11px system-ui, sans-serif';
-    ctx.fillStyle = '#1a1a1a';
-    ctx.fillText(def.icon, res.x, res.y + bob + 1);
+    const bob = Math.sin(G.time * 3 + res.x * 0.13) * 2.5;
+    const resImg = ASSETS[res.type];
+    if (resImg && resImg.complete && resImg.naturalWidth > 0) {
+      const sz = 22;
+      // Soft item shadow beneath
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath();
+      ctx.ellipse(res.x, res.y + 10, 8, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.drawImage(resImg, res.x - sz / 2, res.y - sz / 2 + bob, sz, sz);
+    } else {
+      const def = CFG.RESOURCES[res.type];
+      ctx.fillStyle = def.color;
+      ctx.fillRect(res.x - 9, res.y - 9 + bob, 18, 18);
+    }
   }
 
-  // zombie
+  // Zombie (menggunakan ASSETS['zombie_' + z.type])
   for (const z of L.zombies) {
     const def = CFG.ZOMBIES[z.type];
-    ctx.fillStyle = z.hitFlash > 0.35 ? '#ffffff' : def.color;
-    ctx.strokeStyle = def.outline;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
+    const zImg = ASSETS['zombie_' + z.type];
 
-    // hp bar
-    const bw = 26;
-    ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    ctx.fillRect(z.x - bw / 2, z.y - z.radius - 11, bw, 4);
-    ctx.fillStyle = '#ef4444';
-    ctx.fillRect(z.x - bw / 2, z.y - z.radius - 11, bw * Math.max(0, z.hp / z.maxHp), 4);
+    ctx.save();
+    ctx.translate(z.x, z.y);
+    const zAngle = (z.face !== undefined ? z.face : 0) + Math.PI / 2;
+    ctx.rotate(zAngle);
 
-    // indikator mengejar
-    if (z.chasing) {
-      ctx.fillStyle = '#ffd166';
-      ctx.font = 'bold 11px system-ui, sans-serif';
-      ctx.fillText('!', z.x, z.y - z.radius - 18);
+    if (z.hitFlash > 0.35) {
+      ctx.filter = 'brightness(3) saturate(0)';
     }
 
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.font = 'bold 10px system-ui, sans-serif';
-    ctx.fillText(def.label[0], z.x, z.y + 0.5);
+    if (zImg && zImg.complete && zImg.naturalWidth > 0) {
+      const sz = z.radius * 2.4;
+      ctx.drawImage(zImg, -sz / 2, -sz / 2, sz, sz);
+    } else {
+      ctx.fillStyle = def.color;
+      ctx.beginPath();
+      ctx.arc(0, 0, z.radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+
+    // HP Bar zombie
+    const bw = 26;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(z.x - bw / 2, z.y - z.radius - 12, bw, 4);
+    ctx.fillStyle = '#e74c3c';
+    ctx.fillRect(z.x - bw / 2, z.y - z.radius - 12, bw * Math.max(0, z.hp / z.maxHp), 4);
+
+    // Indikator tanda seru saat mengejar
+    if (z.chasing) {
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#f1c40f';
+      ctx.font = 'bold 12px system-ui, sans-serif';
+      ctx.fillText('!', z.x, z.y - z.radius - 18);
+    }
   }
 
-  // player (lingkaran hijau)
+  // Player (menggunakan ASSETS.player)
   const p = L.player;
-  ctx.fillStyle = 'rgba(0,0,0,0.18)';
-  ctx.beginPath();
-  ctx.arc(p.x, p.y + 4, CFG.PLAYER.RADIUS, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.rotate(p.face + Math.PI / 2); // sprite faces UP (North)
 
-  ctx.fillStyle = '#22c55e';
-  ctx.strokeStyle = '#14532d';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(p.x, p.y, CFG.PLAYER.RADIUS, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
-
-  // arah hadap
-  ctx.fillStyle = '#14532d';
-  ctx.beginPath();
-  ctx.arc(p.x + Math.cos(p.face) * 6.5, p.y + Math.sin(p.face) * 6.5, 3, 0, Math.PI * 2);
-  ctx.fill();
-
-  // efek tebasan saat attack
-  if (p.swing > 0) {
-    ctx.strokeStyle = `rgba(255,255,255,${(p.swing / 0.18) * 0.9})`;
-    ctx.lineWidth = 3;
+  const pImg = ASSETS.player;
+  if (pImg && pImg.complete && pImg.naturalWidth > 0) {
+    const sz = 32;
+    ctx.drawImage(pImg, -sz / 2, -sz / 2, sz, sz);
+  } else {
+    ctx.fillStyle = '#e67e22';
     ctx.beginPath();
-    ctx.arc(p.x, p.y, 22, p.face - 0.7, p.face + 0.7);
+    ctx.arc(0, 0, CFG.PLAYER.RADIUS, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Efek tebasan ayunan senjata saat attack
+  if (p.swing > 0) {
+    ctx.strokeStyle = `rgba(255, 235, 150, ${(p.swing / 0.22) * 0.95})`;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 24, p.face - 0.75, p.face + 0.75);
     ctx.stroke();
   }
 
-  ctx.textBaseline = 'alphabetic';
   ctx.restore();
 }

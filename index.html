@@ -3,7 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Last Harbor</title>
+<title>Last Harbor — Survival Roguelike</title>
+<link rel="icon" type="image/png" href="assets/branding/appicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -13,42 +17,68 @@
 
   <!-- ================= DASHBOARD (LAYAR UTAMA) ================= -->
   <section id="screen-dashboard" class="screen">
-    <div class="panel dashboard-panel">
-      <h1 class="game-title">⚓ LAST HARBOR</h1>
+    <div class="panel dashboard-panel glassmorphism">
+      <div class="logo-wrap">
+        <img src="assets/branding/logo.png" alt="Last Harbor Logo" class="game-logo-img">
+      </div>
+      
       <canvas id="boat-preview" width="280" height="110"></canvas>
 
       <div class="dash-grid">
-        <div class="dash-line">Nama: <b>Last Harbor</b> &nbsp;|&nbsp; Level: <b id="dash-level">1</b></div>
+        <div class="dash-line">
+          <span>Kapal: <b>Last Harbor</b></span>
+          <span class="badge-level">Level <b id="dash-level">1</b></span>
+        </div>
 
         <div class="hp-row">
+          <img src="assets/ui/icon_hp.png" class="ui-ic-hp" alt="HP">
           <div class="hp-bar"><div id="dash-hp-fill" class="hp-fill"></div></div>
           <span id="dash-hp-text" class="mono">HP: 100/100</span>
         </div>
 
-        <div class="dash-line">Storage: <b id="dash-storage" class="mono">0/10</b>
-          &nbsp;|&nbsp; Speed: <b id="dash-speed">☆☆</b>
-          &nbsp;|&nbsp; Defense: <b id="dash-defense">☆☆</b>
+        <div class="stats-row">
+          <div class="stat-item"><span class="stat-label">Storage:</span> <b id="dash-storage" class="mono">0/10</b></div>
+          <div class="stat-item"><span class="stat-label">Speed:</span> <b id="dash-speed" class="stars">☆☆</b></div>
+          <div class="stat-item"><span class="stat-label">Defense:</span> <b id="dash-defense" class="stars">☆☆</b></div>
         </div>
 
         <div class="btn-row">
-          <button id="btn-sail"  class="btn btn-primary">⛵ SAIL</button>
-          <button id="btn-fish"  class="btn">🎣 FISH</button>
-          <button id="btn-upgrade" class="btn">🔧 UPGRADE</button>
-          <button id="btn-inventory" class="btn">🎒 INVENTORY</button>
+          <button id="btn-sail" class="btn btn-primary">
+            <img src="assets/ui/icon_sail.png" class="btn-icon" alt=""> SAIL
+          </button>
+          <button id="btn-fish" class="btn">
+            <img src="assets/ui/icon_fish.png" class="btn-icon" alt=""> FISH
+          </button>
+          <button id="btn-upgrade" class="btn">
+            <img src="assets/ui/icon_upgrade.png" class="btn-icon" alt=""> UPGRADE
+          </button>
+          <button id="btn-inventory" class="btn">
+            <img src="assets/ui/icon_inventory.png" class="btn-icon" alt=""> INVENTORY
+          </button>
         </div>
 
         <div class="island-box">
           <div class="island-info">
-            <div>Pulau Terdekat: <b id="dash-island-name">-</b> (Difficulty: <b id="dash-island-diff">-</b>)</div>
+            <div class="island-title">Pulau Terdekat: <b id="dash-island-name">-</b> <span class="diff-tag">Diff <b id="dash-island-diff">-</b></span></div>
             <div id="dash-island-stock" class="muted small">-</div>
           </div>
-          <button id="btn-explore" class="btn btn-go">🏝 EXPLORE</button>
+          <button id="btn-explore" class="btn btn-go">
+            <img src="assets/ui/icon_explore.png" class="btn-icon" alt=""> EXPLORE
+          </button>
         </div>
 
-        <div class="dash-line">Resource — <span id="dash-resources" class="mono">Fuel: 0 | Wood: 0 | Food: 0 | Medicine: 0</span></div>
-        <div class="dash-line">Stats — Runs: <b id="dash-runs" class="mono">0</b> &nbsp;|&nbsp; Best: <b id="dash-best" class="mono">0.0</b> menit</div>
+        <div class="dash-resources-box">
+          <div class="res-title">Gudang Resource:</div>
+          <div id="dash-resources" class="res-chips-grid"></div>
+        </div>
 
-        <div class="muted small">Kontrol: WASD/Arrow/joystick = gerak · SPACE = serang · E = explore · B = balik ke perahu · klik chip 🍖/💊 untuk heal</div>
+        <div class="dash-meta-row">
+          <div>Runs: <b id="dash-runs" class="mono">0</b></div>
+          <div>Best Time: <b id="dash-best" class="mono">0.0</b> min</div>
+          <a href="asset_viewer.html" target="_blank" class="asset-viewer-link">🎨 Lihat Galeri Aset</a>
+        </div>
+
+        <div class="muted small hint-text">Kontrol: <b>WASD / Joystick</b> gerak · <b>SPACE</b> serang · <b>E</b> explore · <b>B</b> balik ke perahu · klik chip <b>Food/Medicine</b> untuk heal</div>
         <button id="btn-reset" class="btn-link">Reset Save</button>
       </div>
     </div>
@@ -58,16 +88,17 @@
   <section id="screen-hud" class="screen">
     <div id="hud-top">
       <div class="hp-wrap">
+        <img src="assets/ui/icon_hp.png" class="hud-ic-hp" alt="HP">
         <div class="hp-bar"><div id="hud-hp-fill" class="hp-fill"></div></div>
         <span id="hud-hp-text" class="mono">100/100</span>
       </div>
       <div id="hud-timer" class="mono">⏱ 00:00</div>
       <div class="hud-right">
         <span id="hud-storage" class="chip mono">📦 0/10</span>
-        <span id="chip-fuel" class="chip mono">⛽0</span>
-        <span id="chip-wood" class="chip mono">🪵0</span>
-        <span id="chip-food" class="chip mono usable" title="Klik: makan (+10 HP)">🍖0</span>
-        <span id="chip-medicine" class="chip mono usable" title="Klik: pakai obat (+30 HP)">💊0</span>
+        <span id="chip-fuel" class="chip mono"><img src="assets/ui/icon_fuel.png" class="chip-icon" alt="">0</span>
+        <span id="chip-wood" class="chip mono"><img src="assets/ui/icon_wood.png" class="chip-icon" alt="">0</span>
+        <span id="chip-food" class="chip mono usable" title="Klik: makan (+10 HP)"><img src="assets/ui/icon_food.png" class="chip-icon" alt="">0</span>
+        <span id="chip-medicine" class="chip mono usable" title="Klik: pakai obat (+30 HP)"><img src="assets/ui/icon_medicine.png" class="chip-icon" alt="">0</span>
       </div>
     </div>
 
@@ -77,15 +108,29 @@
       <div id="joystick"><div id="joy-knob"></div></div>
       <div id="hud-buttons">
         <div id="hud-sea-buttons" class="btn-col">
-          <button id="hud-btn-sail" class="btn hud-btn" title="Kembali ke harbor & akhiri run">⛵ SAIL</button>
-          <button id="hud-btn-fish" class="btn hud-btn">🎣 FISH</button>
-          <button id="hud-btn-anchor" class="btn hud-btn">⚓ ANCHOR</button>
-          <button id="hud-btn-explore" class="btn hud-btn btn-go" disabled>🏝 EXPLORE</button>
+          <button id="hud-btn-sail" class="btn hud-btn" title="Kembali ke harbor & akhiri run">
+            <img src="assets/ui/icon_sail.png" class="btn-icon" alt=""> SAIL
+          </button>
+          <button id="hud-btn-fish" class="btn hud-btn">
+            <img src="assets/ui/icon_fish.png" class="btn-icon" alt=""> FISH
+          </button>
+          <button id="hud-btn-anchor" class="btn hud-btn">
+            ⚓ ANCHOR
+          </button>
+          <button id="hud-btn-explore" class="btn hud-btn btn-go" disabled>
+            <img src="assets/ui/icon_explore.png" class="btn-icon" alt=""> EXPLORE
+          </button>
         </div>
         <div id="hud-land-buttons" class="btn-col hidden">
-          <button id="hud-btn-attack" class="btn hud-btn">⚔ ATTACK</button>
-          <button id="hud-btn-collect" class="btn hud-btn">🧺 COLLECT</button>
-          <button id="hud-btn-back" class="btn hud-btn btn-go">⛵ BACK TO BOAT</button>
+          <button id="hud-btn-attack" class="btn hud-btn">
+            <img src="assets/ui/icon_attack.png" class="btn-icon" alt=""> ATTACK
+          </button>
+          <button id="hud-btn-collect" class="btn hud-btn">
+            <img src="assets/ui/icon_collect.png" class="btn-icon" alt=""> COLLECT
+          </button>
+          <button id="hud-btn-back" class="btn hud-btn btn-go">
+            <img src="assets/ui/icon_back.png" class="btn-icon" alt=""> BACK TO BOAT
+          </button>
         </div>
       </div>
     </div>
@@ -93,9 +138,12 @@
 
   <!-- ================= MODAL: UPGRADE ================= -->
   <section id="screen-upgrade" class="screen modal hidden">
-    <div class="panel modal-panel">
-      <h2>🔧 UPGRADE PERAHU</h2>
-      <div id="upgrade-resources" class="muted mono"></div>
+    <div class="panel modal-panel glassmorphism">
+      <div class="modal-header">
+        <img src="assets/ui/icon_upgrade.png" class="modal-icon" alt="">
+        <h2>UPGRADE PERAHU</h2>
+      </div>
+      <div id="upgrade-resources" class="res-chips-grid"></div>
       <div id="upgrade-rows"></div>
       <button id="btn-upgrade-close" class="btn">CLOSE</button>
     </div>
@@ -103,22 +151,25 @@
 
   <!-- ================= MODAL: INVENTORY ================= -->
   <section id="screen-inventory" class="screen modal hidden">
-    <div class="panel modal-panel">
-      <h2>🎒 INVENTORY</h2>
+    <div class="panel modal-panel glassmorphism">
+      <div class="modal-header">
+        <img src="assets/ui/icon_inventory.png" class="modal-icon" alt="">
+        <h2>INVENTORY</h2>
+      </div>
       <div id="inv-capacity" class="muted mono"></div>
       <div id="inv-rows"></div>
-      <div class="muted small">Food &amp; Medicine bisa dipakai untuk healing.</div>
+      <div class="muted small">Food &amp; Medicine bisa digunakan langsung untuk pemulihan HP.</div>
       <button id="btn-inventory-close" class="btn">CLOSE</button>
     </div>
   </section>
 
   <!-- ================= MODAL: GAME OVER ================= -->
   <section id="screen-gameover" class="screen modal hidden">
-    <div class="panel modal-panel">
+    <div class="panel modal-panel glassmorphism gameover-panel">
       <h2>☠ GAME OVER</h2>
-      <p id="go-cause"></p>
-      <p id="go-time" class="mono"></p>
-      <p class="muted">Seluruh resource di inventory hilang. Upgrade perahu tetap tersimpan.</p>
+      <p id="go-cause" class="go-text"></p>
+      <p id="go-time" class="mono go-meta"></p>
+      <p class="muted small">Seluruh resource di inventory hilang. Upgrade perahu tetap tersimpan.</p>
       <button id="btn-go-harbor" class="btn btn-primary">KEMBALI KE HARBOR</button>
     </div>
   </section>

@@ -112,13 +112,17 @@ export function updateDashboard() {
     els['dash-island-diff'].textContent = island.difficulty;
     const stock = Object.entries(island.remaining)
       .filter(([, n]) => n > 0)
-      .map(([t, n]) => `${CFG.RESOURCES[t].icon}×${n}`)
-      .join('  ');
-    els['dash-island-stock'].textContent = stock ? `Tersedia: ${stock}` : 'Resource pulau sudah habis';
+      .map(([t, n]) => `<span class="res-chip-item"><img src="assets/ui/icon_${t}.png" alt=""> ×${n}</span>`)
+      .join(' ');
+    els['dash-island-stock'].innerHTML = stock ? `Tersedia: ${stock}` : 'Resource pulau sudah habis';
   }
 
-  els['dash-resources'].textContent =
-    `Fuel: ${G.resources.fuel} | Wood: ${G.resources.wood} | Food: ${G.resources.food} | Medicine: ${G.resources.medicine}`;
+  els['dash-resources'].innerHTML = `
+    <span class="res-chip-item"><img src="assets/ui/icon_fuel.png" alt=""> Fuel: <b>${G.resources.fuel}</b></span>
+    <span class="res-chip-item"><img src="assets/ui/icon_wood.png" alt=""> Wood: <b>${G.resources.wood}</b></span>
+    <span class="res-chip-item"><img src="assets/ui/icon_food.png" alt=""> Food: <b>${G.resources.food}</b></span>
+    <span class="res-chip-item"><img src="assets/ui/icon_medicine.png" alt=""> Med: <b>${G.resources.medicine}</b></span>
+  `;
   els['dash-runs'].textContent = G.totalRuns;
   els['dash-best'].textContent = (G.bestTime / 60).toFixed(1);
 }
@@ -131,10 +135,10 @@ export function updateHUD() {
   els['hud-hp-text'].textContent = `${Math.ceil(G.boatHP)}/${maxHP()}`;
   els['hud-timer'].textContent = `⏱ ${fmtTime(G.runTime)}`;
   els['hud-storage'].textContent = `📦 ${usedStorage()}/${capacity()}`;
-  els['chip-fuel'].textContent = `⛽${G.resources.fuel}`;
-  els['chip-wood'].textContent = `🪵${G.resources.wood}`;
-  els['chip-food'].textContent = `🍖${G.resources.food}`;
-  els['chip-medicine'].textContent = `💊${G.resources.medicine}`;
+  els['chip-fuel'].innerHTML = `<img src="assets/ui/icon_fuel.png" class="chip-icon" alt="">${G.resources.fuel}`;
+  els['chip-wood'].innerHTML = `<img src="assets/ui/icon_wood.png" class="chip-icon" alt="">${G.resources.wood}`;
+  els['chip-food'].innerHTML = `<img src="assets/ui/icon_food.png" class="chip-icon" alt="">${G.resources.food}`;
+  els['chip-medicine'].innerHTML = `<img src="assets/ui/icon_medicine.png" class="chip-icon" alt="">${G.resources.medicine}`;
 
   // prompt kontekstual
   let prompt = '';
@@ -147,24 +151,32 @@ export function updateHUD() {
   } else if (G.nearIsland && G.nearIsland.dist < 70) {
     prompt = `🏝 ${G.nearIsland.island.name} (Diff ${G.nearIsland.island.difficulty}) — tekan EXPLORE / E`;
   } else {
-    prompt = '🌊 WASD / joystick untuk berlayar';
+    prompt = '🌊 WASD / Joystick untuk berlayar';
   }
   els['hud-prompt'].textContent = prompt;
 
   if (G.state === 'sea') {
     const near = G.nearIsland && G.nearIsland.dist < 70 && G.nearIsland.island;
     els['hud-btn-explore'].disabled = !near;
-    els['hud-btn-explore'].textContent = near ? `🏝 EXPLORE (${G.nearIsland.island.name})` : '🏝 EXPLORE';
+    els['hud-btn-explore'].innerHTML = near
+      ? `<img src="assets/ui/icon_explore.png" class="btn-icon" alt=""> EXPLORE (${G.nearIsland.island.name})`
+      : `<img src="assets/ui/icon_explore.png" class="btn-icon" alt=""> EXPLORE`;
     els['hud-btn-fish'].disabled = !!G.fishing;
-    els['hud-btn-fish'].textContent = G.fishing ? '🎣 ...' : '🎣 FISH';
+    els['hud-btn-fish'].innerHTML = G.fishing
+      ? `<img src="assets/ui/icon_fish.png" class="btn-icon" alt=""> ...`
+      : `<img src="assets/ui/icon_fish.png" class="btn-icon" alt=""> FISH`;
     els['hud-btn-anchor'].classList.toggle('active', G.anchored);
   }
 }
 
 // ---------- Modal Upgrade ----------
 export function renderUpgradePanel() {
-  els['upgrade-resources'].textContent =
-    `⛽${G.resources.fuel}  🪵${G.resources.wood}  🍖${G.resources.food}  💊${G.resources.medicine}`;
+  els['upgrade-resources'].innerHTML = `
+    <span class="res-chip-item"><img src="assets/ui/icon_fuel.png" alt=""> ${G.resources.fuel}</span>
+    <span class="res-chip-item"><img src="assets/ui/icon_wood.png" alt=""> ${G.resources.wood}</span>
+    <span class="res-chip-item"><img src="assets/ui/icon_food.png" alt=""> ${G.resources.food}</span>
+    <span class="res-chip-item"><img src="assets/ui/icon_medicine.png" alt=""> ${G.resources.medicine}</span>
+  `;
 
   const rows = els['upgrade-rows'];
   rows.innerHTML = '';
@@ -198,13 +210,15 @@ export function renderUpgradePanel() {
       btn.textContent = 'MAX';
     } else {
       const c = def.levels[lv].cost;
-      const txt = Object.entries(c).map(([t, n]) => `${n}${CFG.RESOURCES[t].icon}`).join(' + ');
+      const txt = Object.entries(c)
+        .map(([t, n]) => `<span style="display:inline-flex;align-items:center;gap:3px">${n}<img src="assets/ui/icon_${t}.png" style="width:14px;height:14px"></span>`)
+        .join(' + ');
       const ok = Object.entries(c).every(([t, n]) => (G.resources[t] || 0) >= n);
       cost.className = 'cost ' + (ok ? 'ok' : 'bad');
-      cost.textContent = `Butuh: ${txt}`;
+      cost.innerHTML = `Butuh: ${txt}`;
       btn.className = 'btn btn-go';
       btn.disabled = !ok;
-      btn.textContent = 'UPGRADE';
+      btn.innerHTML = `<img src="assets/ui/icon_upgrade.png" class="btn-icon" alt=""> UPGRADE`;
       btn.onclick = () => H.buy(key);
     }
 
@@ -229,14 +243,14 @@ export function renderInventoryPanel() {
 
     const main = document.createElement('div');
     main.className = 'inv-main';
-    main.innerHTML = `<b>${def.icon} ${def.label}</b> <span class="muted mono">x${G.resources[type] || 0}</span>`;
+    main.innerHTML = `<div style="display:flex;align-items:center;gap:8px"><img src="assets/resources/${type}.png" style="width:20px;height:20px"> <b>${def.label}</b></div> <span class="muted mono">Jumlah: x${G.resources[type] || 0}</span>`;
     row.appendChild(main);
 
     const heal = CFG.HEAL[type];
     if (heal) {
       const btn = document.createElement('button');
       btn.className = 'btn btn-go';
-      btn.textContent = `USE +${heal} HP`;
+      btn.innerHTML = `<img src="assets/ui/icon_hp.png" class="btn-icon" alt=""> USE +${heal} HP`;
       btn.onclick = () => H.heal(type);
       row.appendChild(btn);
     }

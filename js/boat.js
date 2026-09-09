@@ -1,6 +1,7 @@
 // ============ Perahu ============
 import { CFG } from './config.js';
 import { G } from './state.js';
+import { ASSETS } from './assets.js';
 
 export function maxHP() {
   return CFG.BOAT.BASE_HP + G.upgrades.defense * 20; // 100 + 20/level
@@ -56,40 +57,52 @@ function roundRectPath(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-// Visual perahu: persegi panjang biru; ukuran berubah sesuai upgrade.
+// Visual perahu: render Sprite aset (Lv1 / Lv2 / Lv3) sesuai total upgrade level
 export function drawBoat(ctx, boat, scale = 1) {
-  const w = (34 + G.upgrades.storage * 7 + G.upgrades.defense * 3) * scale;
-  const h = (18 + G.upgrades.storage * 3 + G.upgrades.speed * 1.5) * scale;
+  const lv = boatLevel();
+  let sprite = ASSETS.boat_lv1;
+  let sw = 64, sh = 64;
+
+  if (lv >= 4) {
+    sprite = ASSETS.boat_lv3 || ASSETS.boat_lv2 || ASSETS.boat_lv1;
+    sw = 96; sh = 96;
+  } else if (lv >= 2) {
+    sprite = ASSETS.boat_lv2 || ASSETS.boat_lv1;
+    sw = 80; sh = 80;
+  }
 
   ctx.save();
   ctx.translate(boat.x, boat.y);
-  ctx.rotate(boat.angle);
+  ctx.rotate(boat.angle + Math.PI / 2); // sprite faces UP (North)
 
-  // wake kecil di belakang
-  ctx.fillStyle = 'rgba(255,255,255,0.25)';
-  ctx.beginPath();
-  ctx.moveTo(-w / 2, -h * 0.35);
-  ctx.lineTo(-w / 2 - 14 * scale, 0);
-  ctx.lineTo(-w / 2, h * 0.35);
-  ctx.closePath();
-  ctx.fill();
+  // Wake effect di belakang saat bergerak
+  const sp = Math.hypot(boat.vx || 0, boat.vy || 0);
+  if (sp > 15) {
+    ctx.fillStyle = 'rgba(127, 212, 255, 0.35)';
+    ctx.beginPath();
+    ctx.moveTo(-10 * scale, (sh * 0.38) * scale);
+    ctx.lineTo(0, (sh * 0.38 + 18 + Math.min(20, sp * 0.1)) * scale);
+    ctx.lineTo(10 * scale, (sh * 0.38) * scale);
+    ctx.closePath();
+    ctx.fill();
+  }
 
-  // lambung biru
-  ctx.fillStyle = '#2f74b8';
-  ctx.strokeStyle = '#12365e';
-  ctx.lineWidth = 2 * scale;
-  roundRectPath(ctx, -w / 2, -h / 2, w, h, 6 * scale);
-  ctx.fill();
-  ctx.stroke();
-
-  // strip dek
-  ctx.fillStyle = 'rgba(255,255,255,0.4)';
-  ctx.fillRect(-w * 0.30, -2 * scale, w * 0.60, 4 * scale);
-
-  // kabin
-  ctx.fillStyle = '#9fb8d0';
-  roundRectPath(ctx, -w * 0.08, -h * 0.30, w * 0.22, h * 0.60, 3 * scale);
-  ctx.fill();
+  if (sprite && sprite.complete && sprite.naturalWidth > 0) {
+    const dw = sw * 0.75 * scale;
+    const dh = sh * 0.75 * scale;
+    ctx.drawImage(sprite, -dw / 2, -dh / 2, dw, dh);
+  } else {
+    // Fallback vector drawing
+    const w = (34 + G.upgrades.storage * 7 + G.upgrades.defense * 3) * scale;
+    const h = (18 + G.upgrades.storage * 3 + G.upgrades.speed * 1.5) * scale;
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = '#2f74b8';
+    ctx.strokeStyle = '#12365e';
+    ctx.lineWidth = 2 * scale;
+    roundRectPath(ctx, -w / 2, -h / 2, w, h, 6 * scale);
+    ctx.fill();
+    ctx.stroke();
+  }
 
   ctx.restore();
 }
