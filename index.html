@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Last Harbor</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="ui">
+
+  <!-- ================= DASHBOARD (LAYAR UTAMA) ================= -->
+  <section id="screen-dashboard" class="screen">
+    <div class="panel dashboard-panel">
+      <h1 class="game-title">⚓ LAST HARBOR</h1>
+      <canvas id="boat-preview" width="280" height="110"></canvas>
+
+      <div class="dash-grid">
+        <div class="dash-line">Nama: <b>Last Harbor</b> &nbsp;|&nbsp; Level: <b id="dash-level">1</b></div>
+
+        <div class="hp-row">
+          <div class="hp-bar"><div id="dash-hp-fill" class="hp-fill"></div></div>
+          <span id="dash-hp-text" class="mono">HP: 100/100</span>
+        </div>
+
+        <div class="dash-line">Storage: <b id="dash-storage" class="mono">0/10</b>
+          &nbsp;|&nbsp; Speed: <b id="dash-speed">☆☆</b>
+          &nbsp;|&nbsp; Defense: <b id="dash-defense">☆☆</b>
+        </div>
+
+        <div class="btn-row">
+          <button id="btn-sail"  class="btn btn-primary">⛵ SAIL</button>
+          <button id="btn-fish"  class="btn">🎣 FISH</button>
+          <button id="btn-upgrade" class="btn">🔧 UPGRADE</button>
+          <button id="btn-inventory" class="btn">🎒 INVENTORY</button>
+        </div>
+
+        <div class="island-box">
+          <div class="island-info">
+            <div>Pulau Terdekat: <b id="dash-island-name">-</b> (Difficulty: <b id="dash-island-diff">-</b>)</div>
+            <div id="dash-island-stock" class="muted small">-</div>
+          </div>
+          <button id="btn-explore" class="btn btn-go">🏝 EXPLORE</button>
+        </div>
+
+        <div class="dash-line">Resource — <span id="dash-resources" class="mono">Fuel: 0 | Wood: 0 | Food: 0 | Medicine: 0</span></div>
+        <div class="dash-line">Stats — Runs: <b id="dash-runs" class="mono">0</b> &nbsp;|&nbsp; Best: <b id="dash-best" class="mono">0.0</b> menit</div>
+
+        <div class="muted small">Kontrol: WASD/Arrow/joystick = gerak · SPACE = serang · E = explore · B = balik ke perahu · klik chip 🍖/💊 untuk heal</div>
+        <button id="btn-reset" class="btn-link">Reset Save</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= HUD (LAUT & DARATAN) ================= -->
+  <section id="screen-hud" class="screen">
+    <div id="hud-top">
+      <div class="hp-wrap">
+        <div class="hp-bar"><div id="hud-hp-fill" class="hp-fill"></div></div>
+        <span id="hud-hp-text" class="mono">100/100</span>
+      </div>
+      <div id="hud-timer" class="mono">⏱ 00:00</div>
+      <div class="hud-right">
+        <span id="hud-storage" class="chip mono">📦 0/10</span>
+        <span id="chip-fuel" class="chip mono">⛽0</span>
+        <span id="chip-wood" class="chip mono">🪵0</span>
+        <span id="chip-food" class="chip mono usable" title="Klik: makan (+10 HP)">🍖0</span>
+        <span id="chip-medicine" class="chip mono usable" title="Klik: pakai obat (+30 HP)">💊0</span>
+      </div>
+    </div>
+
+    <div id="hud-prompt"></div>
+
+    <div id="hud-bottom">
+      <div id="joystick"><div id="joy-knob"></div></div>
+      <div id="hud-buttons">
+        <div id="hud-sea-buttons" class="btn-col">
+          <button id="hud-btn-sail" class="btn hud-btn" title="Kembali ke harbor & akhiri run">⛵ SAIL</button>
+          <button id="hud-btn-fish" class="btn hud-btn">🎣 FISH</button>
+          <button id="hud-btn-anchor" class="btn hud-btn">⚓ ANCHOR</button>
+          <button id="hud-btn-explore" class="btn hud-btn btn-go" disabled>🏝 EXPLORE</button>
+        </div>
+        <div id="hud-land-buttons" class="btn-col hidden">
+          <button id="hud-btn-attack" class="btn hud-btn">⚔ ATTACK</button>
+          <button id="hud-btn-collect" class="btn hud-btn">🧺 COLLECT</button>
+          <button id="hud-btn-back" class="btn hud-btn btn-go">⛵ BACK TO BOAT</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MODAL: UPGRADE ================= -->
+  <section id="screen-upgrade" class="screen modal hidden">
+    <div class="panel modal-panel">
+      <h2>🔧 UPGRADE PERAHU</h2>
+      <div id="upgrade-resources" class="muted mono"></div>
+      <div id="upgrade-rows"></div>
+      <button id="btn-upgrade-close" class="btn">CLOSE</button>
+    </div>
+  </section>
+
+  <!-- ================= MODAL: INVENTORY ================= -->
+  <section id="screen-inventory" class="screen modal hidden">
+    <div class="panel modal-panel">
+      <h2>🎒 INVENTORY</h2>
+      <div id="inv-capacity" class="muted mono"></div>
+      <div id="inv-rows"></div>
+      <div class="muted small">Food &amp; Medicine bisa dipakai untuk healing.</div>
+      <button id="btn-inventory-close" class="btn">CLOSE</button>
+    </div>
+  </section>
+
+  <!-- ================= MODAL: GAME OVER ================= -->
+  <section id="screen-gameover" class="screen modal hidden">
+    <div class="panel modal-panel">
+      <h2>☠ GAME OVER</h2>
+      <p id="go-cause"></p>
+      <p id="go-time" class="mono"></p>
+      <p class="muted">Seluruh resource di inventory hilang. Upgrade perahu tetap tersimpan.</p>
+      <button id="btn-go-harbor" class="btn btn-primary">KEMBALI KE HARBOR</button>
+    </div>
+  </section>
+
+  <div id="toasts"></div>
+</div>
+
+<noscript><div style="color:#fff;padding:20px">Game ini membutuhkan JavaScript.</div></noscript>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
