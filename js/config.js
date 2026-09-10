@@ -5,11 +5,13 @@ export const CFG = {
   SAVE_KEY: 'last-harbor-save-v2',
 
   // KAMERA — proyeksi miring 3/4, bukan pandangan atas.
-  // TILT = seberapa gepeng tanah di layar (1 = tampak atas, 0.5 = sangat miring).
-  // Bawaannya sengaja TIDAK ekstrem: cukup untuk memberi kedalaman dan membuat
-  // "berjalan pulang" terasa seperti menuruni layar, tanpa merusak keterbacaan.
+  // TILT = cos sudut kamera terhadap tanah (1 = tampak atas, 0.5 = sangat miring).
+  //   0.66 ~ 49 derajat, 0.62 ~ 52 derajat (setara kamera aksi mobile), 0.55 ~ 57 derajat.
+  // Batas bawah praktis 0.55: di bawah itu tanah mulai kehilangan bentuk dan benda
+  // berdiri mulai terasa seperti potongan kertas. Semua sprite memakai atUpright(),
+  // jadi yang berubah saat TILT diturunkan hanyalah seberapa gepeng TANAH di layar.
   CAM: {
-    TILT: 0.66,        // cos sudut pandang terhadap tanah
+    TILT: 0.62,        // ~52 derajat dari datar: cukup miring untuk terasa sinematik
     LIFT: 0.08,        // kamera mengangkat fokus: pemain duduk di bawah-tengah
     PERSP: 0.00034,    // perubahan ukuran per px kedalaman (paralaks)
     PERSP_MIN: 0.86,
@@ -58,7 +60,7 @@ export const CFG = {
   },
 
   LAND: {
-    ZOOM: 1.45,        // kamera darat: pulau terasa 3-4x lebih luas
+    ZOOM: 1.58,        // kamera darat: pulau lebih besar dari layar, tidak pernah terlihat utuh
     PLAY_RATIO: 0.94,  // batas gerak dari radius pulau — pantai bisa dijalani sampai garis air
     SAND_RATIO: 0.70,  // di luar rasio ini = pantai (zombie melambat)
     FLOOD: 0.42,       // seberapa jauh air pasang naik ke pantai (0.42 = dari 1.06r ke 0.76r)

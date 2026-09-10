@@ -655,10 +655,14 @@ aksi mobile (3/4), dan **ketegangan harus punya sebab yang terlihat, bukan tertu
 
 ### 1. Kamera: miring 3/4
 
+Kamera sekarang **tidak pernah memperlihatkan pulau secara utuh**: pada cincin dekat
+(770px dunia) pulau memakan 1217x754 px dari layar 1280x720, dan pulau cincin jauh
+memakan lebih dari seluruh layar. `LAND.ZOOM` naik 1.45 -> 1.58 untuk itu.
+
 `js/camera.js` (baru) + `CFG.CAM`:
 
 ```
-TILT 0.66      tanah diperas 34% di layar — kemiringan ~48 derajat dari datar
+TILT 0.62      tanah diperas 38% di layar — kemiringan ~52 derajat dari datar
 LIFT 0.08      titik jangkar naik 8% vh: pemain duduk di bawah-tengah, melihat ke depan
 PERSP 0.00034  paralaks kedalaman: 1.16x di depan, 0.86x di belakang
 ```

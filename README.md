@@ -62,7 +62,7 @@ menanyakan hal itu lebih sering, fitur itu tidak ada di sini.
 
 ## Kamera: miring 3/4, bukan dari atas
 
-Kamera duduk **di belakang dan sedikit di atas** bahu pemain — sekitar 48° dari datar.
+Kamera duduk **di belakang dan sedikit di atas** bahu pemain — sekitar 52° dari datar (setara kamera aksi mobile).
 Itu bukan perubahan gaya, itu perubahan bahasa:
 
 | Di layar | Artinya di dunia |
@@ -80,7 +80,7 @@ tebasan) tetap di ruang dunia yang datar — karena itu seluruh test logika teta
 
 ```js
 CFG.CAM = { TILT: 0.66, LIFT: 0.08, PERSP: 0.00034, PERSP_MIN: 0.86, PERSP_MAX: 1.16 };
-//          ^ tanah diperas 34%   ^ pemain duduk di bawah-tengah    ^ paralaks kedalaman
+//          ^ tanah diperas 38%   ^ pemain duduk di bawah-tengah    ^ paralaks kedalaman
 ```
 Semua gambar memakai satu jalur: `beginWorld()` untuk tanah, `atUpright()` untuk benda
 berdiri, lalu urutkan menurut `y`. Pelabuhan memakai bahasa kamera yang sama.
