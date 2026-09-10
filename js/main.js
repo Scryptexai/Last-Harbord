@@ -11,6 +11,7 @@ import { createBoat, updateBoat, drawBoat, maxHP } from './boat.js';
 import { generateSeaWorld, nearestIsland, drawSea, drawOceanBackground } from './world.js';
 import { enterIsland, updateLand, drawLand, tryAttack, collectNearby } from './land.js';
 import { addResource, canAfford, payCost, RES_TYPES } from './inventory.js';
+import { loadAssets } from './assets.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -358,19 +359,19 @@ function render() {
   if (G.state === 'dashboard') drawBoatPreview();
 }
 
-// Preview perahu di dashboard: ukuran berubah sesuai upgrade.
+// Preview perahu di dashboard
 function drawBoatPreview() {
   if (!pctx) return;
   const w = previewCanvas.width, h = previewCanvas.height;
 
   pctx.setTransform(1, 0, 0, 1, 0, 0);
   const g = pctx.createLinearGradient(0, 0, 0, h);
-  g.addColorStop(0, '#15628d');
-  g.addColorStop(1, '#082a45');
+  g.addColorStop(0, '#0d283f');
+  g.addColorStop(1, '#05101b');
   pctx.fillStyle = g;
   pctx.fillRect(0, 0, w, h);
 
-  pctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  pctx.strokeStyle = 'rgba(127, 212, 255, 0.08)';
   pctx.lineWidth = 2;
   for (let i = 0; i < 4; i++) {
     const yb = 18 + i * 26 + ((G.time * 14) % 26);
@@ -383,13 +384,13 @@ function drawBoatPreview() {
   }
 
   pctx.setTransform(1, 0, 0, 1, w / 2, h / 2 + 4);
-  drawBoat(pctx, { x: 0, y: 0, angle: -Math.PI / 2 }, 1.5);
+  drawBoat(pctx, { x: 0, y: 0, angle: -Math.PI / 2 }, 1.35);
 
   pctx.setTransform(1, 0, 0, 1, 0, 0);
-  pctx.fillStyle = 'rgba(255,255,255,0.55)';
-  pctx.font = '10px system-ui, sans-serif';
+  pctx.fillStyle = 'rgba(255,255,255,0.7)';
+  pctx.font = '11px system-ui, sans-serif';
   pctx.textAlign = 'left';
-  pctx.fillText(`Storage Lv.${G.upgrades.storage} · Speed Lv.${G.upgrades.speed} · Defense Lv.${G.upgrades.defense}`, 8, h - 8);
+  pctx.fillText(`Storage Lv.${G.upgrades.storage} · Speed Lv.${G.upgrades.speed} · Defense Lv.${G.upgrades.defense}`, 10, h - 10);
 }
 
 // =================== Handlers UI ===================
@@ -424,8 +425,9 @@ function fmtTimeLocal(s) {
   return String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0');
 }
 
-function boot() {
+async function boot() {
   resize();
+  await loadAssets();
   const loaded = loadGame();
   if (!(G.boatHP > 0)) G.boatHP = maxHP();
   G.boatHP = Math.min(G.boatHP, maxHP());

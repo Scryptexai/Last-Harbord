@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Last Harbor — Visual Asset Showcase</title>
+<link rel="icon" type="image/png" href="assets/branding/appicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #081420;
+    color: #edf2f7;
+    font-family: 'Inter', system-ui, sans-serif;
+    padding: 30px 20px;
+    line-height: 1.6;
+  }
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid rgba(56, 92, 128, 0.4);
+  }
+  .logo {
+    max-width: 320px;
+    height: auto;
+    margin-bottom: 15px;
+    filter: drop-shadow(0 6px 20px rgba(0,0,0,0.6));
+  }
+  h1 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 28px;
+    color: #7fd4ff;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  p.subtitle {
+    color: #94a3b8;
+    font-size: 15px;
+  }
+  .nav-bar {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 18px;
+  }
+  .nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    background: #17324d;
+    border: 1px solid #2d557c;
+    color: #edf2f7;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+  .nav-btn:hover {
+    background: #20456a;
+    border-color: #3b74a8;
+  }
+  .nav-btn.primary {
+    background: #1d4ed8;
+    border-color: #3b82f6;
+  }
+  .nav-btn.primary:hover {
+    background: #2563eb;
+  }
+  
+  .palette-section {
+    background: rgba(14, 28, 44, 0.85);
+    border: 1px solid rgba(56, 92, 128, 0.4);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 35px;
+    backdrop-filter: blur(12px);
+  }
+  .palette-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    color: #f1c40f;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .swatches-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+  }
+  .swatch-card {
+    background: #0d1e2e;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .swatch-color {
+    height: 40px;
+    width: 100%;
+  }
+  .swatch-info {
+    padding: 8px;
+    font-size: 11px;
+  }
+  .swatch-name { font-weight: 600; color: #fff; }
+  .swatch-hex { color: #94a3b8; font-family: monospace; }
+  
+  .category-section {
+    margin-bottom: 45px;
+  }
+  .category-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #234768;
+  }
+  .category-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #edf2f7;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .category-badge {
+    background: rgba(41, 128, 185, 0.3);
+    color: #7fd4ff;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  
+  .asset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 18px;
+  }
+  .asset-grid.large {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+  
+  .asset-card {
+    background: rgba(14, 28, 44, 0.85);
+    border: 1px solid rgba(56, 92, 128, 0.4);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: transform 0.2s, border-color 0.2s;
+    backdrop-filter: blur(8px);
+  }
+  .asset-card:hover {
+    transform: translateY(-3px);
+    border-color: #3b82f6;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+  }
+  
+  .checkerboard-wrap {
+    width: 100%;
+    min-height: 120px;
+    background-color: #0c1c2a;
+    background-image: 
+      linear-gradient(45deg, #091520 25%, transparent 25%), 
+      linear-gradient(-45deg, #091520 25%, transparent 25%), 
+      linear-gradient(45deg, transparent 75%, #091520 75%), 
+      linear-gradient(-45deg, transparent 75%, #091520 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(255,255,255,0.06);
+    overflow: hidden;
+  }
+  .checkerboard-wrap img {
+    max-width: 100%;
+    max-height: 160px;
+    image-rendering: auto;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+  }
+  .checkerboard-wrap.pixelated img {
+    image-rendering: pixelated;
+    transform: scale(1.6);
+  }
+  .checkerboard-wrap.wide img {
+    max-height: 180px;
+    width: auto;
+  }
+  
+  .asset-name {
+    font-weight: 700;
+    font-size: 14px;
+    color: #edf2f7;
+    margin-bottom: 4px;
+  }
+  .asset-desc {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-bottom: 8px;
+  }
+  .asset-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .tag-size {
+    background: rgba(230, 126, 34, 0.2);
+    border: 1px solid rgba(230, 126, 34, 0.6);
+    color: #ffb86c;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: monospace;
+    font-weight: 600;
+  }
+  .tag-path {
+    background: rgba(41, 128, 185, 0.2);
+    border: 1px solid rgba(41, 128, 185, 0.4);
+    color: #7fd4ff;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: monospace;
+  }
+  
+  footer {
+    text-align: center;
+    margin-top: 50px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(56, 92, 128, 0.3);
+    color: #64748b;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <img src="assets/branding/logo.png" alt="Last Harbor" class="logo">
+    <h1>Visual Asset Showcase &amp; Design System</h1>
+    <p class="subtitle">Koleksi lengkap 26 visual aset 2D top-down bertema <i>dark &amp; moody nautical roguelike</i>.</p>
+    <div class="nav-bar">
+      <a href="index.html" class="nav-btn primary">🎮 Mainkan Game</a>
+      <a href="#characters" class="nav-btn">Karakter &amp; Entity</a>
+      <a href="#environment" class="nav-btn">Environment</a>
+      <a href="#resources" class="nav-btn">Resources</a>
+      <a href="#ui" class="nav-btn">UI Icons</a>
+      <a href="#branding" class="nav-btn">Branding</a>
+    </div>
+  </header>
+
+  <!-- PALETTE -->
+  <section class="palette-section">
+    <div class="palette-title">🎨 Color Palette &amp; Design Tokens</div>
+    <div class="swatches-grid">
+      <div class="swatch-card"><div class="swatch-color" style="background:#1a2a3a"></div><div class="swatch-info"><div class="swatch-name">Biru Tua</div><div class="swatch-hex">#1a2a3a</div></div></div>
+      <div class="swatch-card"><div class="swatch-color" style="background:#2c3e50"></div><div class="swatch-info"><div class="swatch-name">Biru Laut</div><div class="swatch-hex">#2c3e50</div></div></div>
+      <div class="swatch-card"><div class="swatch-color" style="background:#7f8c8d"></div><div class="swatch-info"><div class="swatch-name">Abu-abu Slate</div><div class="swatch-hex">#7f8c8d</div></div></div>
+      <div class="swatch-card"><div class="swatch-color" style="background:#e67e22"></div><div class="swatch-info"><div class="swatch-name">Oranye Aksen</div><div class="swatch-hex">#e67e22</div></div></div>
+      <div class="swatch-card"><div class="swatch-color" style="background:#e74c3c"></div><div class="swatch-info"><div class="swatch-name">Merah Danger</div><div class="swatch-hex">#e74c3c</div></div></div>
+      <div class="swatch-card"><div class="swatch-color" style="background:#2ecc71"></div><div class="swatch-info"><div class="swatch-name">Hijau Resource</div><div class="swatch-hex">#2ecc71</div></div></div>
+      <div class="swatch-card"><div class="swatch-color" style="background:#f1c40f"></div><div class="swatch-info"><div class="swatch-name">Gold Nautical</div><div class="swatch-hex">#f1c40f</div></div></div>
+    </div>
+  </section>
+
+  <!-- 1. CHARACTERS & ENTITIES -->
+  <section id="characters" class="category-section">
+    <div class="category-header">
+      <div class="category-title">⛵ 1. Karakter &amp; Entity</div>
+      <span class="category-badge">7 Assets</span>
+    </div>
+    <div class="asset-grid">
+      
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/characters/boat_lv1.png" alt="Boat Lv 1"></div>
+        <div class="asset-name">Boat Level 1</div>
+        <div class="asset-desc">Perahu nelayan kecil dengan bangku kayu dan motor tempel</div>
+        <div class="asset-tags">
+          <span class="tag-size">64x64px</span>
+          <span class="tag-path">boat_lv1.png</span>
+        </div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/characters/boat_lv2.png" alt="Boat Lv 2"></div>
+        <div class="asset-name">Boat Level 2</div>
+        <div class="asset-desc">Perahu sedang dengan kabin kemudi, kaca biru, &amp; kargo depan</div>
+        <div class="asset-tags">
+          <span class="tag-size">80x80px</span>
+          <span class="tag-path">boat_lv2.png</span>
+        </div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/characters/boat_lv3.png" alt="Boat Lv 3"></div>
+        <div class="asset-name">Boat Level 3</div>
+        <div class="asset-desc">Kapal ekspedisi berat dengan cerobong, bendera oranye, &amp; lampu</div>
+        <div class="asset-tags">
+          <span class="tag-size">96x96px</span>
+          <span class="tag-path">boat_lv3.png</span>
+        </div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/characters/player.png" alt="Player"></div>
+        <div class="asset-name">Player (Daratan)</div>
+        <div class="asset-desc">Karakter survivor berjaket hujan oranye dengan ransel &amp; machete</div>
+        <div class="asset-tags">
+          <span class="tag-size">32x32px</span>
+          <span class="tag-path">player.png</span>
+        </div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/characters/zombie_slow.png" alt="Zombie Slow"></div>
+        <div class="asset-name">Zombie Slow</div>
+        <div class="asset-desc">Zombie gemuk hijau kusam berlumut dengan serangan lambat</div>
+        <div class="asset-tags">
+          <span class="tag-size">32x32px</span>
+          <span class="tag-path">zombie_slow.png</span>
+        </div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/characters/zombie_fast.png" alt="Zombie Fast"></div>
+        <div class="asset-name">Zombie Fast</div>
+        <div class="asset-desc">Zombie ramping merah kusam dengan cakar tajam &amp; lari cepat</div>
+        <div class="asset-tags">
+          <span class="tag-size">28x28px</span>
+          <span class="tag-path">zombie_fast.png</span>
+        </div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/characters/zombie_tank.png" alt="Zombie Tank"></div>
+        <div class="asset-name">Zombie Tank</div>
+        <div class="asset-desc">Zombie raksasa ungu bermutasi dengan armor punggung &amp; tinju besar</div>
+        <div class="asset-tags">
+          <span class="tag-size">40x40px</span>
+          <span class="tag-path">zombie_tank.png</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 2. ENVIRONMENT -->
+  <section id="environment" class="category-section">
+    <div class="category-header">
+      <div class="category-title">🏝 2. Environment &amp; Background</div>
+      <span class="category-badge">6 Assets</span>
+    </div>
+    <div class="asset-grid">
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap"><img src="assets/environment/island.png" alt="Island"></div>
+        <div class="asset-name">Island</div>
+        <div class="asset-desc">Pulau kecil lengkap dengan pantai pasir, rumput, &amp; pohon</div>
+        <div class="asset-tags">
+          <span class="tag-size">128x128px</span>
+          <span class="tag-path">island.png</span>
+        </div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/environment/tree.png" alt="Tree"></div>
+        <div class="asset-name">Tree</div>
+        <div class="asset-desc">Pohon pulau top-down dengan layer rimbun hijau gelap</div>
+        <div class="asset-tags">
+          <span class="tag-size">32x32px</span>
+          <span class="tag-path">tree.png</span>
+        </div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/environment/rock.png" alt="Rock"></div>
+        <div class="asset-name">Rock</div>
+        <div class="asset-desc">Batu karang abu-abu bersegi dengan highlight cahaya</div>
+        <div class="asset-tags">
+          <span class="tag-size">24x24px</span>
+          <span class="tag-path">rock.png</span>
+        </div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap wide"><img src="assets/environment/ocean_bg.png" alt="Ocean Background"></div>
+        <div class="asset-name">Ocean Background</div>
+        <div class="asset-desc">Gradasi laut malam hari siap render di Canvas</div>
+        <div class="asset-tags">
+          <span class="tag-size">1920x1080px</span>
+          <span class="tag-path">ocean_bg.png</span>
+        </div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap wide"><img src="assets/environment/wave_pattern.png" alt="Wave Pattern"></div>
+        <div class="asset-name">Wave Pattern</div>
+        <div class="asset-desc">Gelombang air seamless untuk efek riak laut</div>
+        <div class="asset-tags">
+          <span class="tag-size">256x128px</span>
+          <span class="tag-path">wave_pattern.png</span>
+        </div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap"><img src="assets/environment/land_bg.png" alt="Land Background"></div>
+        <div class="asset-name">Land Background</div>
+        <div class="asset-desc">Tekstur daratan tanah &amp; rerumputan hijau gelap</div>
+        <div class="asset-tags">
+          <span class="tag-size">512x512px</span>
+          <span class="tag-path">land_bg.png</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 3. RESOURCES -->
+  <section id="resources" class="category-section">
+    <div class="category-header">
+      <div class="category-title">⛽ 3. Resource Items</div>
+      <span class="category-badge">4 Assets</span>
+    </div>
+    <div class="asset-grid">
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/resources/fuel.png" alt="Fuel"></div>
+        <div class="asset-name">Fuel</div>
+        <div class="asset-desc">Jeriken bahan bakar oranye dengan tutup &amp; handle</div>
+        <div class="asset-tags">
+          <span class="tag-size">24x24px</span>
+          <span class="tag-path">fuel.png</span>
+        </div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/resources/wood.png" alt="Wood"></div>
+        <div class="asset-name">Wood</div>
+        <div class="asset-desc">Tumpukan kayu gelondongan terikat tali</div>
+        <div class="asset-tags">
+          <span class="tag-size">24x24px</span>
+          <span class="tag-path">wood.png</span>
+        </div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/resources/food.png" alt="Food"></div>
+        <div class="asset-name">Food</div>
+        <div class="asset-desc">Makanan kaleng berlabel merah dengan lambang ikan</div>
+        <div class="asset-tags">
+          <span class="tag-size">24x24px</span>
+          <span class="tag-path">food.png</span>
+        </div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/resources/medicine.png" alt="Medicine"></div>
+        <div class="asset-name">Medicine</div>
+        <div class="asset-desc">Kotak P3K medis dengan lambang palang hijau</div>
+        <div class="asset-tags">
+          <span class="tag-size">24x24px</span>
+          <span class="tag-path">medicine.png</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 4. UI ICONS -->
+  <section id="ui" class="category-section">
+    <div class="category-header">
+      <div class="category-title">🎛 4. UI Icons</div>
+      <span class="category-badge">13 Assets</span>
+    </div>
+    <div class="asset-grid">
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/ui/icon_sail.png" alt="Sail Icon"></div>
+        <div class="asset-name">Icon Sail</div>
+        <div class="asset-desc">Perahu layar mengembang di atas air</div>
+        <div class="asset-tags"><span class="tag-size">32x32px</span><span class="tag-path">icon_sail.png</span></div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/ui/icon_fish.png" alt="Fish Icon"></div>
+        <div class="asset-name">Icon Fish</div>
+        <div class="asset-desc">Ikan melompat dengan kail pancing</div>
+        <div class="asset-tags"><span class="tag-size">32x32px</span><span class="tag-path">icon_fish.png</span></div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/ui/icon_upgrade.png" alt="Upgrade Icon"></div>
+        <div class="asset-name">Icon Upgrade</div>
+        <div class="asset-desc">Panah ganda ke atas hijau &amp; emas</div>
+        <div class="asset-tags"><span class="tag-size">32x32px</span><span class="tag-path">icon_upgrade.png</span></div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/ui/icon_inventory.png" alt="Inventory Icon"></div>
+        <div class="asset-name">Icon Inventory</div>
+        <div class="asset-desc">Ransel tactical dengan strap oranye</div>
+        <div class="asset-tags"><span class="tag-size">32x32px</span><span class="tag-path">icon_inventory.png</span></div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/ui/icon_explore.png" alt="Explore Icon"></div>
+        <div class="asset-name">Icon Explore</div>
+        <div class="asset-desc">Kompas nautical emas dengan jarum arah</div>
+        <div class="asset-tags"><span class="tag-size">32x32px</span><span class="tag-path">icon_explore.png</span></div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/ui/icon_attack.png" alt="Attack Icon"></div>
+        <div class="asset-name">Icon Attack</div>
+        <div class="asset-desc">Sepasang pedang / machete bersilang</div>
+        <div class="asset-tags"><span class="tag-size">32x32px</span><span class="tag-path">icon_attack.png</span></div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/ui/icon_collect.png" alt="Collect Icon"></div>
+        <div class="asset-name">Icon Collect</div>
+        <div class="asset-desc">Tangan terbuka mengambil kristal berkilau</div>
+        <div class="asset-tags"><span class="tag-size">32x32px</span><span class="tag-path">icon_collect.png</span></div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/ui/icon_back.png" alt="Back Icon"></div>
+        <div class="asset-name">Icon Back</div>
+        <div class="asset-desc">Panah melingkar kembali ke perahu</div>
+        <div class="asset-tags"><span class="tag-size">32x32px</span><span class="tag-path">icon_back.png</span></div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/ui/icon_fuel.png" alt="Fuel Icon"></div>
+        <div class="asset-name">Icon Fuel</div>
+        <div class="asset-desc">Ikon tabung bahan bakar</div>
+        <div class="asset-tags"><span class="tag-size">24x24px</span><span class="tag-path">icon_fuel.png</span></div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/ui/icon_wood.png" alt="Wood Icon"></div>
+        <div class="asset-name">Icon Wood</div>
+        <div class="asset-desc">Ikon kayu gelondongan</div>
+        <div class="asset-tags"><span class="tag-size">24x24px</span><span class="tag-path">icon_wood.png</span></div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/ui/icon_food.png" alt="Food Icon"></div>
+        <div class="asset-name">Icon Food</div>
+        <div class="asset-desc">Ikon makanan kaleng</div>
+        <div class="asset-tags"><span class="tag-size">24x24px</span><span class="tag-path">icon_food.png</span></div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/ui/icon_medicine.png" alt="Medicine Icon"></div>
+        <div class="asset-name">Icon Medicine</div>
+        <div class="asset-desc">Ikon obat / kotak P3K</div>
+        <div class="asset-tags"><span class="tag-size">24x24px</span><span class="tag-path">icon_medicine.png</span></div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap pixelated"><img src="assets/ui/icon_hp.png" alt="HP Icon"></div>
+        <div class="asset-name">Icon HP</div>
+        <div class="asset-desc">Hati merah dengan palang medis</div>
+        <div class="asset-tags"><span class="tag-size">24x24px</span><span class="tag-path">icon_hp.png</span></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 5. BRANDING -->
+  <section id="branding" class="category-section">
+    <div class="category-header">
+      <div class="category-title">⚓ 5. Branding &amp; Logo</div>
+      <span class="category-badge">2 Assets</span>
+    </div>
+    <div class="asset-grid large">
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap wide"><img src="assets/branding/logo.png" alt="Game Logo"></div>
+        <div class="asset-name">Game Logo</div>
+        <div class="asset-desc">Logo "Last Harbor" gaya nautical dengan emas &amp; biru tua</div>
+        <div class="asset-tags">
+          <span class="tag-size">512x256px</span>
+          <span class="tag-path">logo.png</span>
+        </div>
+      </div>
+
+      <div class="asset-card">
+        <div class="checkerboard-wrap"><img src="assets/branding/appicon.png" alt="App Icon"></div>
+        <div class="asset-name">App Icon</div>
+        <div class="asset-desc">Ikon perahu di tengah laut badai dengan lentera bercahaya</div>
+        <div class="asset-tags">
+          <span class="tag-size">512x512px</span>
+          <span class="tag-path">appicon.png</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer>
+    <p>Last Harbor &copy; 2026 — All visual assets generated &amp; formatted in PNG transparent.</p>
+  </footer>
+</div>
+
+</body>
+</html>

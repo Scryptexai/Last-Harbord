@@ -3,6 +3,7 @@ import { CFG } from './config.js';
 import { G } from './state.js';
 import { makeRng } from './util.js';
 import { drawBoat } from './boat.js';
+import { ASSETS } from './assets.js';
 
 // Spawn pulau random di radius 200-400px mengelilingi posisi perahu (0,0).
 export function generateSeaWorld() {
@@ -72,18 +73,25 @@ export function nearestIsland(x, y) {
   return { island: best, dist: Math.max(0, bd) };
 }
 
-// Background laut: gradasi biru + animasi sin wave.
+// Background laut: Ocean Background Asset + gradasi biru + animasi sin wave.
 export function drawOceanBackground(ctx, vw, vh, parX = 0, parY = 0) {
-  const g = ctx.createLinearGradient(0, 0, 0, vh);
-  g.addColorStop(0, '#15628d');
-  g.addColorStop(0.55, '#0d4266');
-  g.addColorStop(1, '#082a45');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, vw, vh);
+  const bg = ASSETS.ocean_bg;
+  if (bg && bg.complete && bg.naturalWidth > 0) {
+    // Tile or fit ocean background
+    ctx.drawImage(bg, 0, 0, vw, vh);
+  } else {
+    const g = ctx.createLinearGradient(0, 0, 0, vh);
+    g.addColorStop(0, '#0d283f');
+    g.addColorStop(0.55, '#091c2c');
+    g.addColorStop(1, '#05101b');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, vw, vh);
+  }
 
-  ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+  // Animasi gelombang laut halus
+  ctx.strokeStyle = 'rgba(127, 212, 255, 0.09)';
   ctx.lineWidth = 2;
-  const rows = 9;
+  const rows = 8;
   const rh = vh / rows;
   for (let i = 0; i < rows; i++) {
     const yb = i * rh + ((G.time * 14) % rh);
@@ -101,46 +109,48 @@ export function drawOceanBackground(ctx, vw, vh, parX = 0, parY = 0) {
 function drawIslandSea(ctx, isl) {
   const { x, y, r } = isl;
 
-  // air dangkal
-  ctx.fillStyle = 'rgba(120,210,235,0.22)';
+  // Air dangkal halo
+  ctx.fillStyle = 'rgba(30, 95, 130, 0.28)';
   ctx.beginPath();
-  ctx.arc(x, y, r + 16, 0, Math.PI * 2);
+  ctx.arc(x, y, r + 18, 0, Math.PI * 2);
   ctx.fill();
 
-  // pasir
-  blobPath(ctx, x, y, isl.shape, 1);
-  ctx.fillStyle = '#e6cf94';
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(120,95,45,0.6)';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  // rumput
-  blobPath(ctx, x, y, isl.shape, 0.66);
-  ctx.fillStyle = isl.visited ? '#3f8a4b' : '#4c9a4f';
-  ctx.fill();
-
-  // pohon kecil di tengah
-  ctx.fillStyle = '#2e7d32';
-  ctx.beginPath();
-  ctx.arc(x, y, 4.5, 0, Math.PI * 2);
-  ctx.fill();
-
-  // highlight saat dalam jangkauan
-  if (isl.inRange) {
-    ctx.strokeStyle = '#ffd166';
-    ctx.setLineDash([8, 6]);
+  // Jika aset island tersedia
+  const islImg = ASSETS.island;
+  if (islImg && islImg.complete && islImg.naturalWidth > 0) {
+    const size = (r + 14) * 2;
+    ctx.drawImage(islImg, x - size / 2, y - size / 2, size, size);
+  } else {
+    // Fallback pasir & rumput
+    blobPath(ctx, x, y, isl.shape, 1);
+    ctx.fillStyle = '#deca8e';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(120,95,45,0.6)';
     ctx.lineWidth = 2;
+    ctx.stroke();
+
+    blobPath(ctx, x, y, isl.shape, 0.68);
+    ctx.fillStyle = isl.visited ? '#2e6e3f' : '#3a8c50';
+    ctx.fill();
+  }
+
+  // Highlight saat dalam jangkauan
+  if (isl.inRange) {
+    ctx.strokeStyle = '#f1c40f';
+    ctx.setLineDash([8, 6]);
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.arc(x, y, r + 34, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
   }
 
-  // label
+  // Label pulau
   ctx.textAlign = 'center';
   ctx.font = 'bold 13px system-ui, sans-serif';
   ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(0,0,0,0.8)';
+  ctx.shadowBlur = 4;
   ctx.fillText(isl.name, x, y - r - 26);
   ctx.font = '11px system-ui, sans-serif';
   ctx.fillStyle = '#ffd166';
@@ -150,8 +160,9 @@ function drawIslandSea(ctx, isl) {
     .filter(([, n]) => n > 0)
     .map(([t, n]) => `${CFG.RESOURCES[t].icon}${n}`)
     .join(' ');
-  ctx.fillStyle = 'rgba(255,255,255,0.85)';
-  ctx.fillText(stock || 'habis', x, y + r + 18);
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.fillText(stock || 'habis', x, y + r + 22);
+  ctx.shadowBlur = 0;
 }
 
 // Render mode laut (dipanggil dengan transform screen bersih).
@@ -163,11 +174,11 @@ export function drawSea(ctx, vw, vh) {
 
   for (const isl of G.islands) drawIslandSea(ctx, isl);
 
-  // garis autopilot
+  // Garis autopilot
   if (G.autopilotTarget) {
     const t = G.autopilotTarget;
     ctx.save();
-    ctx.strokeStyle = '#ffd166';
+    ctx.strokeStyle = '#f1c40f';
     ctx.setLineDash([10, 8]);
     ctx.lineWidth = 2;
     ctx.beginPath();
