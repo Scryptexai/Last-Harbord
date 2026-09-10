@@ -13,7 +13,7 @@ import { buyNext, nextRung, canBuyNext, goalLabel, isMaxed, capacity } from './r
 import { resetTide, updateTide, tidePhase, seaDrainRate } from './tide.js';
 import { loadAssets } from './assets.js';
 import { sfx, initAudio, setAmbience, tickAmbience, setMuted } from './audio.js';
-import { fx, updateFx, timeScale, shakeOffset, drawFxScreen, resetFx, addFlash, addShake, ring, flushGulls } from './fx.js';
+import { fx, updateFx, timeScale, shakeOffset, drawFxScreen, resetFx, addFlash, addShake, ring, flushGulls, returnGulls } from './fx.js';
 import { clamp, dist, fmtTime } from './util.js';
 
 const canvas = document.getElementById('game');
@@ -50,7 +50,10 @@ function beginRun() {
   G.state = 'sea';
   G.cam.zoom = 1;
   G.cam.x = G.boat.x; G.cam.y = G.boat.y;
-  resetTide();
+  // JAM PASANG TIDAK DI-RESET DI SINI. Dermaga membekukan malam, bukan memutarnya:
+  // kalau berlayar lagi, malam lanjut dari detik terakhir kau menambat. Satu-satunya
+  // yang memutar jam ini ke nol adalah fajar (lihat tide.js).
+  if (!G.tide) resetTide();
   resetFx();
   showScreen('sea');
   setAmbience('sea');
@@ -430,7 +433,10 @@ function update(dt) {
   if (G.state === 'sea' || G.state === 'land') {
     updateTide(d);
     const ph = tidePhase(G.tide ? G.tide.t : 0);
-    if (ph.justChanged && ph.key === 'turning') {
+    // Catatan: flag ada di G.tide, bukan di tabel fase. Sebelum ini dibaca dari
+    // PHASES (undefined) sehingga beat camar/guncangan tidak pernah menyala.
+    const changed = !!(G.tide && G.tide.justChanged);
+    if (changed && ph.key === 'turning') {
       sfx('waveChange');
       // burung-burung pergi. Tidak ada teks — hanya langit yang tiba-tiba kosong.
       const w = G.state === 'land' && G.land ? G.land.player : G.boat;
@@ -438,11 +444,20 @@ function update(dt) {
       addShake(0.14);
       tip('t_turn', 'Camar terbang pergi. Perhatikan garis air di pantai.', 6000);
     }
-    if (ph.justChanged && ph.key === 'high') {
+    if (changed && ph.key === 'high') {
       sfx('waveChange');
       flushGulls(G.boat ? G.boat.x : 0, (G.boat ? G.boat.y : 0), 14);
       addShake(0.34);
       tip('t_high', 'Air pasang. Sepanjang kau di luar, lambungmu terkuras — kembali ke kapal, atau terus ke pulau lain.', 6500);
+    }
+    // FAJAR: malam habis. Air turun, langit sembuh, camar kembali. Tidak ada teks:
+    // yang berubah adalah dunia, dan yang dibaca pemain adalah "aku masih hidup".
+    if (G.tide && G.tide.justDawned) {
+      sfx('gull');
+      addFlash(0.22);
+      const w = G.state === 'land' && G.land ? G.land.player : G.boat;
+      returnGulls(w.x, w.y, 7);
+      toast('Fajar. Air turun.');   // sisanya diperlihatkan dunia, bukan ditulis
     }
     const amb = ph.key === 'high' ? 'high' : (G.state === 'land' ? 'land' : 'sea');
     setAmbience(amb);
@@ -514,11 +529,11 @@ const H = {
 async function boot() {
   resize();
   await loadAssets();
+  resetTide();                 // default; loadGame() boleh menimpa jam malam ini
   const loaded = loadGame();
   if (!G.worldSeed) G.worldSeed = (Math.random() * 1e9) >>> 0;
   generateWorld(G.worldSeed);
   G.boat = createBoat(HARBOR.x, -40);
-  resetTide();                 // jam pasang selalu ada, walau di dermaga ia diam
   if (!(G.hull > 0)) G.hull = maxHP();
   G.hull = Math.min(G.hull, maxHP());
 

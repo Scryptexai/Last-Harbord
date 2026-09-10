@@ -81,6 +81,25 @@ export function flushGulls(x, y, n = 8) {
   if (fx.parts.length > MAX_PARTS) fx.parts.splice(0, fx.parts.length - MAX_PARTS);
 }
 
+// Camar kembali saat fajar: datang dari utara, turun ke pulau. Pasangan dari
+// flushGulls() — supaya pemain bisa membaca "malam habis" tanpa satu kata pun.
+export function returnGulls(x, y, n = 7) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const d = 160 + Math.random() * 240;
+    fx.parts.push({
+      kind: 'gull',
+      x: x + Math.cos(a) * d,
+      y: y - 140 - Math.random() * 200,
+      vx: (Math.random() - 0.5) * 50,
+      vy: 60 + Math.random() * 70,        // turun ke arah pulau
+      life: 0, dur: 3.0 + Math.random() * 1.8, color: 'rgba(255,244,214,0.95)',
+      size: 3 + Math.random() * 2, drag: 0.995, flap: Math.random() * 6.28,
+    });
+  }
+  if (fx.parts.length > MAX_PARTS) fx.parts.splice(0, fx.parts.length - MAX_PARTS);
+}
+
 export function ring(x, y, color, size = 34, dur = 0.4) {
   fx.parts.push({ kind: 'ring', x, y, life: 0, dur, color, size, drag: 1 });
 }

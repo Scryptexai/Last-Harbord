@@ -157,11 +157,13 @@ console.log('\n== 2. Berlayar ==');
 G.target = islandById(0);
 const sailSpot = SPOTS.find((s) => s.key === 'sail');
 hp.x = sailSpot.x; hp.y = sailSpot.y; step(2);
+const tideBeforeSail = G.tide.t;
 tap('e');
 ok(G.state === 'sea', `naik ke haluan + aksi -> berlayar (state=${G.state})`);
-ok(G.runActive && G.tide.t < 1, 'run baru dimulai: jam pasang dari nol');
+ok(G.runActive && Math.abs(G.tide.t - tideBeforeSail) < 1,
+  `berlayar TIDAK memutar malam ke nol (t=${G.tide.t.toFixed(1)}s, lanjut dari dermaga)`);
 step(120);
-ok(G.tide.t > 1.5, `pasang berjalan selama berlayar (t=${G.tide.t.toFixed(1)}s)`);
+ok(G.tide.t > tideBeforeSail + 1.5, `pasang berjalan selama berlayar (t=${G.tide.t.toFixed(1)}s)`);
 
 console.log('\n== 3. Mendarat & memanen ==');
 const isl = islandById(0);
@@ -248,6 +250,9 @@ console.log('\n== 7. Kematian di darat: pelampung, bukan kehilangan ==');
   ok(bankLoad() >= bankBefore, 'gudang TIDAK ikut hilang saat mati');
   ok(G.refit === 0, 'kapal yang sudah dibangun tidak hilang saat mati');
   ok(isModalOpen(), 'debrief kematian muncul (apa yang hilang, apa yang tersisa)');
+  const nightLine = (byId['db-night'] && byId['db-night'].innerHTML) || '';
+  ok(nightLine.includes('night-bar'), 'debrief menunjukkan panjang malam (alasan untuk menekan "berlayar" sekali lagi)');
+  ok(/Malam tersisa \d+%/.test(nightLine), `sisa malam terbaca (${(nightLine.match(/Malam tersisa \d+%/) || ['-'])[0]})`);
   keyDown('escape'); step(2); keyUp('escape');
   ok(!isModalOpen(), 'debrief ditutup -> kembali ke dermaga');
 }
@@ -269,7 +274,65 @@ console.log('\n== 8. Pasang di darat: gelombang bala bantuan datang ==');
   ok(L3.zombies.length > 0, `zombie baru benar-benar ada di pulau (${L3.zombies.length})`);
 }
 
-console.log('\n== 9. Muatan tidak disimpan di localStorage ==');
+console.log('\n== 9. Malam: tidak mundur, punya beat, dan berakhir saat fajar ==');
+{
+  const { timeToNextPhase, nightProgress, updateTide } = await import('../js/tide.js');
+  const { saveGame, loadGame } = await import('../js/save.js');
+  const { fx } = await import('../js/fx.js');
+
+  // (a) tambat lalu berlayar lagi: malam lanjut, bukan mulai dari nol
+  G.state = 'sea'; G.runActive = true;
+  G.tide.t = 150;
+  step(90);                                   // 1,5 detik
+  const atSea = G.tide.t;
+  ok(atSea > 151.4, `jam berjalan saat di laut (${atSea.toFixed(1)}s)`);
+  G.boat.x = HARBOR.x + 40; G.boat.y = HARBOR.y + 20; G.boat.vx = 0; G.boat.vy = 0;
+  step(3); tap('e');
+  ok(G.state === 'harbor', 'tambat kembali di dermaga');
+  step(180);
+  ok(Math.abs(G.tide.t - atSea) < 0.5, 'dermaga membekukan malam (tidak berjalan, tidak mundur)');
+  const hp2 = G.harbor.player;                 // enterHarbor() membuat objek pemain baru
+  G.target = islandById(0);                    // haluan menuntut tujuan, seperti di UI
+  hp2.x = sailSpot.x; hp2.y = sailSpot.y; step(2); tap('e');
+  ok(G.state === 'sea', `berlayar lagi dari dermaga (state=${G.state})`);
+  ok(G.tide.t > 149, `malam yang SAMA diteruskan, bukan dari nol (t=${G.tide.t.toFixed(1)}s)`);
+  ok(nightProgress() > 0.3, `sepertiga malam sudah terpakai (${(nightProgress() * 100).toFixed(0)}%)`);
+
+  // (b) beat 'berubah' benar-benar menyala (dulu dibaca dari objek yang salah)
+  G.tide.t = CFG.TIDE.PHASES[0].until - 0.01;
+  updateTide(0);                               // sinkronkan index dengan t yang baru
+  G.tide.justChanged = false;
+  fx.parts.length = 0; fx.shake = 0;
+  step(3);                                     // melewati batas tenang -> berubah
+  ok(fx.shake > 0, `fase berubah: ada guncangan, bukan cuma teks (${fx.shake.toFixed(2)})`);
+  step(27);
+  const leaving = fx.parts.filter((p) => p.kind === 'gull' && p.vy < 0).length;
+  ok(leaving > 0, `fase berubah: camar benar-benar pergi dari langit (${leaving} ekor)`);
+  ok(timeToNextPhase(G.tide.t) > 0, `hitungan menuju fase berikutnya wajar (${timeToNextPhase(G.tide.t).toFixed(0)}s)`);
+
+  // (c) fajar: malam diputar ulang, camar kembali, dan tidak ada kuras lambung
+  G.tide.t = CFG.TIDE.DAWN_AT + CFG.TIDE.DAWN_FALL - 0.4;
+  fx.parts.length = 0; fx.shake = 0;
+  const nightBefore = G.tide.night;
+  step(30);
+  ok(G.tide.night === nightBefore + 1, `fajar: satu malam tamat (malam ke-${G.tide.night})`);
+  ok(G.tide.t < 5, `jam diputar ke nol oleh fajar (t=${G.tide.t.toFixed(1)}s)`);
+  const returning = fx.parts.filter((p) => p.kind === 'gull' && p.vy > 0).length;
+  ok(returning > 0, `fajar: camar kembali ke pulau (${returning} ekor terbang ke selatan)`);
+  ok(G.tide.justDawned === false || G.tide.t < 5, 'beat fajar hanya sekali, bukan tiap frame');
+
+  // (d) menutup game bukan cara memutar waktu ke belakang
+  G.tide.t = 240; G.tide.night = 3;
+  saveGame();
+  G.tide.t = 0; G.tide.night = 0;
+  const loaded = loadGame();
+  ok(loaded, 'save bisa dimuat');
+  ok(Math.abs(G.tide.t - 240) < 0.5, `jam malam ikut tersimpan (t=${G.tide.t.toFixed(1)}s)`);
+  ok(G.tide.night === 3, 'jumlah malam ikut tersimpan');
+  ok(G.tide.justChanged === false && G.tide.warn === 0, 'memuat game tidak menembakkan beat transisi palsu');
+}
+
+console.log('\n== 10. Muatan tidak disimpan di localStorage ==');
 {
   const raw = JSON.parse(store[CFG.SAVE_KEY] || '{}');
   ok(raw.carried === undefined, 'palka yang dibawa tidak pernah masuk save (reload bukan jalan pintas)');

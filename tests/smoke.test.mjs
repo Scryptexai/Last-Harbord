@@ -27,7 +27,7 @@ import {
   atExtract, isRevealed, playerWorldPos,
 } from '../js/land.js';
 import { makeZombie } from '../js/zombie.js';
-import { resetTide, updateTide, tidePhase, timeToNextPhase, tideTint, seaDrainRate, consumeReinforce } from '../js/tide.js';
+import { resetTide, updateTide, tidePhase, timeToNextPhase, tideTint, seaDrainRate, consumeReinforce, nightProgress, isDawn } from '../js/tide.js';
 import { inFloodWater, floodRadius, shapeRadius } from '../js/land.js';
 import { fx, flushGulls, updateFx } from '../js/fx.js';
 import { horizonBand, stormLevel } from '../js/world.js';
@@ -180,6 +180,25 @@ G.tide.t = 200; G.tide.nextReinforce = 0;
 ok(consumeReinforce(0.016) === 1, 'pasang memicu gelombang bala bantuan di darat');
 G.tide.t = 10; 
 ok(consumeReinforce(0.016) === 0, 'tenang: tidak ada bala bantuan (tidak menghukum di awal)');
+
+// --- SATU MALAM: jam pasang milik malam, bukan milik satu run -----------------
+const DAWN = CFG.TIDE.DAWN_AT, FALL = CFG.TIDE.DAWN_FALL;
+G.tide.t = DAWN - 30;
+ok(nightProgress() < 0.95 && nightProgress() > 0.85, `malam hampir habis (${(nightProgress() * 100).toFixed(0)}%)`);
+ok(!isDawn(), 'sebelum fajar: belum fajar');
+G.tide.t = DAWN + FALL / 2;
+ok(tideTint() > 0.2 && tideTint() < 0.5, `fajar: air turun, tint memudar (${tideTint().toFixed(2)})`);
+ok(seaDrainRate(1000) === 0, 'fajar: laut melepas lambung (tidak ada kuras saat air turun)');
+G.tide.t = DAWN + FALL - 1;
+const nightBefore = G.tide.night;
+updateTide(2);
+ok(G.tide.t <= 1.01, `fajar memutar malam ke nol (t=${G.tide.t.toFixed(2)})`);
+ok(G.tide.night === nightBefore + 1, 'malam dihitung: satu malam selesai');
+ok(G.tide.justDawned === true, 'fajar punya flag sendiri untuk beat visualnya');
+ok(tidePhase(G.tide.t).key === 'calm' && tideTint() < 0.01, `setelah fajar: tenang lagi, terang lagi (tint ${tideTint().toFixed(3)})`);
+G.tide.justDawned = false;
+G.tide.t = DAWN + 5; updateTide(1);      // tetap di fase pasang, belum fajar penuh
+ok(!G.tide.justDawned && G.tide.t > DAWN, 'fajar tidak menembak dua kali');
 
 // ============================================================
 console.log('\n== 5. Dunia: jarak adalah dial kesulitan ==');

@@ -100,6 +100,11 @@ export const CFG = {
     WADE: 0.78,           // lambat mengarungi air banjir saat pasang
     SEA_SAFE_NEAR: 170,   // aman dari drain jika lebih dekat dari ini ke pulau
     WARNING_AT: 12,       // detik sebelum fase berganti: gulls berhenti, angin naik
+    // SATU MALAM. Jam pasang adalah milik malam, bukan milik satu run: ia hanya
+    // berjalan saat kau di luar, membeku di dermaga, dan tidak pernah mundur kalau
+    // kau tambat lalu berlayar lagi. Fajar memutarnya kembali — sekali, di ujung.
+    DAWN_AT: 420,         // detik di laut sebelum fajar (7 menit)
+    DAWN_FALL: 10,        // berapa lama air turun saat fajar
   },
 
   // Tangga refit: SATU jalur, satu tujuan berikutnya yang selalu jelas.

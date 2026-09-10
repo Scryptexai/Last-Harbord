@@ -12,6 +12,7 @@ import { drawBoat, drawLanternPool } from './boat.js';
 import { HARBOR } from './world.js';
 import { carriedLoad, bankLoad, RES_TYPES } from './inventory.js';
 import { beginWorld, endWorld, upright, atUpright } from './camera.js';
+import { tideTint } from './tide.js';
 
 const DECK = { x0: -30, x1: 30, y0: -46, y1: 44 };
 const PIER = { x0: -44, x1: 44, y0: 44, y1: 250 };
@@ -94,11 +95,15 @@ export function drawHarbor(ctx, vw, vh) {
   const H = G.harbor;
   if (!H) return;
 
-  // laut malam yang tenang
+  // Laut di dermaga BUKAN selamanya tenang: warnanya mengikuti malam yang sedang
+  // berjalan. Pemain pulang dan melihat airnya naik — itu alasan untuk tegang,
+  // tanpa satu kalimat pun yang menjelaskannya.
+  const tideK = Math.min(1, tideTint() / 0.70);
+  const mix = (a, b, t) => `rgb(${Math.round(a[0] + (b[0] - a[0]) * t)},${Math.round(a[1] + (b[1] - a[1]) * t)},${Math.round(a[2] + (b[2] - a[2]) * t)})`;
   const g = ctx.createLinearGradient(0, 0, 0, vh);
-  g.addColorStop(0, '#0a1e2e');
-  g.addColorStop(0.6, '#071522');
-  g.addColorStop(1, '#040c14');
+  g.addColorStop(0, mix([10, 30, 46], [46, 18, 24], tideK));
+  g.addColorStop(0.6, mix([7, 21, 34], [30, 12, 18], tideK));
+  g.addColorStop(1, mix([4, 12, 20], [12, 5, 9], tideK));
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, vw, vh);
 
@@ -122,10 +127,13 @@ export function drawHarbor(ctx, vw, vh) {
     ctx.stroke();
   }
 
-  drawLanternPool(ctx, 0, 0, 260);
+  // lampu dermaga menyusut saat malam bertambah tua: rumah tetap aman, tapi hangatnya
+  // berkurang — itu satu-satunya tekanan yang dibutuhkan di tempat yang tidak berbahaya
+  drawLanternPool(ctx, 0, 0, 260 * (1 - 0.35 * tideK));
 
   // dermaga
   drawPier(ctx);
+  drawTideLine(ctx, H.t, tideK);
 
   // kapal (berdiri di air) + muatannya + meja — semuanya urut menurut kedalaman
   atUpright(ctx, 0, 0, () => {
@@ -169,6 +177,29 @@ export function drawHarbor(ctx, vw, vh) {
   vg.addColorStop(1, 'rgba(0,0,0,0.55)');
   ctx.fillStyle = vg;
   ctx.fillRect(0, 0, vw, vh);
+}
+
+// Garis air di dermaga. Bahasa yang sama dengan pulau: saat pasang, ujung dermaga
+// yang paling jauh ke laut tenggelam lebih dulu, lalu airnya merangkak ke arah dek.
+function drawTideLine(ctx, t, k) {
+  if (k <= 0.02) return;
+  const y0 = 254 - k * 132;
+  const w = 96;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(-w / 2 - 10, 256);
+  ctx.lineTo(-w / 2 - 10, y0);
+  for (let x = -w / 2 - 10; x <= w / 2 + 10; x += 10) {
+    ctx.lineTo(x, y0 + Math.sin(x * 0.09 + t * 1.7) * 3.5 + Math.sin(x * 0.21 - t * 2.3) * 1.6);
+  }
+  ctx.lineTo(w / 2 + 10, 256);
+  ctx.closePath();
+  ctx.fillStyle = `rgba(${Math.round(18 + 30 * k)},${Math.round(46 - 14 * k)},${Math.round(66 - 30 * k)},${0.52 + 0.16 * k})`;
+  ctx.fill();
+  ctx.strokeStyle = `rgba(214,232,246,${0.16 + 0.2 * k})`;   // buih tipis di garis air
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawPier(ctx) {

@@ -6,7 +6,7 @@ import { addBanked, addCarried, emptyBag, bankCarried } from '../js/inventory.js
 import { generateWorld, drawSea, HARBOR } from '../js/world.js';
 import { createBoat, drawBoat } from '../js/boat.js';
 import { enterIsland, updateLand, drawLand } from '../js/land.js';
-import { resetTide, updateTide } from '../js/tide.js';
+import { resetTide, updateTide, tideTint } from '../js/tide.js';
 import { enterHarbor, updateHarbor, drawHarbor } from '../js/harbor.js';
 import { fx, updateFx, drawFxScreen, resetFx, addFlash, addShake, ring, burst, flyItem, splash, addHurtDir } from '../js/fx.js';
 
@@ -14,9 +14,13 @@ globalThis.localStorage = { getItem:()=>null, setItem(){}, removeItem(){} };
 globalThis.document = { createElement: () => ({ getContext: () => cstub(), width:0, height:0 }) };
 
 let ops = 0;
+let gradStops = [];                    // warna gradien yang benar-benar dipakai menggambar
 function cstub() {
   const c = { canvas: { width: 1280, height: 720 } };
-  const grad = () => ({ addColorStop() {} });
+  const grad = () => {
+    const g = { stops: [], addColorStop(pos, col) { g.stops.push([pos, col]); gradStops.push(col); } };
+    return g;
+  };
   c.createLinearGradient = grad; c.createRadialGradient = grad;
   c.createPattern = () => null; c.measureText = () => ({ width: 10 });
   c.getImageData = () => ({ data: new Uint8ClampedArray(4) });
@@ -156,6 +160,30 @@ const { G: G2, CFG: CFG2 } = { G, CFG };
   const warm = c1.glow.r > c1.glow.b && c1.glow.g > c1.glow.b;
   const red = c3.glow.r > c3.glow.g * 2;
   if (!warm || !red || !(c3.height > c1.height)) { console.log('  ERR  cakrawala tidak berubah makna antar fase'); process.exitCode = 1; }
+
+  // Dermaga: malam yang sama harus terlihat di rumah. Kalau dermaga selalu biru tenang,
+  // "sesuatu milikmu sedang terancam" tidak pernah terbaca.
+  const { enterHarbor, drawHarbor } = await import('../js/harbor.js');
+  enterHarbor();
+  G.tide.t = 20; updateTide(0);
+  gradStops = []; drawHarbor(ctx, 1280, 720);
+  const calmHarbor = gradStops.slice(0, 3);
+  const tideCalm = tideTint();
+  G.tide.t = 320; updateTide(0);
+  gradStops = []; drawHarbor(ctx, 1280, 720);
+  const highHarbor = gradStops.slice(0, 3);
+  const tideHigh = tideTint();
+  const rgb = (c) => { const m = /rgb\((\d+),(\d+),(\d+)\)/.exec(c); return m ? [+m[1], +m[2], +m[3]] : null; };
+  const ca = rgb(calmHarbor[0]), ch = rgb(highHarbor[0]);
+  const changed = calmHarbor[0] !== highHarbor[0];
+  const blueCalm = ca && ca[2] > ca[0];
+  const redHigh = ch && ch[0] > ch[2];
+  console.log(`  ok   dermaga: tenang ${calmHarbor[0]} (tint ${tideCalm.toFixed(2)}) -> pasang ${highHarbor[0]} (tint ${tideHigh.toFixed(2)})`);
+  if (!(changed && blueCalm && redHigh)) {
+    console.log('  ERR  dermaga tidak memperlihatkan malam (warnanya tidak berubah sesuai fase)');
+    process.exitCode = 1;
+  }
+  if (!(tideHigh > tideCalm * 3)) { console.log('  ERR  tint malam tidak naik cukup jauh'); process.exitCode = 1; }
 }
 
 console.log(process.exitCode ? '\nADA JALUR GAMBAR YANG GAGAL.' : '\nSemua jalur gambar berjalan tanpa error.');

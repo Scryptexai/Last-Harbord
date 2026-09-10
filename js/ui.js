@@ -6,7 +6,7 @@ import { G } from './state.js';
 import { fmtTime, clamp } from './util.js';
 import { capacity, maxHP, nextRung, goalLabel, isMaxed, REFIT, storageLv, speedLv, hullLv } from './refit.js';
 import { carriedLoad, bankLoad, RES_TYPES } from './inventory.js';
-import { tidePhase, timeToNextPhase, tideTint } from './tide.js';
+import { tidePhase, timeToNextPhase, tideTint, nightProgress } from './tide.js';
 import { islandTotalRemaining, isDepleted, HARBOR } from './world.js';
 import { atExtract } from './land.js';
 
@@ -26,7 +26,7 @@ const IDS = [
   'btn-context', 'btn-attack', 'btn-heal', 'btn-mute', 'joystick', 'joy-knob',
   'modal-chart', 'chart-rows', 'chart-hint', 'chart-bank', 'chart-close', 'chart-sail',
   'modal-bench', 'bench-rows', 'bench-bank', 'bench-close', 'bench-title', 'bench-sub',
-  'modal-debrief', 'db-title', 'db-cause', 'db-lost', 'db-kept', 'db-salvage', 'db-goal', 'db-close',
+  'modal-debrief', 'db-title', 'db-cause', 'db-lost', 'db-kept', 'db-salvage', 'db-night', 'db-goal', 'db-close',
   'hint-line',
 ];
 
@@ -133,21 +133,22 @@ export function updateHUD(ctx) {
     els['hold-text'].classList.toggle('full', inPlay && load >= cap);
   }
 
-  // pasang — hanya tampil saat bermain, dan berubah dari informasi jadi peringatan
-  const tideOn = inPlay || G.runActive;
+  // MALAM — tampil juga di dermaga, karena di situlah keputusannya diambil: berapa
+  // banyak malam yang tersisa, dan apakah masih ada waktu untuk satu kali lagi.
+  const tideOn = inPlay || G.runActive || st === 'harbor';
   els['tide-block'].classList.toggle('hidden', !tideOn);
   if (tideOn) {
     const ph = tidePhase(G.tide ? G.tide.t : 0);
     const tint = Math.round(tideTint() * 20) / 20;
-    const key = ph.key + '|' + tint;
+    const prog = Math.round(nightProgress() * 200) / 200;
+    const key = ph.key + '|' + tint + '|' + prog;
     if (key !== cache.tide) {
       cache.tide = key;
       els['tide-name'].textContent = ph.label.toUpperCase();
       els['tide-block'].className = 'tide-' + ph.key;
-      const total = 90;
-      const pctFill = ph.key === 'calm' ? clamp(((G.tide ? G.tide.t : 0) / 90) * 100, 0, 100)
-        : ph.key === 'turning' ? clamp(((G.tide.t - 90) / 120) * 100, 0, 100) : 100;
-      els['tide-fill'].style.width = pctFill + '%';
+      // bilahnya panjang MALAM, bukan panjang fase: satu malam, sekali jalan, tidak mundur
+      els['tide-fill'].style.width = (prog * 100).toFixed(1) + '%';
+      els['tide-block'].classList.toggle('dawn-near', prog > 0.86);
     }
     const warn = G.tide && G.tide.warn > 0.15 && ph.key !== 'high';
     els['tide-block'].classList.toggle('warn', !!warn);
@@ -330,6 +331,15 @@ export function renderDebrief(info) {
   els['db-salvage'].innerHTML = info.salvageText
     ? `<span class="sv">◉</span> ${info.salvageText}`
     : '';
+  // Baris malam: bukan penjelasan, cuma panjang malam yang tersisa. Ini yang membuat
+  // "sekali lagi" masuk akal — malam belum habis, dan ia hanya berjalan kalau kau keluar.
+  const prog = nightProgress();
+  const left = Math.max(0, Math.round((1 - prog) * 100));
+  const dawnX = ((CFG.TIDE.DAWN_AT / (CFG.TIDE.DAWN_AT + CFG.TIDE.DAWN_FALL)) * 100).toFixed(1);
+  els['db-night'].innerHTML =
+    `<div class="night-bar${prog > 0.6 ? ' hot' : ''}"><i style="width:${(prog * 100).toFixed(1)}%"></i>` +
+    `<b style="left:${dawnX}%"></b></div><span>Malam tersisa ${left}%</span>`;
+
   const gl = goalLabel();
   els['db-goal'].innerHTML = `<span class="muted small">Tujuan berikutnya:</span> <b>${isMaxed() ? 'Tidak ada — kapal lengkap' : gl.text}</b> <span class="muted small">· ${fmtTime(info.time || 0)}</span>`;
 }

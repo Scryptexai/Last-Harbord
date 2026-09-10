@@ -7,6 +7,7 @@
 import { CFG } from './config.js';
 import { G } from './state.js';
 import { emptyBag } from './inventory.js';
+import { resetTide, updateTide } from './tide.js';
 
 const int = (v, d = 0) => (Number.isFinite(+v) ? Math.max(0, Math.floor(+v)) : d);
 
@@ -29,6 +30,8 @@ export function saveGame() {
           food: int(s.cargo && s.cargo.food), medicine: int(s.cargo && s.cargo.medicine),
         },
       })),
+      tideT: Math.max(0, Math.min(CFG.TIDE.DAWN_AT + CFG.TIDE.DAWN_FALL - 0.01, +(G.tide ? G.tide.t : 0) || 0)),
+      nights: int(G.tide && G.tide.night),
       surveyed: Object.keys(G.surveyed || {}).map((k) => int(k)),
       tabbed: G.tabbed || {},
       muted: !!G.muted,
@@ -52,6 +55,18 @@ export function loadGame() {
     G.banked = { fuel: int(b.fuel), wood: int(b.wood), food: int(b.food), medicine: int(b.medicine) };
     G.carried = emptyBag(); // selalu mulai dengan tangan kosong
     G.totalRuns = int(d.totalRuns);
+    // Malam lanjut dari tempat ia berhenti, bukan dari nol: dermaga membekukan jam,
+    // dan menutup game bukan cara memutar waktu ke belakang.
+    resetTide();
+    if (Number.isFinite(+d.tideT)) {
+      const total = CFG.TIDE.DAWN_AT + CFG.TIDE.DAWN_FALL;
+      G.tide.t = Math.max(0, Math.min(total - 0.01, +d.tideT));
+      G.tide.night = int(d.nights);
+      updateTide(0);
+      G.tide.justChanged = false;    // jangan menembakkan beat transisi saat memuat
+      G.tide.justDawned = false;
+      G.tide.warn = 0;
+    }
     G.salvages = Array.isArray(d.salvages) ? d.salvages.map((s) => ({
       islandId: int(s.islandId), x: +s.x || 0, y: +s.y || 0,
       cargo: { fuel: int(s.cargo && s.cargo.fuel), wood: int(s.cargo && s.cargo.wood), food: int(s.cargo && s.cargo.food), medicine: int(s.cargo && s.cargo.medicine) },

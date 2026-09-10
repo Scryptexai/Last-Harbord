@@ -101,6 +101,56 @@ sebab: badai di utara yang mendorong air naik.
 Tidak ada satu pun elemen HUD untuk ini. Yang memberi tahu kau harus pulang adalah
 horizon, air di kakimu, dan cahaya kapal yang terus memanggil.
 
+## Satu malam, bukan satu run (jantung "sekali lagi")
+
+Dulu jam pasang **di-reset setiap kali kau berlayar**. Bot yang efisien menambat di detik
+88 — tepat sebelum fase tegang dimulai di detik 90. Artinya pemain yang bermain bagus
+tidak pernah bertemu gigi permainan ini, dan yang bermain buruk dihukum dua kali. Itu
+persis penyakit yang paling banyak dikeluhkan pemain Dredge ("toothless", ketegangan
+hilang setelah jam pertama).
+
+Sekarang jam pasang adalah **milik malam, bukan milik satu run**, dan aturannya tiga:
+
+1. **Jam hanya berjalan saat kau di luar** (laut/pulau). Di dermaga ia membeku — pulang
+   membeli keamanan, bukan kemajuan.
+2. **Ia tidak pernah mundur.** Berlayar lagi = melanjutkan malam yang sama dari detik
+   terakhir kau menambat. Jadi keserakahanmu di run pertama menaikkan ongkos run berikutnya.
+3. **Fajar memutarnya** (`TIDE.DAWN_AT`, 420 detik di laut): air turun, cakrawala sembuh,
+   camar kembali. Malam tamat dengan sendirinya, lalu malam baru mulai dari nol.
+
+Konsekuensinya bisa diukur, dan inilah yang membuat "sekali lagi" masuk akal:
+
+| Berangkat saat | Run | Rata di pulau | Muatan | Mati |
+|---|---|---|---|---|
+| Tenang | 17 | 98s | 7,8 | 6% |
+| Berubah | 21 | 76s | 4,6 | 24% |
+| Pasang | 53 | 59s | 3,3 | 25% |
+
+Dermaga ikut memperlihatkan malam yang sedang berjalan: air naik di sepanjang dermaga,
+langit bergeser dari biru ke merah, dan lingkaran lampu menyusut. Di debrief kematian ada
+satu baris baru: **Malam tersisa N%** — malam hanya berjalan kalau kau keluar, dan itu
+alasan untuk menekan "berlayar" sekali lagi.
+
+Dasar eksternalnya (bukan asumsi — ini data perilaku pemain sungguhan):
+
+- **Clark dkk. 2009, *Neuron* 61:481–490** — "hampir berhasil" hanya memotivasi kalau
+  **pemain** yang menyusunnya; near-miss yang dipilih komputer justru menurunkan keinginan
+  bermain. Karena itu tidak ada "hampir sampai" buatan di game ini: kerugian selalu
+  berasal dari keputusan pemain sendiri (bertahan lebih lama, masuk lebih dalam).
+- **Berridge & Robinson (incentive salience)** — dopamin adalah *wanting* (tarikan isyarat),
+  bukan *liking*. Karena itu jam malam, bar sisa malam, dan air yang naik adalah isyarat
+  sebelum hadiahnya; hadiahnya sendiri tetap nyata (muatan benar-benar jadi milikmu).
+- **Ulasan Dredge** (Metacritic pengguna ≈73% positif/23% campur/3% negatif) — yang dipuji:
+  ketegangan terus-menerus tanpa jumpscare, kabut, umpan keserakahan. Yang dikritik:
+  ketegangan menguap setelah jam pertama dan konten malam **opsional**. Karena itu malam
+  di sini tidak bisa dilewati dan tidak bisa ditunggu sampai selesai.
+- **Laporan pemain Tarkov/Rust** — ketegangan kehilangan bertahan hanya kalau ada dua hal:
+  jalan pulih yang murah dan terlihat (pelampung muatan, lambung 50%, gudang tetap) dan
+  progres yang tidak hilang saat mati. Rust dikritik karena "tidak menghargai apa pun
+  selain waktu".
+- **Panjang sesi** (benchmark 2026: mobile P50 ≈3–6 menit, PC P50 ≈18 menit) — satu malam
+  ≈7 menit di laut, bisa dipotong kapan saja di dermaga tanpa kehilangan apa pun.
+
 ## Kontrol
 
 | | Keyboard | Sentuh |
@@ -117,7 +167,9 @@ horizon, air di kakimu, dan cahaya kapal yang terus memanggil.
 ## Perjalanan pemain
 
 ```
-DERMAGA (berjalan di dek: peta → meja kerja → haluan)
+DERMAGA (berjalan di dek: peta → meja kerja → haluan; malam membeku di sini)
+   ↑ FAJAR (420s di laut): air turun, camar kembali, malam baru mulai
+   ↺ MALAM: jam tidak mundur saat kau berlayar lagi — makin lama kau di luar, makin keras
    → BERLAYAR (8-20 detik, kabut terbuka, tanda pulau muncul)
    → MENDARAT (sekoci jatuh, kamera membuka pulau)
    → PULAU (memanen = rentan; makin dalam = makin kaya)
@@ -224,12 +276,13 @@ Bot bermain di atas modul asli, termasuk kamera dan pasang yang baru (`node test
 
 | Metrik | Hasil | Target desain |
 |---|---|---|
-| Waktu di pulau per run | **77,5 detik** (45–90 di sesi berbeda) | 45–90 detik |
-| Waktu berlayar per run | **10,7 detik** | 10–30 detik |
-| Muatan dibawa pulang | 6,8 unit (bot mundur lebih awal saat terluka) | 8–14 |
-| Tingkat refit yang bisa dicapai | **6 / 6** (1/3 sesi tamat, sesi lain 5/6) | 6 / 6 (build lama: 1 / 6) |
-| Kematian | 8 dari 95 run (8%) | keserakahan punya ongkos |
-| Pasang saat tambat | rata 88s — sebagian besar run berakhir di fase "Berubah" | keputusan berbalik terjadi sebelum air pasang penuh |
+| Waktu di pulau per run | **70,7 detik** (bot hati-hati) / 88,9s (bot serakah) | 45–90 detik |
+| Waktu berlayar per run | **7,1 detik** | 10–30 detik |
+| Muatan dibawa pulang | 4,4 unit (turun dari 6,8 karena malam tidak lagi gratis) | 8–14 |
+| Tingkat refit yang bisa dicapai | **4 / 6** dalam satu sesi (3 sesi @ ~90 run) | 6 / 6 (build lama: 1 / 6) |
+| Kematian | 19 dari 91 run (bot hati-hati) / 75 dari 114 (bot serakah) | keserakahan punya ongkos |
+| Pasang saat tambat | rata 229s — malam diteruskan, bukan direset | keputusan berbalik terjadi sebelum air pasang penuh |
+| Fajar | 29 kali dalam 3 sesi | malam tamat dengan sendirinya, tanpa jalan buntu |
 
 Catatan kejujuran: waktu berlayar rata-rata 10 detik ada di **batas bawah** target — cukup untuk
 kabut, penunjuk arah, dan keputusan "lanjut atau berbalik", tapi bukan pelayaran yang panjang.
@@ -237,9 +290,9 @@ kabut, penunjuk arah, dan keputusan "lanjut atau berbalik", tapi bukan pelayaran
 ## Test
 
 ```bash
-node tests/smoke.test.mjs        # 127: logika, ekonomi, pasang, bentuk pulau, kawanan
-node tests/integration.test.mjs  #  38: LOOP GAME SUNGGUHAN lewat main.js, tanpa browser
-node tests/render.test.mjs       #  28: semua jalur gambar dengan canvas tiruan
+node tests/smoke.test.mjs        # 136: logika, ekonomi, malam, bentuk pulau, kawanan
+node tests/integration.test.mjs  #  57: LOOP GAME SUNGGUHAN lewat main.js, tanpa browser
+node tests/render.test.mjs       #  29: semua jalur gambar dengan canvas tiruan
 node tests/camera.test.mjs       #  15: kontrak kamera miring (posisi & kedalaman sprite)
 node tests/pacing.test.mjs       # alat ukur, bukan test: laporan pacing bot
 ```

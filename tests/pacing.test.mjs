@@ -20,7 +20,7 @@ const { addCarried, carriedLoad, emptyBag, bankCarried, dropCarried } = await im
 const { generateWorld, nearestIsland, HARBOR, harborDist, islandById, islandTotalRemaining } = await import('../js/world.js');
 const { createBoat, updateBoat } = await import('../js/boat.js');
 const { enterIsland, updateLand, contextAction, atExtract, landContext, tryAttack } = await import('../js/land.js');
-const { resetTide, updateTide } = await import('../js/tide.js');
+const { resetTide, updateTide, tidePhase } = await import('../js/tide.js');
 const { enterHarbor, updateHarbor, harborContext } = await import('../js/harbor.js');
 const { SPOTS } = await import('../js/harbor.js');
 const { makeZombie } = await import('../js/zombie.js');
@@ -68,8 +68,9 @@ function playSession(seed) {
     G.state = 'sea';
     G.boat.x = HARBOR.x; G.boat.y = HARBOR.y - 160;
     G.boat.vx = 0; G.boat.vy = 0;
-    resetTide();
+    if (!G.tide) resetTide();          // malam tidak direset: jam lanjut dari dermaga
     runs++;
+    return { t: G.tide.t, night: G.tide.night || 0, phase: tidePhase(G.tide.t).key };
   }
 
   function bank() {
@@ -82,7 +83,7 @@ function playSession(seed) {
   while (!isMaxed() && runs < 60) {
     const target = pickTarget();
     if (!target) break;
-    startRun(target);
+    const start = startRun(target);
 
     let result = 'pulang';
     let death = false;
@@ -210,6 +211,8 @@ function playSession(seed) {
 
     log.push({
       island: islandTime, sail: sailTime, cargo: last, tide: G.tide.t,
+      tideStart: start.t, startPhase: start.phase, night: start.night,
+      nightNow: G.tide.night || 0,
       result, death, bought, rung: G.refit,
     });
 
@@ -253,6 +256,21 @@ console.log(`rata waktu di pulau       : ${avg((l) => l.island).toFixed(1)}s   (
 console.log(`rata waktu berlayar       : ${avg((l) => l.sail).toFixed(1)}s   (target 10-30s)`);
 console.log(`rata muatan dibawa pulang : ${avg((l) => l.cargo).toFixed(1)} unit`);
 console.log(`rata pasang saat tambat   : ${avg((l) => l.tide).toFixed(0)}s  (jam 0-90 tenang, 90-210 berubah, 210+ pasang)`);
+
+// ---- MALAM: apakah ketegangannya benar-benar datang, dan apakah tetap bisa dimainkan ----
+const byPhase = {};
+for (const l of all) (byPhase[l.startPhase] = byPhase[l.startPhase] || []).push(l);
+console.log('\n--- PER FASE SAAT BERANGKAT (inilah bukti malam tidak mundur) ---');
+for (const k of ['calm', 'turning', 'high']) {
+  const g = byPhase[k] || [];
+  if (!g.length) { console.log(`  ${k.padEnd(8)}: -`); continue; }
+  const di = g.filter((l) => l.death).length;
+  console.log(`  ${k.padEnd(8)}: ${String(g.length).padStart(3)} run   rata pulau ` +
+    `${(g.reduce((a, l) => a + l.island, 0) / g.length).toFixed(0)}s   muatan ` +
+    `${(g.reduce((a, l) => a + l.cargo, 0) / g.length).toFixed(1)}   mati ${di} (${Math.round(100 * di / g.length)}%)`);
+}
+const dawns = sessions.reduce((a, r) => a + (r.log.length ? r.log[r.log.length - 1].nightNow : 0), 0);
+console.log(`fajar terjadi             : ${dawns} kali dalam ${sessions.length} sesi (malam tamat dengan sendirinya)`);
 console.log(`kematian                  : ${deaths} dari ${all.length} run`);
 console.log(`sesi yang tamat (6/6)     : ${completed}/${sessions.length}`);
 console.log(`hasil akhir per sesi      : ${all.filter((l) => l.result === 'MATI').length} mati, ` +
@@ -268,4 +286,8 @@ ok(avg((l) => l.island) < 130, 'waktu di pulau tidak membengkak (maks 130s rata-
 ok(avg((l) => l.sail) < 60, 'waktu berlayar tidak membengkak (maks 60s rata-rata)');
 ok(all.filter((l) => l.result === 'TERJEBAK').length === 0, 'tidak ada run yang terjebak selamanya');
 ok(sessions.some((r) => r.rungs >= 3), 'bot bisa menaiki tangga refit (>=3 tingkat) dalam 3 sesi');
+ok(all.some((l) => l.startPhase !== 'calm'),
+  'ada run yang BERANGKAT setelah fase tenang lewat (malam tidak direset tiap berlayar)');
+ok(dawns > 0, 'fajar benar-benar terjadi: satu malam bisa tamat dalam satu sesi');
+ok(all.filter((l) => l.result === 'NYASAR').length === 0, 'tidak ada run yang tersesat tanpa akhir di laut');
 process.exit(fail ? 1 : 0);

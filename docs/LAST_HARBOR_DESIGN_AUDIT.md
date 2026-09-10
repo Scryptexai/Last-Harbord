@@ -722,13 +722,91 @@ node tests/pacing.test.mjs        -> pulau 77,5s (target 45-90), layar 10,7s (ta
 ## Verifikasi (bukan klaim, hasil perintah)
 
 ```
-node tests/smoke.test.mjs        -> 127 pass, 0 fail
-node tests/integration.test.mjs  ->  38 pass, 0 fail
-node tests/render.test.mjs       ->  28 jalur gambar, 0 error
+node tests/smoke.test.mjs        -> 136 pass, 0 fail
+node tests/integration.test.mjs  ->  57 pass, 0 fail
+node tests/render.test.mjs       ->  29 jalur gambar, 0 error
 node tests/camera.test.mjs       ->  15 pass, 0 fail   (kontrak kamera miring)
-node tests/pacing.test.mjs       ->  alat ukur: pulau 77,5s / layar 10,7s / 8% mati
+node tests/pacing.test.mjs       ->  alat ukur: lihat Appendix E.4 (malam, bukan run tunggal)
 ```
+
+Catatan: angka-angka di Appendix D diambil **sebelum** jam pasang menjadi milik malam.
+Angka yang berlaku sekarang ada di Appendix E.4.
 
 Harness pengukuran pacing (bot di atas modul asli, 3 seed per gaya main):
 rata-rata pulau 43–81s (target 45–90), layar 10,1s (target 10–30), 13–15 run sampai
 kapal lengkap, pemain serakah 1–2 kematian vs hati-hati 0–1.
+
+---
+
+# APPENDIX E — VERIFIKASI EKSTERNAL & LOOP "SEKALI LAGI" (revisi 2026-09-10)
+
+Diminta eksplisit: klaim soal ketegangan **tidak boleh asumsi**, harus dari perilaku
+pemain manusia sungguhan (sentimen ulasan, laporan/testimoni pemain, studi). Ini yang
+ditemukan, dan ini yang mengubah desain. Enam pencarian web dijalankan; ringkasannya di
+bawah, dan setiap perubahan kode menunjuk balik ke temuan yang menyebabkannya.
+
+## E.1 Apa yang membuat game tegang (dari data, bukan dari perasaan)
+
+| Sumber | Temuan | Konsekuensi di build ini |
+|---|---|---|
+| Clark dkk. 2009, *Neuron* 61:481–490 (PMC2658737) | "Hampir berhasil" terasa **kurang menyenangkan** tapi menaikkan keinginan lanjut bermain — **hanya bila pemain sendiri yang menyusunnya**. Near-miss yang ditentukan komputer justru **menurunkan** keinginan bermain. | Tidak ada near-miss buatan. Kehilangan selalu berasal dari keputusan pemain (bertahan lebih lama, masuk lebih dalam). Tidak ada "hampir sampai!" yang dipasang sistem. |
+| Berridge & Robinson; Tindell 2009 (incentive salience) | Dopamin = *wanting* (tarikan isyarat), bukan *liking* (kenikmatan). RPE = kalibrasi, bukan hadiah. | Isyarat diperkuat **sebelum** hadiah: bar malam, air naik di dermaga, camar pergi, lentera menyusut. Hadiahnya tetap nyata (muatan benar-benar jadi milikmu di dermaga). |
+| Ulasan Dredge (Metacritic pengguna ≈73% positif / 23% campur / 3% negatif; frostilyte.ca "Toothless Tension"; r/patientgamers) | Yang dipuji: ketegangan konstan tanpa jumpscare, kabut, umpan keserakahan. Yang dikritik: **ketegangan menguap setelah jam pertama**, dan konten malam **opsional** sehingga sensasinya bisa dilewati. | Malam tidak bisa dilewati dan tidak bisa ditunggu: jam hanya berjalan saat kau di luar, dan hanya fajar yang memutarnya. |
+| Laporan pemain Tarkov/Rust (r/EscapefromTarkov, r/patientgamers, forum resmi) | Ketegangan kehilangan bertahan hanya bila ada **dua** hal: jalan pulih yang murah & terlihat, dan progres yang tidak hilang saat mati. Rust dikritik: "tidak menghargai apa pun selain waktu". | Pelampung muatan (sudah ada), lambung diisi 50% saat mati (sudah ada), gudang + refit tidak hilang (sudah ada). Yang baru: **malam tidak direset** = waktu yang kau pakai tetap terpakai, jadi mati tidak menghapus kemajuan malam. |
+| Psikologi "one more run" (roguelike/extraction) | Tiga pilar: kegagalan = informasi, run pendek (10–30 menit) supaya ongkos mengulang rendah, dan meta-progresi membawa sesuatu setiap run sehingga berhenti terasa prematur. | Satu malam ≈7 menit di laut, bisa dipotong kapan saja di dermaga tanpa kehilangan apa pun. Baris "Malam tersisa N%" di debrief adalah pilar ketiga, divisualkan. |
+| Benchmark panjang sesi 2026 (mobile P50 ≈3–6 menit, PC P50 ≈18 menit) | Sesi pendek adalah norma, bukan pengecualian. | Malam bisa dimulai/diakhiri kapan saja di dermaga; tidak ada hukuman untuk berhenti. |
+
+## E.2 Masalah nyata yang ditemukan verifikasi ini
+
+1. **Jam pasang di-reset setiap kali berlayar.** Bot efisien menambat di detik 88 — dua
+   detik sebelum fase tegang dimulai. Pemain yang bermain bagus **tidak pernah** bertemu
+   gigi permainan; pemain yang bermain buruk dihukum berulang. Ini persis kegagalan
+   "toothless" yang dikeluhkan pemain Dredge.
+2. **Beat ketegangan terbesar tidak pernah menyala.** `main.js` membaca `ph.justChanged`
+   dari tabel fase di `config.js`, sementara flag-nya diset di `G.tide`. Akibatnya camar
+   tidak pernah terbang, guncangan tidak pernah terjadi, dan tip peringatan tidak pernah
+   muncul — selama ini. Test lama tidak menangkapnya karena menguji mekanismenya
+   (`flushGulls`) langsung, bukan pemicunya.
+3. **Menutup game adalah mesin waktu.** Karena jam selalu direset di `beginRun()`, reload
+   menghapus seluruh malam. Sekarang jam malam ikut disimpan (`save.tideT`, `save.nights`).
+
+## E.3 Perubahan yang diimplementasikan
+
+| Perubahan | File | Alasan (dari tabel E.1) |
+|---|---|---|
+| Jam pasang milik **malam**, bukan run: tidak direset saat berlayar | `main.js beginRun()` | Dredge (eskalasi tidak opsional) |
+| Fajar pada 420s di laut: air turun, cakrawala sembuh, camar kembali, malam baru | `tide.js`, `config.js`, `fx.js returnGulls()`, `main.js` | one-more-run (siklus punya ujung) + wanting/liking (isyarat lalu kelegaan) |
+| Dermaga memperlihatkan malam: air naik di dermaga, langit biru→merah, lampu menyusut | `harbor.js drawHarbor()/drawTideLine()` | Tarkov (sesuatu milikmu terancam) + wanting (isyarat di tempat aman) |
+| Bilah HUD = panjang **malam**, bukan panjang fase | `ui.js`, `css/style.css` | wanting (isyarat sebelum hadiah) |
+| Debrief menambah "Malam tersisa N%" | `ui.js`, `index.html`, `css/style.css` | one-more-run (berhenti terasa prematur) |
+| Jam malam ikut disimpan | `save.js` | Tarkov/Rust (kemajuan tidak boleh hilang karena menutup game) |
+| Beat `turning`/`high` diperbaiki + beat fajar baru | `main.js` | Bug #2; tanpa ini seluruh bahasa visual ketegangan mati |
+
+## E.4 Hasil pengukuran setelah perubahan (bot di atas modul asli)
+
+```
+node tests/pacing.test.mjs 0.42 3     (bot hati-hati: mundur di 42% lambung)
+fase saat berangkat   run   rata pulau   muatan   mati
+tenang                 17      98s         7,8      6%
+berubah                21      76s         4,6     24%
+pasang                 53      59s         3,3     25%
+fajar: 29 kali dalam 3 sesi. 0 TERJEBAK, 0 NYASAR.
+```
+
+Gradient itu adalah bukti ketegangan tidak lagi opsional: **keserakahan di satu run
+menaikkan ongkos run berikutnya**, dan itu keputusan pemain, bukan keputusan sistem.
+
+Kejujuran soal regresi: karena malam tidak lagi gratis, bot hati-hati hanya mencapai
+**4/6** tingkat refit dalam satu sesi (sebelumnya 1/3 sesi bisa 6/6), dan muatan per run
+turun 6,8 → 4,4. Ini konsekuensi yang disengaja dari eskalasi, bukan bug — tapi angkanya
+di bawah target "kapal lengkap dalam satu sesi", jadi tuning ekonomi (harga tangga refit)
+masih kandidat revisi berikutnya.
+
+## E.5 Yang **belum** dikerjakan (jujur)
+
+- **P2 (polish)** belum disentuh: art pass pulau, cuaca sebagai varian pasang, chart/journal
+  lengkap, mix audio (ducking/atenuasi), tuning kamera lanjutan, ergonomi mobile (safe-area,
+  haptik). Tidak satu pun mengubah keputusan pemain — itu sebabnya verifikasi psikologis
+  didahulukan.
+- **P3** tetap tidak dibangun (PvP, multiplayer, memasak, crafting, pohon meta-progresi).
+  Memancing masih belum dikurangi sesuai cut list (masih faucet tanpa umpan).
