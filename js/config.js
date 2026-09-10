@@ -93,8 +93,8 @@ export const CFG = {
   // THE TIDE — satu jam run yang berubah dari ambience -> informasi -> gigi.
   TIDE: {
     PHASES: [
-      { key: 'calm',    label: 'Tenang',   until: 90,   tint: 0.00, reinforce: 0,  seaDrain: 0   },
-      { key: 'turning', label: 'Berubah',  until: 210,  tint: 0.35, reinforce: 26, seaDrain: 0   },
+      { key: 'calm',    label: 'Tenang',   until: 150,  tint: 0.00, reinforce: 0,  seaDrain: 0   },
+      { key: 'turning', label: 'Berubah',  until: 270,  tint: 0.35, reinforce: 26, seaDrain: 0   },
       { key: 'high',    label: 'Pasang',   until: 1e9,  tint: 0.70, reinforce: 14, seaDrain: 3.5, waveBonus: 1, wade: 0.72 },
     ],
     WADE: 0.78,           // lambat mengarungi air banjir saat pasang

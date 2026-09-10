@@ -165,18 +165,18 @@ console.log('\n== 4. THE TIDE: ambience -> informasi -> gigi ==');
 resetProgress();
 resetTide();
 ok(tidePhase(G.tide.t).key === 'calm', 'fase awal: tenang');
-G.tide.t = 100;
-ok(tidePhase(G.tide.t).key === 'turning', 'setelah 90s: berubah');
-G.tide.t = 240;
-ok(tidePhase(G.tide.t).key === 'high', 'setelah 210s: pasang');
+G.tide.t = CFG.TIDE.PHASES[0].until + 10;
+ok(tidePhase(G.tide.t).key === 'turning', `setelah ${CFG.TIDE.PHASES[0].until}s: berubah`);
+G.tide.t = CFG.TIDE.PHASES[1].until + 30;
+ok(tidePhase(G.tide.t).key === 'high', `setelah ${CFG.TIDE.PHASES[1].until}s: pasang`);
 ok(tideTint() > 0.6, `tint pasang cukup gelap (${tideTint().toFixed(2)})`);
-G.tide.t = 80;
-ok(timeToNextPhase(80) === 10, 'waktu menuju fase berikutnya akurat');
+G.tide.t = CFG.TIDE.PHASES[0].until - 10;
+ok(timeToNextPhase(G.tide.t) === 10, 'waktu menuju fase berikutnya akurat');
 ok(seaDrainRate(1000) === 0 && seaDrainRate(50) === 0, 'tenang: laut tidak menguras lambung');
-G.tide.t = 240;
+G.tide.t = CFG.TIDE.PHASES[1].until + 30;
 ok(seaDrainRate(50) === 0, 'pasang tapi dekat pulau: aman (SEA_SAFE_NEAR)');
 ok(seaDrainRate(1000) > 0, 'pasang di laut terbuka: lambung terkuras');
-G.tide.t = 200; G.tide.nextReinforce = 0;
+G.tide.t = (CFG.TIDE.PHASES[0].until + CFG.TIDE.PHASES[1].until) / 2; G.tide.nextReinforce = 0;
 ok(consumeReinforce(0.016) === 1, 'pasang memicu gelombang bala bantuan di darat');
 G.tide.t = 10; 
 ok(consumeReinforce(0.016) === 0, 'tenang: tidak ada bala bantuan (tidak menghukum di awal)');
@@ -553,17 +553,19 @@ console.log('\n== 13. Ketegangan punya SEBAB, dan sebebnya terlihat ==');
   for (let i = 0; i < 60 * 6; i++) updateFx(1 / 60);
   ok(fx.parts.length === 0, 'langit bersih lagi setelah camar pergi — tidak ada partikel yang tertinggal');
 
-  // (d) badai: alasan visual, tumbuh bersama pasang
-  G.tide.t = 0;
-  const s0 = stormLevel();
-  G.tide.t = 120;
-  const s1 = stormLevel();
-  G.tide.t = 260;
-  const s2 = stormLevel();
-  ok(s0 === 0 && s1 > 0 && s2 > 0.95, `badai tumbuh seiring pasang (${s0.toFixed(2)} -> ${s1.toFixed(2)} -> ${s2.toFixed(2)})`);
-  const h0 = horizonBand(), h2 = (G.tide.t = 260, horizonBand());
+  // (d) badai: alasan visual, tumbuh bersama pasang — diukur di tiga titik fase
+  const P = CFG.TIDE.PHASES;
+  G.tide.t = 0;                 const s0 = stormLevel(), h0 = horizonBand();
+  G.tide.t = P[0].until + 40;   const s1 = stormLevel();
+  G.tide.t = P[1].until + 40;   const s2 = stormLevel(), h2 = horizonBand();
+  ok(s0 === 0 && s1 > s0 && s2 > s1 && s2 > 0.95,
+    `badai tumbuh seiring pasang, tanpa melompat (${s0.toFixed(2)} -> ${s1.toFixed(2)} -> ${s2.toFixed(2)})`);
   ok(h0.glow.r > h0.glow.b && h2.glow.r > h2.glow.b * 1.6,
     `cakrawala berubah warna dari hangat ke merah (rgb(${h0.glow.r},${h0.glow.g},${h0.glow.b}) -> rgb(${h2.glow.r},${h2.glow.g},${h2.glow.b}))`);
+  // dan warnanya benar-benar merangkak, bukan melompat di batas fase (bug yang pernah ada)
+  G.tide.t = P[0].until + 5;  const creepA = tideTint();
+  G.tide.t = P[0].until + 55; const creepB = tideTint();
+  ok(creepB > creepA + 0.05, `tint menanjak DI DALAM fase, bukan melompat (${creepA.toFixed(2)} -> ${creepB.toFixed(2)})`);
   G.tide.t = 0;
 }
 

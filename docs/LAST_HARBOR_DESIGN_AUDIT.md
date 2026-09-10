@@ -758,10 +758,10 @@ bawah, dan setiap perubahan kode menunjuk balik ke temuan yang menyebabkannya.
 
 ## E.2 Masalah nyata yang ditemukan verifikasi ini
 
-1. **Jam pasang di-reset setiap kali berlayar.** Bot efisien menambat di detik 88 — dua
-   detik sebelum fase tegang dimulai. Pemain yang bermain bagus **tidak pernah** bertemu
-   gigi permainan; pemain yang bermain buruk dihukum berulang. Ini persis kegagalan
-   "toothless" yang dikeluhkan pemain Dredge.
+1. **Jam pasang di-reset setiap kali berlayar.** Dengan jendela tenang 90 detik saat itu,
+   bot efisien menambat di detik 88 — dua detik sebelum fase tegang dimulai. Pemain yang
+   bermain bagus **tidak pernah** bertemu gigi permainan; pemain yang bermain buruk
+   dihukum berulang. Ini persis kegagalan "toothless" yang dikeluhkan pemain Dredge.
 2. **Beat ketegangan terbesar tidak pernah menyala.** `main.js` membaca `ph.justChanged`
    dari tabel fase di `config.js`, sementara flag-nya diset di `G.tide`. Akibatnya camar
    tidak pernah terbang, guncangan tidak pernah terjadi, dan tip peringatan tidak pernah
@@ -774,35 +774,71 @@ bawah, dan setiap perubahan kode menunjuk balik ke temuan yang menyebabkannya.
 
 | Perubahan | File | Alasan (dari tabel E.1) |
 |---|---|---|
-| Jam pasang milik **malam**, bukan run: tidak direset saat berlayar | `main.js beginRun()` | Dredge (eskalasi tidak opsional) |
+| Jam pasang milik **malam**, bukan run: tidak direset saat berlayar (0-150-270, fajar 420) | `main.js beginRun()`, `config.js` | Dredge (eskalasi tidak opsional) |
+| **Isyarat ≠ ongkos**: `tideTint()` (warna, sudah bergerak sejak detik 0) dipisah dari `tideDanger()` (air yang menelan pantai, baru mulai setelah fase tenang) | `tide.js`, `land.js`, `harbor.js` | wanting/liking: isyarat lebih dulu, hukuman belakangan; fase "tenang" tetap tenang |
 | Fajar pada 420s di laut: air turun, cakrawala sembuh, camar kembali, malam baru | `tide.js`, `config.js`, `fx.js returnGulls()`, `main.js` | one-more-run (siklus punya ujung) + wanting/liking (isyarat lalu kelegaan) |
 | Dermaga memperlihatkan malam: air naik di dermaga, langit biru→merah, lampu menyusut | `harbor.js drawHarbor()/drawTideLine()` | Tarkov (sesuatu milikmu terancam) + wanting (isyarat di tempat aman) |
 | Bilah HUD = panjang **malam**, bukan panjang fase | `ui.js`, `css/style.css` | wanting (isyarat sebelum hadiah) |
 | Debrief menambah "Malam tersisa N%" | `ui.js`, `index.html`, `css/style.css` | one-more-run (berhenti terasa prematur) |
 | Jam malam ikut disimpan | `save.js` | Tarkov/Rust (kemajuan tidak boleh hilang karena menutup game) |
 | Beat `turning`/`high` diperbaiki + beat fajar baru | `main.js` | Bug #2; tanpa ini seluruh bahasa visual ketegangan mati |
+| Audio punya RNG sendiri; gelombang bala bantuan tidak lagi di-seed `Date.now()` | `audio.js`, `land.js` | agar pengukuran bisa diulang (lihat E.6) |
 
 ## E.4 Hasil pengukuran setelah perubahan (bot di atas modul asli)
 
 ```
-node tests/pacing.test.mjs 0.42 3     (bot hati-hati: mundur di 42% lambung)
-fase saat berangkat   run   rata pulau   muatan   mati
-tenang                 17      98s         7,8      6%
-berubah                21      76s         4,6     24%
-pasang                 53      59s         3,3     25%
-fajar: 29 kali dalam 3 sesi. 0 TERJEBAK, 0 NYASAR.
+node tests/pacing.test.mjs 0.42 3     (bot hati-hati: mundur di 42% lambung; 94 run)
+fase saat berangkat   run   rata pulau   muatan   lambung hilang   mati
+tenang                 40      70s         4,8        -14,1         8%
+berubah                20      61s         3,4        -18,1        10%
+pasang                 34      51s         3,1         -6,1        32%
+fajar: 31 kali dalam 3 sesi. 0 TERJEBAK, 0 NYASAR. rata pulau 61,6s, layar 8,6s.
+
+node tests/pacing.test.mjs 0 3        (bot serakah: tidak pernah mundur; 144 run)
+tenang 54 run / mati 41%  ·  berubah 29 run / mati 86%  ·  pasang 61 run / mati 77%
 ```
 
 Gradient itu adalah bukti ketegangan tidak lagi opsional: **keserakahan di satu run
 menaikkan ongkos run berikutnya**, dan itu keputusan pemain, bukan keputusan sistem.
 
 Kejujuran soal regresi: karena malam tidak lagi gratis, bot hati-hati hanya mencapai
-**4/6** tingkat refit dalam satu sesi (sebelumnya 1/3 sesi bisa 6/6), dan muatan per run
-turun 6,8 → 4,4. Ini konsekuensi yang disengaja dari eskalasi, bukan bug — tapi angkanya
+**3/6** tingkat refit dalam satu sesi (sebelumnya 1/3 sesi bisa 6/6), dan muatan per run
+turun 6,8 → 3,9. Ini konsekuensi yang disengaja dari eskalasi, bukan bug — tapi angkanya
 di bawah target "kapal lengkap dalam satu sesi", jadi tuning ekonomi (harga tangga refit)
 masih kandidat revisi berikutnya.
 
-## E.5 Yang **belum** dikerjakan (jujur)
+## E.5 Bug yang ditemukan verifikasi ini (dan diperbaiki)
+
+1. `main.js` membaca `ph.justChanged` dari **tabel fase** (`config.js`), sementara flag-nya
+   diset di `G.tide`. Akibatnya beat camar-pergi dan guncangan **tidak pernah menyala**
+   selama ini; seluruh bahasa visual ketegangan yang didokumentasikan di Appendix D mati.
+   Sekarang ada test yang memeriksa pemicunya, bukan cuma mekanismenya.
+2. `tideTint()` me-lerp sepanjang **fase berikutnya**, bukan fase sekarang
+   (`next.until - t0`), sehingga tint melompat di batas fase: 0,35 di detik 90 DAN di
+   detik 150 — tidak ada eskalasi yang terlihat. Alat ukur baru (`tests/tension.test.mjs`)
+   yang menemukannya; sekarang tint merangkak di dalam setiap fase.
+3. `drawLand` menghitung ulang rumus banjir sendiri (`1.06 - FLOOD * tint`) padahal
+   `floodRadius()` sudah ada — dua versi rumus yang sama, dan keduanya sempat memakai
+   kurva berbeda. Sekarang gambar memanggil `floodRadius(L)`: satu rumus untuk gerak dan
+   gambar.
+4. Audio memakai `Math.random()` untuk buffer noise sementara pemutarannya di-throttle
+   dengan jam dinding (`performance.now()`). Karena RNG itu dibagi dengan game, **suara
+   bisa mengubah posisi zombie**: menyetel suara mengubah gameplay. Sekarang audio punya
+   RNG sendiri.
+5. `spawnWave` memakai `Date.now()` sebagai seed: gelombang bala bantuan tidak pernah sama
+   dua kali, jadi tidak ada pengukuran yang bisa diulang. Sekarang di-seed dari
+   `worldSeed ^ island ^ waveCount`.
+
+## E.6 Catatan alat ukur
+
+`tests/pacing.test.mjs` sekarang menanam `Math.random` (`tests/_seed.mjs`) dan bot bisa
+dijalankan berulang dengan hasil sama; `tests/tension.test.mjs` mencetak busur satu malam
+(tint, warna & tinggi cakrawala, badai, radius pantai, garis air dermaga) dan gagal kalau
+salah satu kanal berhenti berubah. Dua sesi berikutnya dalam satu proses masih mewarisi
+sedikit keadaan proses (kecepatan pemain), jadi angka dibandingkan antar-jalan perintah
+yang sama, bukan antar-sesi di dalam satu jalan.
+
+## E.7 Yang **belum** dikerjakan (jujur)
 
 - **P2 (polish)** belum disentuh: art pass pulau, cuaca sebagai varian pasang, chart/journal
   lengkap, mix audio (ducking/atenuasi), tuning kamera lanjutan, ergonomi mobile (safe-area,

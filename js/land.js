@@ -13,7 +13,7 @@ import { sfx } from './audio.js';
 import { fx, burst, splash, flyItem, ring, addShake, addHitstop, addHurtDir, drawFxWorld } from './fx.js';
 import { blobPath, markTaken, survey, islandRemaining, drawStormPulse } from './world.js';
 import { ASSETS } from './assets.js';
-import { consumeReinforce, tideTint, tidePhase } from './tide.js';
+import { consumeReinforce, tideTint, tideDanger, tidePhase } from './tide.js';
 import { beginWorld, endWorld, upright, atUpright, byDepth } from './camera.js';
 import { drawBoat, drawLanternPool } from './boat.js';
 import { maxHP } from './refit.js';
@@ -513,7 +513,9 @@ function spawnWave(L) {
   const ph = wavePhase();
   const n = 1 + L.island.ringIdx + (ph && ph.waveBonus ? ph.waveBonus : 0);
   const p = L.player;
-  const rng = makeRng((Date.now() ^ (L.waveCount * 7919)) >>> 0);
+  // Seed dari dunia + pulau + nomor gelombang, bukan dari jam dinding: satu save dengan
+  // seed yang sama harus melahirkan gelombang yang sama (bisa diuji, bisa diulang).
+  const rng = makeRng((G.worldSeed ^ (L.island.id * 2654435761) ^ (L.waveCount * 7919)) >>> 0);
   for (let i = 0; i < n; i++) {
     let x = 0, y = 0;
     for (let t = 0; t < 40; t++) {
@@ -600,7 +602,7 @@ export function isRevealed(L, x, y) {
 // Dipakai main.js untuk menyimpan muatan yang hilang saat mati.
 // Batas air banjir: satu rumus, dipakai gerak DAN gambar. Tidak boleh ada dua versi.
 export function floodRadius(L) {
-  return L.r * (1.06 - CFG.LAND.FLOOD * tideTint());
+  return L.r * (1.06 - CFG.LAND.FLOOD * tideDanger());
 }
 
 export function inFloodWater(L, x, y) {
@@ -685,6 +687,7 @@ export function drawLand(ctx, vw, vh) {
   const L = G.land;
   if (!L) return;
   const tint = tideTint();
+  const danger = tideDanger();
   const zoom = G.cam.zoom || 1;
 
   ctx.fillStyle = '#05121d';
@@ -710,12 +713,13 @@ export function drawLand(ctx, vw, vh) {
   ctx.fill();
 
   // PASANG NAIK KE PANTAI — kanal informasi utama, bukan UI.
-  // Garis air naik dari 1.06 (di luar pasir) ke 0.82 (menelan hampir seluruh pantai).
-  const flood = 1.06 - CFG.LAND.FLOOD * tint;
-  blobPath(ctx, 0, 0, L.shape, flood);
-  ctx.fillStyle = `rgba(20,66,92,${0.72 + tint * 0.2})`;
+  // Satu rumus dengan gerak: floodRadius(). Kalau digambar sendiri di sini, gambar dan
+  // tabrakan bisa berbeda, dan pemain berjalan di air (atau sebaliknya) tanpa alasan.
+  // Warna air tetap ikut tint (isyarat); POSISINYA ikut bahaya (ongkos).
+  blobPath(ctx, 0, 0, L.shape, floodRadius(L) / L.r);
+  ctx.fillStyle = `rgba(20,66,92,${0.72 + danger * 0.2})`;
   ctx.fill();
-  ctx.strokeStyle = `rgba(160,220,255,${0.2 + tint * 0.28})`;
+  ctx.strokeStyle = `rgba(160,220,255,${0.2 + danger * 0.28})`;
   ctx.lineWidth = 2.5;
   ctx.stroke();
 

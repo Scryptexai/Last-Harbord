@@ -267,7 +267,7 @@ console.log('\n== 8. Pasang di darat: gelombang bala bantuan datang ==');
   tap('e');
   const L3 = G.land;
   L3.zombies.length = 0;
-  G.tide.t = 125;                                  // fase "Berubah": gelombang mulai datang
+  G.tide.t = CFG.TIDE.PHASES[0].until + 35;        // fase "Berubah": gelombang mulai datang
   const n0 = L3.waveCount;
   step(60 * 40);                                   // 40 detik
   ok(L3.waveCount > n0, `bala bantuan datang saat pasang (${n0} -> ${L3.waveCount} gelombang)`);
@@ -282,7 +282,7 @@ console.log('\n== 9. Malam: tidak mundur, punya beat, dan berakhir saat fajar ==
 
   // (a) tambat lalu berlayar lagi: malam lanjut, bukan mulai dari nol
   G.state = 'sea'; G.runActive = true;
-  G.tide.t = 150;
+  G.tide.t = CFG.TIDE.PHASES[0].until + 60;
   step(90);                                   // 1,5 detik
   const atSea = G.tide.t;
   ok(atSea > 151.4, `jam berjalan saat di laut (${atSea.toFixed(1)}s)`);
@@ -322,12 +322,13 @@ console.log('\n== 9. Malam: tidak mundur, punya beat, dan berakhir saat fajar ==
   ok(G.tide.justDawned === false || G.tide.t < 5, 'beat fajar hanya sekali, bukan tiap frame');
 
   // (d) menutup game bukan cara memutar waktu ke belakang
-  G.tide.t = 240; G.tide.night = 3;
+  const savedTide = CFG.TIDE.PHASES[1].until + 40;
+  G.tide.t = savedTide; G.tide.night = 3;
   saveGame();
   G.tide.t = 0; G.tide.night = 0;
   const loaded = loadGame();
   ok(loaded, 'save bisa dimuat');
-  ok(Math.abs(G.tide.t - 240) < 0.5, `jam malam ikut tersimpan (t=${G.tide.t.toFixed(1)}s)`);
+  ok(Math.abs(G.tide.t - savedTide) < 0.5, `jam malam ikut tersimpan (t=${G.tide.t.toFixed(1)}s)`);
   ok(G.tide.night === 3, 'jumlah malam ikut tersimpan');
   ok(G.tide.justChanged === false && G.tide.warn === 0, 'memuat game tidak menembakkan beat transisi palsu');
 }

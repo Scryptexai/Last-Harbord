@@ -99,14 +99,38 @@ export function tideTint() {
   let tint;
   if (!next) tint = ph.tint;
   else {
+    // Menanjak SEPANJANG fase ini, dari warna fase ini ke warna fase berikutnya.
+    // (Dulu pembaginya `next.until - t0`, yaitu akhir fase BERIKUTNYA — akibatnya
+    // tint melompat di batas fase, bukan merangkak: 0,35 di detik 90 dan di detik 150.)
     const t0 = i === 0 ? 0 : PHASES[i - 1].until;
-    const k = (t - t0) / (next.until - t0);
+    const t1 = PHASES[i].until;
+    const k = (t - t0) / Math.max(1, t1 - t0);
     tint = ph.tint + (next.tint - ph.tint) * Math.max(0, Math.min(1, k));
   }
   // fajar: air turun lagi, 0.70 -> 0 sepanjang DAWN_FALL detik
   const dk = (t - CFG.TIDE.DAWN_AT) / CFG.TIDE.DAWN_FALL;
   if (dk > 0) tint *= 1 - Math.min(1, dk);
   return tint;
+}
+
+// BAHAYA pasang: 0 sepanjang fase tenang (tidak ada tekanan sama sekali), menanjak
+// selama fase berubah, penuh saat pasang, lalu turun saat fajar.
+//
+// Dibuat terpisah dari tideTint() dengan sengaja. tideTint() adalah ISYARAT: warnanya
+// mengeras perlahan sejak detik pertama, supaya pemain bisa merasa malam menua sebelum
+// apa pun terjadi. tideDanger() adalah ONGKOS: air yang benar-benar menelan pantai,
+// memperlambat langkah, dan menutup dermaga. Kalau keduanya memakai satu kurva, banjir
+// mulai menggerogoti pantai sejak detik nol dan fase "tenang" berhenti jadi tenang.
+export function tideDanger() {
+  if (!G.tide) return 0;
+  const t = G.tide.t;
+  const t0 = PHASES[0].until;          // 90  : tenang habis
+  const t1 = PHASES[1].until;          // 210 : pasang penuh
+  let d = (t - t0) / Math.max(1, t1 - t0);
+  d = Math.max(0, Math.min(1, d));
+  const dk = (t - CFG.TIDE.DAWN_AT) / CFG.TIDE.DAWN_FALL;
+  if (dk > 0) d *= 1 - Math.min(1, dk);   // fajar: air turun lagi
+  return d;
 }
 
 // Berapa jauh malam ini sudah berjalan, 0 (baru mulai) .. 1 (fajar). Hanya angka:

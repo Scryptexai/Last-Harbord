@@ -11,6 +11,13 @@ let ambSrc = null;
 let ambFilter = null;
 let ambKind = null;
 let gullTimer = 0;
+
+// RNG PRIBADI AUDIO. Suara tidak boleh menyentuh aliran acak permainan: dulu buffer noise
+// memakai Math.random(), dan karena pemutaran suara di-throttle dengan jam dinding
+// (performance.now), jumlah pemanggilan acak berbeda antar-jalan — posisi zombie pun ikut
+// berubah hanya karena sebuah langkah kaki berbunyi. Sekarang audio punya urutan sendiri.
+let aSeed = 0x51ed2701;
+function arand() { aSeed = (aSeed * 1664525 + 1013904223) >>> 0; return aSeed / 4294967296; }
 let lastPlay = 0;
 
 function ac() {
@@ -68,7 +75,7 @@ function noise({ dur = 0.15, gain = 0.09, f = 900, f2 = null, q = 1, at = 0, typ
   const n = Math.max(1, Math.floor(c.sampleRate * dur));
   const buf = c.createBuffer(1, n, c.sampleRate);
   const d = buf.getChannelData(0);
-  for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+  for (let i = 0; i < n; i++) d[i] = arand() * 2 - 1;
   const src = c.createBufferSource();
   src.buffer = buf;
   const flt = c.createBiquadFilter();
@@ -85,7 +92,7 @@ function noise({ dur = 0.15, gain = 0.09, f = 900, f2 = null, q = 1, at = 0, typ
 
 // ---------- suara permainan ----------
 const SFX = {
-  gather_tick: () => tone({ f: 300 + Math.random() * 40, dur: 0.045, type: 'square', gain: 0.035 }),
+  gather_tick: () => tone({ f: 300 + arand() * 40, dur: 0.045, type: 'square', gain: 0.035 }),
   gather_done: () => { tone({ f: 480, f2: 660, dur: 0.08, type: 'triangle', gain: 0.09 }); noise({ dur: 0.09, gain: 0.05, f: 2200 }); },
   pickup: () => tone({ f: 620, f2: 940, dur: 0.09, type: 'sine', gain: 0.08 }),
   swing: () => noise({ dur: 0.13, gain: 0.06, f: 1800, f2: 420, q: 1.2 }),
@@ -100,7 +107,7 @@ const SFX = {
   forge: () => { noise({ dur: 0.3, gain: 0.14, f: 2600, f2: 700, q: 4 }); tone({ f: 900, f2: 1300, dur: 0.24, type: 'triangle', gain: 0.07 }); tone({ f: 140, dur: 0.3, type: 'sine', gain: 0.08, at: 0.03 }); },
   anchor: () => { noise({ dur: 0.5, gain: 0.12, f: 1600, f2: 160, q: 0.8 }); tone({ f: 90, f2: 50, dur: 0.4, type: 'sine', gain: 0.08 }); },
   splash: () => noise({ dur: 0.34, gain: 0.09, f: 1400, f2: 300, q: 0.7 }),
-  step: () => noise({ dur: 0.05, gain: 0.02, f: 800 + Math.random() * 400 }),
+  step: () => noise({ dur: 0.05, gain: 0.02, f: 800 + arand() * 400 }),
   gull: () => { tone({ f: 900, f2: 520, dur: 0.13, type: 'triangle', gain: 0.03 }); tone({ f: 1000, f2: 600, dur: 0.1, type: 'triangle', gain: 0.024, at: 0.15 }); },
   groan: (p = 150) => { tone({ f: p, f2: p * 0.7, dur: 0.55, type: 'sawtooth', gain: 0.045 }); noise({ dur: 0.4, gain: 0.03, f: 400, f2: 150 }); },
   screech: () => { tone({ f: 700, f2: 300, dur: 0.18, type: 'square', gain: 0.05 }); },
@@ -130,7 +137,7 @@ export function setAmbience(kind) {
     const n = Math.floor(c.sampleRate * 2);
     const buf = c.createBuffer(1, n, c.sampleRate);
     const d = buf.getChannelData(0);
-    for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    for (let i = 0; i < n; i++) d[i] = arand() * 2 - 1;
     ambSrc = c.createBufferSource();
     ambSrc.buffer = buf;
     ambSrc.loop = true;
@@ -161,7 +168,7 @@ export function tickAmbience(dt, allowed) {
   if (!allowed) return;
   gullTimer -= dt;
   if (gullTimer <= 0) {
-    gullTimer = 7 + Math.random() * 14;
+    gullTimer = 7 + arand() * 14;
     sfx('gull');
   }
 }

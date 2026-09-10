@@ -94,9 +94,16 @@ sebab: badai di utara yang mendorong air naik.
 | Fase | Yang berubah di layar | Yang berubah di tubuhmu |
 |---|---|---|
 | **Tenang** | cakrawala kuning hangat; camar berputar; bayangan panjang; laut tenang | tidak ada tekanan |
-| **Camar pergi** (90s) | burung-burung terbang ke utara, langit tiba-tiba kosong; garis air naik ke pantai | jalan pulang jadi lebih panjang dari yang kau duga |
-| **Air menyentuh kakimu** (150s+) | riak air di sepatu bot; pasir basah melebar; dermaga mulai terendam | langkahmu lebih pendek di air |
-| **Pasang** (210s+) | langit utara menggelap dan **kadang menyala** (kilat jauh); cakrawala memerah; lentera kapal tumbuh & berdenyut lebih cepat | lambungmu terkuras sepanjang kau di luar |
+| **Camar pergi** (150s) | burung-burung terbang ke utara, langit tiba-tiba kosong | jalan pulang jadi lebih panjang dari yang kau duga |
+| **Air menyentuh kakimu** (155s+) | riak air di sepatu bot; pasir basah melebar; dermaga mulai terendam | langkahmu lebih pendek di air |
+| **Pasang** (270s+) | langit utara menggelap dan **kadang menyala** (kilat jauh); cakrawala memerah; lentera kapal tumbuh & berdenyut lebih cepat | lambungmu terkuras sepanjang kau di luar |
+| **Fajar** (420s) | air turun, cakrawala sembuh ke kuning hangat, camar kembali dari utara | malam tamat; napasmu kembali |
+
+**Isyarat lebih dulu, ongkos belakangan.** Warna langit dan cakrawala sudah mengeras
+sejak detik pertama (`tideTint()`), sementara air yang benar-benar menelan pantai baru
+bergerak setelah fase tenang habis (`tideDanger()`). Kalau keduanya memakai satu kurva,
+fase "tenang" berhenti jadi tenang — dan pemain baru dihukum sebelum dia sempat belajar.
+Angka busurnya bisa diperiksa ulang kapan saja: `node tests/tension.test.mjs`.
 
 Tidak ada satu pun elemen HUD untuk ini. Yang memberi tahu kau harus pulang adalah
 horizon, air di kakimu, dan cahaya kapal yang terus memanggil.
@@ -118,13 +125,20 @@ Sekarang jam pasang adalah **milik malam, bukan milik satu run**, dan aturannya 
 3. **Fajar memutarnya** (`TIDE.DAWN_AT`, 420 detik di laut): air turun, cakrawala sembuh,
    camar kembali. Malam tamat dengan sendirinya, lalu malam baru mulai dari nol.
 
+Satu malam = 7 menit di laut: **150s tenang → 120s berubah → 150s pasang → fajar**.
+Jendela tenang sengaja cukup untuk ~2 kali panen; kalau lebih pendek, seluruh malam
+berjalan di jendela yang miskin dan tangga refit jadi tidak mungkin dinaiki.
+
 Konsekuensinya bisa diukur, dan inilah yang membuat "sekali lagi" masuk akal:
 
 | Berangkat saat | Run | Rata di pulau | Muatan | Mati |
 |---|---|---|---|---|
-| Tenang | 17 | 98s | 7,8 | 6% |
-| Berubah | 21 | 76s | 4,6 | 24% |
-| Pasang | 53 | 59s | 3,3 | 25% |
+| Tenang | 40 | 70s | 4,8 | 8% |
+| Berubah | 20 | 61s | 3,4 | 10% |
+| Pasang | 34 | 51s | 3,1 | 32% |
+
+Bot serakah (tidak pernah mundur) menunjukkan bentuk yang sama, lebih tajam:
+mati 41% saat berangkat tenang, **86% saat berubah**, 77% saat pasang.
 
 Dermaga ikut memperlihatkan malam yang sedang berjalan: air naik di sepanjang dermaga,
 langit bergeser dari biru ke merah, dan lingkaran lampu menyusut. Di debrief kematian ada
@@ -276,13 +290,17 @@ Bot bermain di atas modul asli, termasuk kamera dan pasang yang baru (`node test
 
 | Metrik | Hasil | Target desain |
 |---|---|---|
-| Waktu di pulau per run | **70,7 detik** (bot hati-hati) / 88,9s (bot serakah) | 45–90 detik |
-| Waktu berlayar per run | **7,1 detik** | 10–30 detik |
-| Muatan dibawa pulang | 4,4 unit (turun dari 6,8 karena malam tidak lagi gratis) | 8–14 |
-| Tingkat refit yang bisa dicapai | **4 / 6** dalam satu sesi (3 sesi @ ~90 run) | 6 / 6 (build lama: 1 / 6) |
-| Kematian | 19 dari 91 run (bot hati-hati) / 75 dari 114 (bot serakah) | keserakahan punya ongkos |
-| Pasang saat tambat | rata 229s — malam diteruskan, bukan direset | keputusan berbalik terjadi sebelum air pasang penuh |
-| Fajar | 29 kali dalam 3 sesi | malam tamat dengan sendirinya, tanpa jalan buntu |
+| Waktu di pulau per run | **61,6 detik** (bot hati-hati) / >100s (serakah) | 45–90 detik |
+| Waktu berlayar per run | **8,6 detik** | 10–30 detik |
+| Muatan dibawa pulang | 3,9 unit (turun dari 6,8 karena malam tidak lagi gratis) | 8–14 |
+| Tingkat refit yang bisa dicapai | **3 / 6** per sesi (3 sesi, 94 run) | 6 / 6 (build lama: 1 / 6) |
+| Kematian per fase saat berangkat | 8% tenang · 10% berubah · **32% pasang** | keserakahan punya ongkos |
+| Pasang saat tambat | rata 214s — malam diteruskan, bukan direset | keputusan berbalik terjadi sebelum air pasang penuh |
+| Fajar | 31 kali dalam 3 sesi | malam tamat dengan sendirinya, tanpa jalan buntu |
+
+Angka di atas **bisa diulang**: RNG bot ditanam (`tests/_seed.mjs`) dan audio tidak lagi
+memakai aliran acak permainan, jadi dua jalan perintah yang sama memberi keluaran sama
+(`sidik jari 28613.69|3|45`).
 
 Catatan kejujuran: waktu berlayar rata-rata 10 detik ada di **batas bawah** target — cukup untuk
 kabut, penunjuk arah, dan keputusan "lanjut atau berbalik", tapi bukan pelayaran yang panjang.
@@ -290,9 +308,10 @@ kabut, penunjuk arah, dan keputusan "lanjut atau berbalik", tapi bukan pelayaran
 ## Test
 
 ```bash
-node tests/smoke.test.mjs        # 136: logika, ekonomi, malam, bentuk pulau, kawanan
+node tests/smoke.test.mjs        # 137: logika, ekonomi, malam, bentuk pulau, kawanan
 node tests/integration.test.mjs  #  57: LOOP GAME SUNGGUHAN lewat main.js, tanpa browser
 node tests/render.test.mjs       #  29: semua jalur gambar dengan canvas tiruan
+node tests/tension.test.mjs      # busur ketegangan satu malam, 6 kanal visual sekaligus
 node tests/camera.test.mjs       #  15: kontrak kamera miring (posisi & kedalaman sprite)
 node tests/pacing.test.mjs       # alat ukur, bukan test: laporan pacing bot
 ```

@@ -13,6 +13,10 @@
 
 globalThis.localStorage = { getItem: () => null, setItem() {}, removeItem() {} };
 
+// RNG ditanam LEBIH DULU, sebelum modul game diimpor: beberapa modul memakai Math.random
+// saat pertama dimuat, dan kalau itu terjadi sebelum penanaman, hasil ukur berubah tiap jalan.
+const { mulberry32 } = await import('./_seed.mjs');
+
 const { CFG } = await import('../js/config.js');
 const { G } = await import('../js/state.js');
 const { maxHP, capacity, buyNext, canBuyNext, isMaxed, goalLabel } = await import('../js/refit.js');
@@ -32,8 +36,12 @@ const MAX_SESSION = 60 * 60 * 20;      // 20 menit per sesi (bukan per run)
 
 function dist(a, b, c, d) { return Math.hypot(a - c, b - d); }
 
+// RNG yang bisa diulang (lihat _seed.mjs): tanpa ini angka bot bergoyang antar-jalan,
+// dan alat ukur yang hasilnya berubah tidak bisa dipakai sebagai bukti.
+
 // ---------- bot: satu gaya main, dua ambang ----------
 function playSession(seed) {
+  Math.random = mulberry32(seed ^ 0x9e3779b9);   // angka yang sama setiap kali dijalankan
   generateWorld(seed);
   G.hull = maxHP();
   G.carried = emptyBag();
@@ -44,6 +52,12 @@ function playSession(seed) {
   G.tabbed = {};
   G.totalRuns = 0;
   G.boat = createBoat(HARBOR.x, -40);
+  resetTide();                     // sesi baru = malam baru (kalau tidak, sesi 2/3 mewarisi malam sesi 1)
+  // Sesi baru harus mulai dari keadaan bersih. Tanpa ini, kecepatan pemain yang tersisa
+  // dari sesi sebelumnya ikut terbawa ke frame pertama sesi berikutnya.
+  G.land = null; G.target = null; G.fishing = null; G.runActive = false;
+  G.nearIsland = nearestIsland(G.boat.x, G.boat.y);
+  G.cam.x = HARBOR.x; G.cam.y = HARBOR.y; G.cam.zoom = 1;
 
   const log = [];
   let runs = 0;
@@ -70,7 +84,7 @@ function playSession(seed) {
     G.boat.vx = 0; G.boat.vy = 0;
     if (!G.tide) resetTide();          // malam tidak direset: jam lanjut dari dermaga
     runs++;
-    return { t: G.tide.t, night: G.tide.night || 0, phase: tidePhase(G.tide.t).key };
+    return { t: G.tide.t, night: G.tide.night || 0, phase: tidePhase(G.tide.t).key, hull: G.hull };
   }
 
   function bank() {
@@ -212,6 +226,7 @@ function playSession(seed) {
     log.push({
       island: islandTime, sail: sailTime, cargo: last, tide: G.tide.t,
       tideStart: start.t, startPhase: start.phase, night: start.night,
+      hullLost: Math.max(0, Math.round((start.hull - G.hull) * 10) / 10),
       nightNow: G.tide.night || 0,
       result, death, bought, rung: G.refit,
     });
@@ -222,6 +237,12 @@ function playSession(seed) {
   }
 
   return { log, rungs: G.refit, bank: { ...G.banked }, runs };
+}
+
+// Sidik jari satu sesi: dipakai untuk membuktikan alat ukur ini benar-benar bisa diulang.
+function fingerprint(r) {
+  const s = r.log.reduce((a, l) => a + l.island * 7.3 + l.sail * 3.1 + l.cargo * 11.7 + (l.death ? 1000 : 0), 0);
+  return Math.round(s * 1000) / 1000 + '|' + r.rungs + '|' + r.runs;
 }
 
 // ---------- jalankan ----------
@@ -245,6 +266,11 @@ for (let s = 0; s < RUNS; s++) {
   );
 }
 
+// Sidik jari dicetak supaya dua JALAN PERINTAH yang berbeda bisa dibandingkan: RNG
+// ditanam dan audio tidak lagi menggeser aliran acak, jadi keluaran yang sama berarti
+// pengukuran ini bisa diulang (sudah diverifikasi dua kali jalan terpisah).
+console.log(`\nsidik jari          : ${fingerprint(sessions[0])} (sesi 1, seed 4242)`);
+
 const all = sessions.flatMap((s) => s.log);
 const avg = (f) => all.reduce((a, l) => a + f(l), 0) / Math.max(1, all.length);
 const deaths = all.filter((l) => l.death).length;
@@ -255,7 +281,12 @@ console.log(`total run                 : ${all.length}`);
 console.log(`rata waktu di pulau       : ${avg((l) => l.island).toFixed(1)}s   (target desain 45-90s)`);
 console.log(`rata waktu berlayar       : ${avg((l) => l.sail).toFixed(1)}s   (target 10-30s)`);
 console.log(`rata muatan dibawa pulang : ${avg((l) => l.cargo).toFixed(1)} unit`);
-console.log(`rata pasang saat tambat   : ${avg((l) => l.tide).toFixed(0)}s  (jam 0-90 tenang, 90-210 berubah, 210+ pasang)`);
+{
+  const P = CFG.TIDE.PHASES;
+  console.log(`rata pasang saat tambat   : ${avg((l) => l.tide).toFixed(0)}s  ` +
+    `(malam: 0-${P[0].until} tenang, ${P[0].until}-${P[1].until} berubah, ${P[1].until}+ pasang, ` +
+    `${CFG.TIDE.DAWN_AT} fajar)`);
+}
 
 // ---- MALAM: apakah ketegangannya benar-benar datang, dan apakah tetap bisa dimainkan ----
 const byPhase = {};
@@ -267,7 +298,9 @@ for (const k of ['calm', 'turning', 'high']) {
   const di = g.filter((l) => l.death).length;
   console.log(`  ${k.padEnd(8)}: ${String(g.length).padStart(3)} run   rata pulau ` +
     `${(g.reduce((a, l) => a + l.island, 0) / g.length).toFixed(0)}s   muatan ` +
-    `${(g.reduce((a, l) => a + l.cargo, 0) / g.length).toFixed(1)}   mati ${di} (${Math.round(100 * di / g.length)}%)`);
+    `${(g.reduce((a, l) => a + l.cargo, 0) / g.length).toFixed(1)}   ` +
+    `lambung -${(g.reduce((a, l) => a + l.hullLost, 0) / g.length).toFixed(1)}   ` +
+    `mati ${di} (${Math.round(100 * di / g.length)}%)`);
 }
 const dawns = sessions.reduce((a, r) => a + (r.log.length ? r.log[r.log.length - 1].nightNow : 0), 0);
 console.log(`fajar terjadi             : ${dawns} kali dalam ${sessions.length} sesi (malam tamat dengan sendirinya)`);
@@ -290,4 +323,5 @@ ok(all.some((l) => l.startPhase !== 'calm'),
   'ada run yang BERANGKAT setelah fase tenang lewat (malam tidak direset tiap berlayar)');
 ok(dawns > 0, 'fajar benar-benar terjadi: satu malam bisa tamat dalam satu sesi');
 ok(all.filter((l) => l.result === 'NYASAR').length === 0, 'tidak ada run yang tersesat tanpa akhir di laut');
+
 process.exit(fail ? 1 : 0);

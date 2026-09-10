@@ -203,8 +203,8 @@ console.log('\n== 4. Bahasa visual pasang: cakrawala + badai ==');
 {
   resetTide();
   const calm = horizonBand();
-  G.tide.t = 120; const turn = horizonBand();
-  G.tide.t = 300; const high = horizonBand();
+  G.tide.t = CFG.TIDE.PHASES[0].until + 30; const turn = horizonBand();
+  G.tide.t = CFG.TIDE.PHASES[1].until + 60; const high = horizonBand();
 
   ok(calm.glow.r > calm.glow.b && calm.glow.g > calm.glow.b, 'tenang: cahaya hangat (kuning) di cakrawala');
   ok(high.glow.r > high.glow.g * 1.8, 'pasang: cakrawala memerah');

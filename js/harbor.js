@@ -12,7 +12,7 @@ import { drawBoat, drawLanternPool } from './boat.js';
 import { HARBOR } from './world.js';
 import { carriedLoad, bankLoad, RES_TYPES } from './inventory.js';
 import { beginWorld, endWorld, upright, atUpright } from './camera.js';
-import { tideTint } from './tide.js';
+import { tideTint, tideDanger } from './tide.js';
 
 const DECK = { x0: -30, x1: 30, y0: -46, y1: 44 };
 const PIER = { x0: -44, x1: 44, y0: 44, y1: 250 };
@@ -98,7 +98,9 @@ export function drawHarbor(ctx, vw, vh) {
   // Laut di dermaga BUKAN selamanya tenang: warnanya mengikuti malam yang sedang
   // berjalan. Pemain pulang dan melihat airnya naik — itu alasan untuk tegang,
   // tanpa satu kalimat pun yang menjelaskannya.
-  const tideK = Math.min(1, tideTint() / 0.70);
+  const tideK = Math.min(1, tideTint() / 0.70);   // isyarat: warna langit & air
+  const dangerK = tideDanger();                   // ongkos: air yang benar-benar naik
+                                                  // (dermaga pulau memakai kurva yang sama)
   const mix = (a, b, t) => `rgb(${Math.round(a[0] + (b[0] - a[0]) * t)},${Math.round(a[1] + (b[1] - a[1]) * t)},${Math.round(a[2] + (b[2] - a[2]) * t)})`;
   const g = ctx.createLinearGradient(0, 0, 0, vh);
   g.addColorStop(0, mix([10, 30, 46], [46, 18, 24], tideK));
@@ -133,7 +135,7 @@ export function drawHarbor(ctx, vw, vh) {
 
   // dermaga
   drawPier(ctx);
-  drawTideLine(ctx, H.t, tideK);
+  drawTideLine(ctx, H.t, dangerK);
 
   // kapal (berdiri di air) + muatannya + meja — semuanya urut menurut kedalaman
   atUpright(ctx, 0, 0, () => {
@@ -181,9 +183,15 @@ export function drawHarbor(ctx, vw, vh) {
 
 // Garis air di dermaga. Bahasa yang sama dengan pulau: saat pasang, ujung dermaga
 // yang paling jauh ke laut tenggelam lebih dulu, lalu airnya merangkak ke arah dek.
+let lastWaterLine = null;
+// Dipakai test untuk memverifikasi garis air yang benar-benar digambar (bukan rumus
+// yang disalin ulang di test).
+export function tideLineY() { return lastWaterLine; }
+
 function drawTideLine(ctx, t, k) {
-  if (k <= 0.02) return;
+  if (k <= 0.02) { lastWaterLine = null; return; }
   const y0 = 254 - k * 132;
+  lastWaterLine = y0;
   const w = 96;
   ctx.save();
   ctx.beginPath();
