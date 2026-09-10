@@ -34,19 +34,28 @@ Difficulty pulau (1–3) menentukan jumlah zombie & resource.
 ## Struktur
 
 ```
-index.html        — markup + overlay UI
-css/style.css     — styling UI
+index.html          — markup + overlay UI
+asset_viewer.html   — galeri untuk melihat semua aset visual
+css/style.css       — styling UI (dark & moody, glassmorphism)
+assets/             — suite aset visual (perahu 3 level, zombie, player, pulau, ikon UI, branding)
+scripts/            — generator aset (Python/PIL)
+tests/
+  smoke.test.mjs    — smoke test logika (jalankan: node tests/smoke.test.mjs)
 js/
-  main.js         — bootstrap, state machine, game loop
-  config.js       — konstanta & balance
-  state.js        — state global shared
-  save.js         — localStorage save/load
-  input.js        — keyboard WASD + virtual joystick
-  ui.js           — DOM overlay (dashboard, HUD, modal)
-  boat.js         — perahu (gerak inertia, stat, render)
-  world.js        — laut, gelombang, pulau
-  land.js         — mode daratan (player, zombie AI, resource)
-  zombie.js       — factory zombie (Slow/Fast/Tank)
-  inventory.js    — inventory & kapasitas storage
-  util.js         — util kecil (rng, format waktu)
+  main.js           — bootstrap, state machine, game loop
+  assets.js         — loader aset PNG (dengan fallback vector bila gagal load)
+  config.js         — konstanta & balance
+  state.js          — state global shared
+  save.js           — localStorage save/load
+  input.js          — keyboard WASD + virtual joystick
+  ui.js             — DOM overlay (dashboard, HUD, modal)
+  boat.js           — perahu (gerak inertia, stat, render sprite/fallback)
+  world.js          — laut, gelombang, pulau
+  land.js           — mode daratan (player, zombie AI, resource)
+  zombie.js         — factory zombie (Slow/Fast/Tank)
+  inventory.js      — inventory & kapasitas storage
+  util.js           — util kecil (rng, format waktu)
 ```
+
+Semua render Canvas memakai sprite dari `assets/` dan otomatis jatuh kembali ke
+gambar vector (shape dasar) bila aset gagal dimuat.
