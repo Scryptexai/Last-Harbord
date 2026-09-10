@@ -1,29 +1,51 @@
 // ============ State global game (shared singleton) ============
+import { emptyBag } from './inventory.js';
+
 export const G = {
-  state: 'dashboard',   // 'dashboard' | 'sea' | 'land' | 'gameover'
+  state: 'harbor',      // 'harbor' | 'sea' | 'land' | 'gameover'
   time: 0,              // total waktu berjalan (animasi)
-  runActive: false,     // sedang dalam run (sail)?
-  runTime: 0,           // detik survival run sekarang
+  runActive: false,     // sedang dalam run (meninggalkan dermaga)?
+  runTime: 0,           // detik sejak meninggalkan harbor
 
+  // dunia
+  worldSeed: 1,
+  islands: [],          // pulau-pulau di kepulauan (persisten)
   boat: null,           // { x,y,vx,vy,angle }
-  islands: [],          // pulau-pulau di laut
-  land: null,           // state daratan saat explore
-  nearIsland: null,     // { island, dist } terdekat dari perahu
-  autopilotTarget: null,// island yang dituju otomatis
-  fishing: null,        // { t, dur } saat memancing
+  land: null,           // state daratan saat mendarat
+  harbor: null,         // state dermaga (walkable)
+  nearIsland: null,     // { island, dist }
+  fishing: null,        // { t, dur }
   anchored: false,
-  cam: { x: 0, y: 0 },
+  cam: { x: 0, y: 0, zoom: 1 },
+  target: null,         // pulau yang dipilih di peta -> jadi penunjuk arah
 
-  // ---- data yang dipersist ke localStorage ----
-  boatHP: 100,          // HP dipakai bareng perahu & karakter daratan
-  resources: { fuel: 0, wood: 0, food: 0, medicine: 0 },
-  upgrades: { storage: 0, speed: 0, defense: 0 }, // level 0-2
+  // ---- dipersist ke localStorage ----
+  refit: 0,             // jumlah tingkat refit yang selesai (0..6) = progresi tunggal
+  hull: 100,            // hull = nyawa. Dipakai bersama perahu & karakter darat.
+  carried: emptyBag(),  // hasil run yang belum dibongkar (BISA HILANG)
+  banked: emptyBag(),   // gudang di dermaga (AMAN)
   totalRuns: 0,
-  bestTime: 0,          // detik
+  salvages: [],         // [{ islandId, x, y, cargo }] pelampung bekas kematian
+  surveyed: {},         // islandId -> true (sudah pernah dipijak / terlihat dekat)
+  tabbed: {},           // islandId -> jumlah unit yang sudah diambil dari pulau itu
+  muted: false,
 
   // ---- flags internal ----
-  hpFlash: 0,           // efek layar merah saat kena hit
+  hurtFlash: 0,
+  hurtDir: null,        // { angle, t } indikator arah serangan
   pendingDeath: false,
-  saveDirty: false,
   deathInfo: null,
+  saveDirty: false,
+  bankBeat: 0,          // 0..1 animasi pembongkaran muatan
+  bankedLast: null,     // muatan yang baru dibongkar (untuk animasi)
 };
+
+export function resetTransient() {
+  G.land = null;
+  G.fishing = null;
+  G.anchored = false;
+  G.target = null;
+  G.runTime = 0;
+  G.runActive = false;
+  G.cam.zoom = 1;
+}

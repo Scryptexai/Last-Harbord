@@ -1,34 +1,47 @@
-// ============ Input: keyboard WASD/arrow + touch joystick ============
+// ============ Input: keyboard WASD/arrow + joystick + aksi konteks ============
 export const input = {
   keys: new Set(),
   joy: { active: false, id: null, cx: 0, cy: 0, dx: 0, dy: 0 },
   attackQueued: false,
-  actionQueued: null, // 'explore' | 'back'
+  actionQueued: false,
+  held: { action: false },   // ditahan -> memanen berjalan; dilepas -> batal
+  anyGesture: false,         // untuk membuka AudioContext
+  onGesture: null,
 };
 
 const PREVENT = new Set(['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' ']);
 
-export function initInput() {
+function gesture() {
+  if (input.anyGesture) return;
+  input.anyGesture = true;
+  if (input.onGesture) input.onGesture();
+}
+
+export function initInput(handlers = {}) {
   window.addEventListener('keydown', (e) => {
     const k = e.key.toLowerCase();
     if (PREVENT.has(k)) e.preventDefault();
     if (e.repeat) return;
+    gesture();
     input.keys.add(k);
     if (k === ' ') input.attackQueued = true;
-    if (k === 'e') input.actionQueued = 'explore';
-    if (k === 'b') input.actionQueued = 'back';
+    if (k === 'e' || k === 'f') { input.actionQueued = true; input.held.action = true; }
+    if (k === 'm' && handlers.mute) handlers.mute();
+    if (k === 'escape' && handlers.escape) handlers.escape();
   });
-  window.addEventListener('keyup', (e) => input.keys.delete(e.key.toLowerCase()));
-  window.addEventListener('blur', () => { input.keys.clear(); resetJoy(); });
+  window.addEventListener('keyup', (e) => {
+    const k = e.key.toLowerCase();
+    input.keys.delete(k);
+    if (k === 'e' || k === 'f') input.held.action = false;
+  });
+  window.addEventListener('blur', () => { input.keys.clear(); resetJoy(); input.held.action = false; });
 
-  // ---- virtual joystick (kiri bawah) ----
   const joy = document.getElementById('joystick');
   const knob = document.getElementById('joy-knob');
-  const R = 48;
+  if (!joy || !knob) return;
+  const R = 46;
 
-  function setKnob(dx, dy) {
-    knob.style.transform = `translate(${dx}px, ${dy}px)`;
-  }
+  function setKnob(dx, dy) { knob.style.transform = `translate(${dx}px, ${dy}px)`; }
   function resetJoy() {
     input.joy.active = false;
     input.joy.dx = 0; input.joy.dy = 0;
@@ -47,6 +60,7 @@ export function initInput() {
   }
 
   joy.addEventListener('pointerdown', (e) => {
+    gesture();
     input.joy.active = true;
     input.joy.id = e.pointerId;
     const rect = joy.getBoundingClientRect();
@@ -62,7 +76,11 @@ export function initInput() {
   joy.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 
-// Vektor gerak ternormalisasi dari keyboard atau joystick.
+// Tombol konteks (HTML) memakai API yang sama dengan tombol E.
+export function pressContext() { gesture(); input.actionQueued = true; input.held.action = true; }
+export function releaseContext() { input.held.action = false; }
+export function pressAttack() { gesture(); input.attackQueued = true; }
+
 export function getMove() {
   let x = 0, y = 0;
   const k = input.keys;
@@ -76,4 +94,10 @@ export function getMove() {
   }
   if (input.joy.active) return { x: input.joy.dx, y: input.joy.dy };
   return { x: 0, y: 0 };
+}
+
+export function clearQueued() {
+  input.attackQueued = false;
+  input.actionQueued = false;
+  input.held.action = false;
 }

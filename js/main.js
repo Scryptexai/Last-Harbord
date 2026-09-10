@@ -2,21 +2,22 @@
 import { CFG } from './config.js';
 import { G } from './state.js';
 import { loadGame, saveGame, clearSave } from './save.js';
-import { initInput, getMove, input } from './input.js';
-import {
-  initUI, showScreen, openModal, closeModal, toast,
-  updateDashboard, updateHUD, renderUpgradePanel, renderInventoryPanel, renderGameOver,
-} from './ui.js';
-import { createBoat, updateBoat, drawBoat, maxHP } from './boat.js';
-import { generateSeaWorld, nearestIsland, drawSea, drawOceanBackground } from './world.js';
-import { enterIsland, updateLand, drawLand, tryAttack, collectNearby } from './land.js';
-import { addResource, canAfford, payCost, RES_TYPES } from './inventory.js';
+import { initInput, getMove, input, pressContext, releaseContext, pressAttack, clearQueued } from './input.js';
+import { initUI, showScreen, openModal, closeModal, isModalOpen, toast, updateHUD, renderDebrief, renderChart, renderBench, showHint, refreshIfOpen } from './ui.js';
+import { createBoat, updateBoat, drawBoat, drawLanternPool, maxHP, speedMult, boatTier } from './boat.js';
+import { generateWorld, nearestIsland, drawSea, drawOceanBackground, HARBOR, harborDist, survey, islandRemaining, islandTotalRemaining, islandById } from './world.js';
+import { enterIsland, updateLand, drawLand, tryAttack, contextAction, landContext, atExtract, playerWorldPos } from './land.js';
+import { enterHarbor, updateHarbor, drawHarbor, harborContext } from './harbor.js';
+import { addCarried, bankCarried, carriedLoad, emptyBag, RES_TYPES, dropCarried } from './inventory.js';
+import { buyNext, nextRung, canBuyNext, goalLabel, isMaxed, capacity } from './refit.js';
+import { resetTide, updateTide, tidePhase, seaDrainRate } from './tide.js';
 import { loadAssets } from './assets.js';
+import { sfx, initAudio, setAmbience, tickAmbience, setMuted } from './audio.js';
+import { fx, updateFx, timeScale, shakeOffset, drawFxScreen, resetFx, addFlash, addShake, ring, flushGulls, returnGulls } from './fx.js';
+import { clamp, dist, fmtTime } from './util.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
-const previewCanvas = document.getElementById('boat-preview');
-const pctx = previewCanvas ? previewCanvas.getContext('2d') : null;
 
 let vw = window.innerWidth, vh = window.innerHeight, dpr = 1;
 function resize() {
@@ -30,49 +31,70 @@ function resize() {
 }
 window.addEventListener('resize', resize);
 
-// =================== Aksi-aksi game ===================
+const tips = new Set();
+function tip(key, text, ms = 5200) {
+  if (tips.has(key)) return;
+  tips.add(key);
+  showHint(text, ms);
+}
+
+// =================== Aksi ===================
 
 function beginRun() {
+  const first = G.totalRuns === 0;
   G.totalRuns++;
   G.runActive = true;
   G.runTime = 0;
   G.anchored = false;
   G.fishing = null;
-  G.autopilotTarget = null;
   G.state = 'sea';
-  G.cam.x = G.boat.x;
-  G.cam.y = G.boat.y;
+  G.cam.zoom = 1;
+  G.cam.x = G.boat.x; G.cam.y = G.boat.y;
+  // JAM PASANG TIDAK DI-RESET DI SINI. Dermaga membekukan malam, bukan memutarnya:
+  // kalau berlayar lagi, malam lanjut dari detik terakhir kau menambat. Satu-satunya
+  // yang memutar jam ini ke nol adalah fajar (lihat tide.js).
+  if (!G.tide) resetTide();
+  resetFx();
   showScreen('sea');
+  setAmbience('sea');
+  sfx('anchor');
   saveGame();
-  toast('Berlayar! Dekati pulau lalu tekan EXPLORE.');
+  if (first) tip('t_sail', 'Bertolak. Ikuti penunjuk arah, atau berlayar bebas — hanya kau yang tahu berapa jauh terlalu jauh. Perhatikan cakrawala.', 6500);
 }
 
-// Dari dashboard: autopilot menuju pulau terdekat lalu mendarat.
-function departExplore() {
-  beginRun();
-  const { island } = nearestIsland(G.boat.x, G.boat.y);
-  if (!island) return;
-  G.autopilotTarget = island;
-  toast(`Autopilot: menuju ${island.name} (Diff ${island.difficulty})`);
+function pickTarget(id) {
+  G.target = islandById(id);
+  if (H.onModalClosed) { /* peta tetap terbuka */ }
 }
 
-// Perahu tiba di pulau → masuk mode daratan.
+// Perahu tiba di pulau -> mendarat.
 function enterIslandFlow(island) {
-  G.autopilotTarget = null;
   G.fishing = null;
   G.anchored = false;
-  enterIsland(island);
+  G.target = null;
 
-  const a = Math.PI / 2; // parkir di sisi dock
-  G.boat.x = island.x + Math.cos(a) * (island.r + 34);
-  G.boat.y = island.y + Math.sin(a) * (island.r + 34);
+  const a = Math.PI / 2;
+  G.boat.x = island.x;
+  G.boat.y = island.y + (island.r + CFG.BOAT.PARK_OFFSET);
   G.boat.vx = 0; G.boat.vy = 0;
+  G.boat.angle = -Math.PI / 2;
 
+  const first = !G.surveyed[island.id];
+  enterIsland(island);
   G.state = 'land';
-  const p = G.land.player;
-  G.cam.x = p.x; G.cam.y = p.y;
   showScreen('land');
-  toast(`Mendarat di ${island.name}! Difficulty ${island.difficulty}`);
+  setAmbience('land');
+  clearQueued();
+
+  const left = islandTotalRemaining(island);
+  if (first) {
+    tip('t_land', 'Kapalmu ada di bawah layar. Semua yang kau kumpulkan hilang kalau kau mati sebelum naik kapal.', 6200);
+    toast(`${island.name} · ${CFG.FLAVORS[island.flavor].label}`);
+  } else if (left <= 0) {
+    toast('Pulau ini sudah habis dikuras.');
+  } else {
+    toast(`${island.name} · sisa muatan di pulau ini`);
+  }
 }
 
 function backToBoat() {
@@ -80,260 +102,379 @@ function backToBoat() {
   const isl = G.land.island;
   G.land = null;
   G.state = 'sea';
-  const a = Math.PI / 2;
-  G.boat.x = isl.x + Math.cos(a) * (isl.r + 40);
-  G.boat.y = isl.y + Math.sin(a) * (isl.r + 40);
+  G.boat.x = isl.x;
+  G.boat.y = isl.y + (isl.r + CFG.BOAT.PARK_OFFSET);
   G.boat.vx = 0; G.boat.vy = 0;
   G.cam.x = G.boat.x; G.cam.y = G.boat.y;
+  G.cam.zoom = 1;
   G.nearIsland = nearestIsland(G.boat.x, G.boat.y);
-  saveGame();
+  setAmbience('sea');
+  sfx('board');
+  addFlash(0.25);
   showScreen('sea');
-  toast('Kembali ke perahu.');
-}
-
-// Tombol SAIL di HUD laut = kembali ke harbor (akhiri run).
-function dockHarbor() {
-  if (G.runTime > G.bestTime) G.bestTime = G.runTime;
-  const t = G.runTime;
-  G.runActive = false;
-  G.runTime = 0;
-  resetToHarbor();
-  toast(`Kembali ke harbor. Waktu run: ${fmtTimeLocal(t)}`);
-}
-
-function die(cause) {
-  if (G.runTime > G.bestTime) G.bestTime = G.runTime;
-  G.deathInfo = { cause, time: G.runTime };
-  // kehilangan seluruh resource di inventory; upgrade tetap
-  for (const t of RES_TYPES) G.resources[t] = 0;
-  G.boatHP = maxHP();
-  G.runActive = false;
-  G.runTime = 0;
-  G.land = null;
-  G.autopilotTarget = null;
-  G.fishing = null;
-  G.anchored = false;
-  G.state = 'gameover';
+  if (carriedLoad() >= capacity()) {
+    tip('t_full', 'Palka penuh. Waktunya pulang sebelum pasang menutup jalanmu.', 5000);
+  }
   saveGame();
-  renderGameOver();
-  showScreen('gameover');
 }
 
-function resetToHarbor() {
-  G.state = 'dashboard';
-  G.land = null;
-  G.autopilotTarget = null;
-  G.fishing = null;
-  G.anchored = false;
+// Tambat di dermaga: muatan dibongkar, run selesai.
+function moorHarbor() {
+  const moved = bankCarried();
+  const total = Object.values(moved).reduce((a, b) => a + b, 0);
   G.runActive = false;
   G.runTime = 0;
-  G.boat = createBoat(0, 0);
-  G.cam.x = 0; G.cam.y = 0;
-  G.nearIsland = null;
-  generateSeaWorld();
-  saveGame();
-  showScreen('dashboard');
-  updateDashboard();
-}
+  G.boat.vx = 0; G.boat.vy = 0;
+  G.boat.x = HARBOR.x; G.boat.y = -40;
+  G.target = null;
+  resetFx();
 
-// EXPLORE saat di laut: dekat → langsung masuk; jauh → autopilot.
-function exploreNear() {
-  if (G.state !== 'sea') return;
-  const { island, dist } = nearestIsland(G.boat.x, G.boat.y);
-  if (!island) return;
-  if (dist < 50) {
-    enterIslandFlow(island);
+  enterHarbor();
+  showScreen('harbor');
+  setAmbience('harbor');
+  saveGame();
+
+  if (total > 0) {
+    sfx('bank');
+    addFlash(0.3);
+    showBankBeat(moved);
+    if (canBuyNext()) {
+      const r = nextRung();
+      toast(`${r.label} sudah bisa dipasang di meja kerja.`);
+      sfx('newGoal');
+    }
   } else {
-    G.autopilotTarget = island;
-    toast(`Berlayar ke ${island.name}...`);
+    toast('Kau kembali dengan tangan kosong.');
   }
 }
 
-// ---------- Fishing ----------
-function startFishing() {
+function showBankBeat(cargo) {
+  const el = document.getElementById('bank-beat');
+  if (!el) return;
+  const icons = RES_TYPES.filter((t) => (cargo[t] || 0) > 0)
+    .map((t) => `<span class="bb-item"><i style="background:${CFG.RESOURCES[t].color}"></i>+${cargo[t]}</span>`).join('');
+  el.innerHTML = `<div class="bb-title">MUATAN DIBONGKAR</div><div class="bb-row">${icons}</div>`;
+  el.classList.remove('hidden');
+  el.classList.remove('show');
+  requestAnimationFrame(() => el.classList.add('show'));
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.classList.add('hidden'), 400); }, 1500);
+}
+
+function die(cause) {
+  const pos = playerWorldPos();
+  const lost = dropCarried();
+  const lostTotal = Object.values(lost).reduce((a, b) => a + b, 0);
+  let salvageText = '';
+
+  if (lostTotal > 0) {
+    let islandId, sx, sy;
+    if (pos && G.land) {
+      // mati di darat: pelampung jatuh tepat di tempat kejadian
+      islandId = G.land.island.id; sx = pos.x; sy = pos.y;
+    } else {
+      // mati di laut: muatan hanyut ke pulau terdekat
+      const ni = nearestIsland(G.boat.x, G.boat.y);
+      const isl = ni.island;
+      islandId = isl.id;
+      const a = Math.random() * Math.PI * 2;
+      sx = Math.cos(a) * isl.r * 0.5;
+      sy = Math.sin(a) * isl.r * 0.5;
+    }
+    G.salvages.push({ islandId, x: sx, y: sy, cargo: { ...lost } });
+    const isl = islandById(islandId);
+    salvageText = `Pelampung muatan hanyut ke ${isl ? isl.name : 'pulau terdekat'} — tandai di peta, ambil kembali kapan saja.`;
+  } else {
+    salvageText = 'Tidak ada muatan yang hilang.';
+  }
+
+  const runTime = G.runTime;
+  G.hull = Math.max(1, Math.round(0.5 * maxHP()));
+  G.deathInfo = { cause, time: runTime, lost, salvageText };
+  G.runActive = false;
+  G.runTime = 0;
+  G.land = null;
+  G.fishing = null;
+  G.target = null;
+  G.pendingDeath = false;
+
+  sfx('death');
+  resetFx();
+  saveGame();
+  enterHarbor();
+  showScreen('harbor');
+  setAmbience('harbor');
+  renderDebrief(G.deathInfo);
+  openModal('debrief');
+}
+
+function newGame() {
+  clearSave();
+  G.refit = 0;
+  G.hull = maxHP();
+  G.banked = emptyBag();
+  G.carried = emptyBag();
+  G.totalRuns = 0;
+  G.salvages = [];
+  G.surveyed = {};
+  G.tabbed = {};
+  G.deathInfo = null;
+  G.worldSeed = (Math.random() * 1e9) >>> 0;
+  generateWorld(G.worldSeed);
+  G.hull = maxHP();
+  enterHarbor();
+  showScreen('harbor');
+  saveGame();
+  refreshIfOpen();
+}
+
+function useHeal() {
+  const mx = maxHP();
+  const need = mx - G.hull;
+  if (need <= 0) return;
+  const med = G.carried.medicine || 0;
+  const food = G.carried.food || 0;
+  let type = null;
+  if (med > 0 && need >= CFG.HEAL.medicine) type = 'medicine';
+  else if (food > 0) type = 'food';
+  else if (med > 0) type = 'medicine';
+  if (!type) { toast('Bekal habis.'); sfx('blockFull'); return; }
+  G.carried[type]--;
+  G.hull = Math.min(mx, G.hull + CFG.HEAL[type]);
+  sfx('pickup');
+  addFlash(0.12);
+  const px = G.land && G.land.player ? G.land.player.x : G.boat.x;
+  const py = G.land && G.land.player ? G.land.player.y : G.boat.y;
+  ring(px, py, '#9fe0a8', 42, 0.45);
+  toast(`+${CFG.HEAL[type]} hull · ${CFG.RESOURCES[type].short}`);
+  G.saveDirty = true;
+}
+
+function buyRefit() {
+  const rung = buyNext();
+  if (!rung) { toast('Belum cukup bahan.'); sfx('blockFull'); return; }
+  sfx('forge');
+  addFlash(0.4);
+  addShake(0.2);
+  toast(`${rung.label} terpasang · ${rung.effect}`);
+  saveGame();
+  renderBench();
+  refreshIfOpen();
+}
+
+// ---------- memancing: di air dangkal dekat pulau, berumpan 1 makanan ----------
+function fishHere() {
   if (G.state !== 'sea' || G.fishing) return;
+  if ((G.banked.food || 0) + (G.carried.food || 0) <= 0) return;
   G.fishing = { t: 0, dur: CFG.FISH.DURATION };
-  toast('Mulai memancing...');
+  G.anchored = true;
+  sfx('splash');
+  tip('t_fish', 'Memancing menahanmu di sini sementara pasang terus naik.', 4200);
 }
 
 function tickFishing(dt) {
   const f = G.fishing;
+  if (!f) return;
   f.t += dt;
   if (f.t < f.dur) return;
   G.fishing = null;
-  const roll = Math.random();
-  let type = null;
-  if (roll < CFG.FISH.CHANCE_FOOD) type = 'food';
-  else if (roll < CFG.FISH.CHANCE_FOOD + CFG.FISH.CHANCE_WOOD) type = 'wood';
-  if (type) {
-    const n = addResource(type, 1);
-    toast(n ? `Dapat 1 ${CFG.RESOURCES[type].label}!` : 'Storage penuh, hasil lepas!');
-  } else {
-    toast('Tidak dapat apa-apa...');
-  }
+  G.anchored = false;
+  // umpan: ambil dari gudang dulu, lalu dari muatan
+  if (G.banked.food > 0) G.banked.food--; else if (G.carried.food > 0) G.carried.food--;
+  const got = [];
+  const add = (t, n) => { const a = addCarried(t, n); if (a > 0) got.push(`${a} ${CFG.RESOURCES[t].short.toLowerCase()}`); };
+  add('food', 2);
+  if (Math.random() < 0.3) add('wood', 1);
+  if (Math.random() < 0.15) add('medicine', 1);
+  if (got.length) { sfx('gather_done'); toast('Tangkapan: ' + got.join(', ')); }
+  else toast('Palka penuh — tangkapan lepas.');
   G.saveDirty = true;
 }
 
-// ---------- Anchor ----------
-function toggleAnchor() {
-  if (G.state !== 'sea') return;
-  G.anchored = !G.anchored;
-  if (G.anchored && G.fishing) G.fishing = null;
-  toast(G.anchored ? 'Jangkar turun — perahu berhenti.' : 'Jangkar ditarik.');
-}
-
-// ---------- Upgrade ----------
-function buyUpgrade(key) {
-  const def = CFG.UPGRADES[key];
-  const lv = G.upgrades[key];
-  if (lv >= def.levels.length) { toast('Sudah level maksimum.'); return; }
-  const cost = def.levels[lv].cost;
-  if (!canAfford(cost)) { toast('Resource tidak cukup!'); return; }
-  payCost(cost);
-  G.upgrades[key] = lv + 1;
-  if (key === 'defense') G.boatHP = Math.min(maxHP(), G.boatHP + 20);
-  saveGame();
-  renderUpgradePanel();
-  updateDashboard();
-  toast(`${def.label} → Lv.${lv + 1}!`);
-}
-
-// ---------- Healing (Food / Medicine) ----------
-function useHeal(type) {
-  if (!CFG.HEAL[type]) return;
-  if ((G.resources[type] || 0) <= 0) {
-    toast(`Tidak punya ${CFG.RESOURCES[type].label}!`);
-    return;
-  }
-  if (G.boatHP >= maxHP()) { toast('HP sudah penuh.'); return; }
-  G.resources[type]--;
-  const h = CFG.HEAL[type];
-  G.boatHP = Math.min(maxHP(), G.boatHP + h);
-  toast(`+${h} HP (${CFG.RESOURCES[type].label})`);
-  saveGame();
-  updateDashboard();
-  renderInventoryPanel();
-  if (!elsHidden('screen-upgrade')) renderUpgradePanel();
-}
-
-function elsHidden(id) {
-  const el = document.getElementById(id);
-  return !el || el.classList.contains('hidden');
-}
-
-// ---------- Reset save (klik 2x untuk konfirmasi) ----------
-let resetArmed = false, resetTimer = null;
-function resetSaveFlow(btn) {
-  if (!resetArmed) {
-    resetArmed = true;
-    btn.textContent = 'Yakin? Klik lagi untuk hapus';
-    clearTimeout(resetTimer);
-    resetTimer = setTimeout(() => { resetArmed = false; btn.textContent = 'Reset Save'; }, 2600);
-    return;
-  }
-  resetArmed = false;
-  clearTimeout(resetTimer);
-  clearSave();
-  G.resources = { fuel: 0, wood: 0, food: 0, medicine: 0 };
-  G.upgrades = { storage: 0, speed: 0, defense: 0 };
-  G.totalRuns = 0;
-  G.bestTime = 0;
-  G.boatHP = maxHP();
-  btn.textContent = 'Reset Save';
-  resetToHarbor();
-  toast('Save direset.');
-}
-
-// =================== Update per state ===================
+// =================== Update ===================
 
 let lastSaveT = 0;
 function flushSave() {
-  if (G.saveDirty && G.time - lastSaveT > 0.8) {
+  if (G.saveDirty && G.time - lastSaveT > 1.0) {
     saveGame();
-    G.saveDirty = false;
     lastSaveT = G.time;
+  }
+}
+
+// Konteks tunggal — satu tombol yang selalu tahu apa yang masuk akal.
+function currentContext() {
+  if (isModalOpen()) return { kind: null };
+  if (G.state === 'land') return landContext();
+  if (G.state === 'harbor') return harborContext();
+  if (G.state === 'sea') {
+    const hd = harborDist();
+    if (hd < 190) return { kind: 'moor', label: 'BERTAMBAT' };
+    const ni = G.nearIsland;
+    if (ni && ni.island && ni.dist < 90) return { kind: 'land', label: 'MENDARAT' };
+    if (ni && ni.island && ni.dist < 280 && (G.banked.food > 0 || G.carried.food > 0)) {
+      return { kind: 'fish', label: 'MEMANCING' };
+    }
+    return { kind: null };
+  }
+  return { kind: null };
+}
+
+function doContext() {
+  const c = currentContext();
+  switch (c.kind) {
+    case 'land': {
+      const ni = G.nearIsland;
+      if (ni && ni.island) enterIslandFlow(ni.island);
+      break;
+    }
+    case 'moor': moorHarbor(); break;
+    case 'fish': fishHere(); break;
+    case 'moorNothing': break;
+    case 'board': backToBoat(); break;
+    case 'chart': openModal('chart'); break;
+    case 'bench': openModal('bench'); break;
+    case 'sail': {
+      if (!G.target) { openModal('chart'); toast('Pilih tujuan dulu di meja peta.'); }
+      else { sfx('board'); beginRun(); }
+      break;
+    }
+    case 'gather':
+    case 'salvage': {
+      const r = contextAction();
+      if (r === 'board') backToBoat();
+      break;
+    }
+    default: {
+      const r = contextAction();
+      if (r === 'board') backToBoat();
+      break;
+    }
   }
 }
 
 function updateSea(dt) {
   if (G.runActive) G.runTime += dt;
-
   const manual = getMove();
   let move = manual;
   const hasManual = Math.hypot(manual.x, manual.y) > 0.01;
+  if (hasManual && G.fishing) { G.fishing = null; G.anchored = false; }
+  if (hasManual && G.anchored) G.anchored = false;
 
-  if (hasManual) {
-    if (G.autopilotTarget) { G.autopilotTarget = null; toast('Autopilot dibatalkan.'); }
-    if (G.fishing) { G.fishing = null; toast('Memancing dibatalkan.'); }
-    if (G.anchored) { G.anchored = false; toast('Jangkar ditarik.'); }
-  } else if (G.autopilotTarget) {
-    const t = G.autopilotTarget;
-    const dx = t.x - G.boat.x, dy = t.y - G.boat.y;
-    const d = Math.hypot(dx, dy) || 1;
-    move = { x: dx / d, y: dy / d };
-  }
+  const ni = nearestIsland(G.boat.x, G.boat.y);
+  G.nearIsland = ni;
+  const shallow = (ni.island && ni.dist < 100) || harborDist() < 240;
 
-  updateBoat(dt, move);
+  updateBoat(dt, move, { shallow });
   if (G.fishing) tickFishing(dt);
 
-  if (G.autopilotTarget) {
-    const t = G.autopilotTarget;
-    if (Math.hypot(t.x - G.boat.x, t.y - G.boat.y) < t.r + 42) {
-      enterIslandFlow(t);
+  // pasang menguras lambung di laut terbuka
+  const drain = seaDrainRate(Math.min(ni.dist, harborDist() - HARBOR.r));
+  if (drain > 0) {
+    G.hull -= drain * dt;
+    if (Math.random() < dt * 1.4) { sfx('crack'); addShake(0.12); }
+    if (G.hull <= 0) {
+      G.hull = 0;
+      die('Lambung tidak kuat menahan pasang di laut terbuka.');
       return;
     }
   }
 
-  const ni = nearestIsland(G.boat.x, G.boat.y);
-  G.nearIsland = ni;
-  for (const isl of G.islands) {
-    isl.inRange = (ni.island === isl && ni.dist < 70);
-  }
-
   G.cam.x += (G.boat.x - G.cam.x) * Math.min(1, dt * 5);
   G.cam.y += (G.boat.y - G.cam.y) * Math.min(1, dt * 5);
-
   flushSave();
+  maybeRevealNearby(ni.island, ni.dist);
+}
+
+function maybeRevealNearby(island, d) {
+  if (!island || d > 260) return;
+  if (survey(island)) {
+    toast(`${island.name} tercatat di peta.`);
+    saveGame();
+    renderChart();
+  }
 }
 
 function updateLandState(dt) {
   if (!G.land) return;
-  G.runTime += dt;
+  if (G.runActive) G.runTime += dt;
 
   if (input.attackQueued) {
     input.attackQueued = false;
     tryAttack();
   }
 
-  updateLand(dt, getMove());
+  updateLand(dt, getMove(), { gatherHeld: input.held.action });
 
   const p = G.land.player;
   if (p) {
     G.cam.x += (p.x - G.cam.x) * Math.min(1, dt * 6);
     G.cam.y += (p.y - G.cam.y) * Math.min(1, dt * 6);
   }
-
   flushSave();
 
   if (G.pendingDeath) {
     G.pendingDeath = false;
-    die('Kau dibunuh zombie di daratan.');
+    die('Kau kalah di daratan. Kapal menunggu, tapi kau tidak sampai.');
   }
 }
 
 function update(dt) {
+  const icon = getMove();
   G.time += dt;
-  G.hpFlash = Math.max(0, (G.hpFlash || 0) - dt * 1.4);
 
-  if (G.state === 'sea') updateSea(dt);
-  else if (G.state === 'land') updateLandState(dt);
+  // hit-stop: satu-satunya tempat waktu boleh berhenti
+  const ts = timeScale();
+  const d = dt * ts;
+
+  updateFx(dt);
+
+  if (G.state === 'sea' && fx.vignetteTarget) fx.vignetteTarget = 0;
+
+  if (G.state === 'sea' || G.state === 'land') {
+    updateTide(d);
+    const ph = tidePhase(G.tide ? G.tide.t : 0);
+    // Catatan: flag ada di G.tide, bukan di tabel fase. Sebelum ini dibaca dari
+    // PHASES (undefined) sehingga beat camar/guncangan tidak pernah menyala.
+    const changed = !!(G.tide && G.tide.justChanged);
+    if (changed && ph.key === 'turning') {
+      sfx('waveChange');
+      // burung-burung pergi. Tidak ada teks — hanya langit yang tiba-tiba kosong.
+      const w = G.state === 'land' && G.land ? G.land.player : G.boat;
+      flushGulls(w.x, w.y * 0.96, 9);
+      addShake(0.14);
+      tip('t_turn', 'Camar terbang pergi. Perhatikan garis air di pantai.', 6000);
+    }
+    if (changed && ph.key === 'high') {
+      sfx('waveChange');
+      flushGulls(G.boat ? G.boat.x : 0, (G.boat ? G.boat.y : 0), 14);
+      addShake(0.34);
+      tip('t_high', 'Air pasang. Sepanjang kau di luar, lambungmu terkuras — kembali ke kapal, atau terus ke pulau lain.', 6500);
+    }
+    // FAJAR: malam habis. Air turun, langit sembuh, camar kembali. Tidak ada teks:
+    // yang berubah adalah dunia, dan yang dibaca pemain adalah "aku masih hidup".
+    if (G.tide && G.tide.justDawned) {
+      sfx('gull');
+      addFlash(0.22);
+      const w = G.state === 'land' && G.land ? G.land.player : G.boat;
+      returnGulls(w.x, w.y, 7);
+      toast('Fajar. Air turun.');   // sisanya diperlihatkan dunia, bukan ditulis
+    }
+    const amb = ph.key === 'high' ? 'high' : (G.state === 'land' ? 'land' : 'sea');
+    setAmbience(amb);
+    tickAmbience(dt, ph.key === 'calm' && G.state === 'sea');
+  }
 
   // aksi dari keyboard
   if (input.actionQueued) {
-    const a = input.actionQueued;
-    input.actionQueued = null;
-    if (a === 'explore' && G.state === 'sea') exploreNear();
-    if (a === 'back' && G.state === 'land') backToBoat();
+    input.actionQueued = false;
+    doContext();
+  }
+
+  if (G.state === 'sea') updateSea(d);
+  else if (G.state === 'land') updateLandState(d);
+  else if (G.state === 'harbor') {
+    updateHarbor(d, icon, isModalOpen());
+    tickAmbience(dt, true);
   }
 }
 
@@ -341,112 +482,89 @@ function update(dt) {
 
 function render() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.imageSmoothingEnabled = true;
 
-  if (G.state === 'sea') {
-    drawSea(ctx, vw, vh);
-  } else if (G.state === 'land') {
-    drawLand(ctx, vw, vh);
+  const sh = shakeOffset();
+  const zoom = G.cam.zoom || 1;
+
+  if (G.state === 'sea' || G.state === 'land' || G.state === 'harbor') {
+    ctx.save();
+    if (sh.x || sh.y) ctx.translate(sh.x, sh.y);
+    if (G.state === 'sea') drawSea(ctx, vw, vh);
+    else if (G.state === 'land') drawLand(ctx, vw, vh);
+    else drawHarbor(ctx, vw, vh);
+    ctx.restore();
   } else {
     drawOceanBackground(ctx, vw, vh, 0, 0);
   }
 
-  // vignette merah saat kena hit
-  if (G.hpFlash > 0) {
-    ctx.fillStyle = `rgba(255,30,30,${(G.hpFlash * 0.55).toFixed(3)})`;
-    ctx.fillRect(0, 0, vw, vh);
-  }
+  // indikator arah serangan & vignette lambung kritis (layar)
+  drawFxScreen(ctx, vw, vh, 0);
 
-  if (G.state === 'dashboard') drawBoatPreview();
-}
-
-// Preview perahu di dashboard
-function drawBoatPreview() {
-  if (!pctx) return;
-  const w = previewCanvas.width, h = previewCanvas.height;
-
-  pctx.setTransform(1, 0, 0, 1, 0, 0);
-  const g = pctx.createLinearGradient(0, 0, 0, h);
-  g.addColorStop(0, '#0d283f');
-  g.addColorStop(1, '#05101b');
-  pctx.fillStyle = g;
-  pctx.fillRect(0, 0, w, h);
-
-  pctx.strokeStyle = 'rgba(127, 212, 255, 0.08)';
-  pctx.lineWidth = 2;
-  for (let i = 0; i < 4; i++) {
-    const yb = 18 + i * 26 + ((G.time * 14) % 26);
-    pctx.beginPath();
-    for (let x = -10; x <= w + 10; x += 18) {
-      const y = yb + Math.sin(x * 0.03 + G.time * 1.6 + i) * 3;
-      if (x === -10) pctx.moveTo(x, y); else pctx.lineTo(x, y);
-    }
-    pctx.stroke();
-  }
-
-  pctx.setTransform(1, 0, 0, 1, w / 2, h / 2 + 4);
-  drawBoat(pctx, { x: 0, y: 0, angle: -Math.PI / 2 }, 1.35);
-
-  pctx.setTransform(1, 0, 0, 1, 0, 0);
-  pctx.fillStyle = 'rgba(255,255,255,0.7)';
-  pctx.font = '11px system-ui, sans-serif';
-  pctx.textAlign = 'left';
-  pctx.fillText(`Storage Lv.${G.upgrades.storage} · Speed Lv.${G.upgrades.speed} · Defense Lv.${G.upgrades.defense}`, 10, h - 10);
 }
 
 // =================== Handlers UI ===================
 
-const handlers = {
-  sail: () => beginRun(),
-  fish: () => { beginRun(); startFishing(); },
-  upgrade: () => openModal('upgrade'),
-  inventory: () => openModal('inventory'),
-  explore: () => departExplore(),
-  resetSave: (btn) => resetSaveFlow(btn),
-
-  hudSail: () => dockHarbor(),
-  hudFish: () => startFishing(),
-  hudAnchor: () => toggleAnchor(),
-  hudExplore: () => exploreNear(),
-
-  attack: () => { input.attackQueued = true; },
-  collect: () => collectNearby(),
-  back: () => backToBoat(),
-
-  buy: (key) => buyUpgrade(key),
-  heal: (type) => useHeal(type),
-  closeModal: () => closeModal(),
-  goHarbor: () => resetToHarbor(),
+const H = {
+  onContextDown: () => pressContext(),
+  onContextUp: () => releaseContext(),
+  onAttack: () => pressAttack(),
+  onMute: () => {
+    setMuted(!G.muted);
+    toast(G.muted ? 'Suara mati.' : 'Suara hidup.');
+    saveGame();
+  },
+  onPickTarget: (id) => pickTarget(id),
+  onSailNoTarget: () => {
+    if (!G.target) G.target = null;
+    beginRun();
+  },
+  onBuy: () => buyRefit(),
+  onHeal: () => useHeal(),
+  onModalClosed: () => clearQueued(),
 };
 
 // =================== Bootstrap & loop ===================
 
-function fmtTimeLocal(s) {
-  const sec = Math.max(0, Math.floor(s || 0));
-  return String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0');
-}
-
 async function boot() {
   resize();
   await loadAssets();
+  resetTide();                 // default; loadGame() boleh menimpa jam malam ini
   const loaded = loadGame();
-  if (!(G.boatHP > 0)) G.boatHP = maxHP();
-  G.boatHP = Math.min(G.boatHP, maxHP());
-  G.boat = createBoat(0, 0);
-  G.cam.x = 0; G.cam.y = 0;
-  generateSeaWorld();
-  initInput();
-  initUI(handlers);
-  showScreen('dashboard');
-  updateDashboard();
-  if (loaded) toast('Save dimuat dari localStorage.');
+  if (!G.worldSeed) G.worldSeed = (Math.random() * 1e9) >>> 0;
+  generateWorld(G.worldSeed);
+  G.boat = createBoat(HARBOR.x, -40);
+  if (!(G.hull > 0)) G.hull = maxHP();
+  G.hull = Math.min(G.hull, maxHP());
+
+  initInput({ mute: () => H.onMute(), escape: () => closeModal() });
+  input.onGesture = () => initAudio();
+  initUI(H);
+
+  enterHarbor();
+  showScreen('harbor');
+  setAmbience('harbor');
+
+  if (loaded) {
+    toast('Progres dimuat dari dermaga terakhir.');
+  } else {
+    toast('Kau baru saja sampai di dermaga ini.');
+  }
+  setTimeout(() => {
+    const touch = typeof window.matchMedia === 'function' && window.matchMedia('(hover: none)').matches;
+    tip('t_move', touch ? 'Joystick kiri untuk berjalan. Tombol kanan untuk aksi.' : 'WASD untuk berjalan · E untuk aksi · SPASI untuk menyerang.', 6000);
+  }, 500);
+  setTimeout(() => {
+    tip('t_harbor', 'Buka peta untuk memilih pulau, lalu berjalan ke haluan kapal untuk berlayar.', 8000);
+  }, 6600);
 
   let last = performance.now();
   function frame(now) {
-    const dt = Math.min(0.05, (now - last) / 1000);
+    const raw = Math.min(0.05, (now - last) / 1000);
     last = now;
-    update(dt);
+    update(raw);
     render();
-    updateHUD();
+    updateHUD(currentContext());
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
