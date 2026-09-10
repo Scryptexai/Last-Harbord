@@ -11,9 +11,10 @@ import { addCarried, carriedFull } from './inventory.js';
 import { makeZombie } from './zombie.js';
 import { sfx } from './audio.js';
 import { fx, burst, splash, flyItem, ring, addShake, addHitstop, addHurtDir, drawFxWorld } from './fx.js';
-import { blobPath, markTaken, survey, islandRemaining } from './world.js';
+import { blobPath, markTaken, survey, islandRemaining, drawStormPulse } from './world.js';
 import { ASSETS } from './assets.js';
 import { consumeReinforce, tideTint, tidePhase } from './tide.js';
+import { beginWorld, endWorld, upright, atUpright, byDepth } from './camera.js';
 import { drawBoat, drawLanternPool } from './boat.js';
 import { maxHP } from './refit.js';
 
@@ -267,8 +268,7 @@ export function updateLand(dt, move, opts = {}) {
   if (!locked) {
     const ml = Math.hypot(move.x, move.y);
     // mengarungi air banjir saat pasang itu berat — dan bisa dilihat & dipelajari
-    const floodR = L.r * (1.06 - 0.34 * tideTint());
-    const inFlood = Math.hypot(p.x, p.y) > floodR ? (CFG.TIDE.WADE || 0.78) : 1;
+    const inFlood = inFloodWater(L, p.x, p.y) ? (CFG.TIDE.WADE || 0.78) : 1;
     const tx = ml > 0.01 ? (move.x / Math.max(1, ml)) * P.SPEED * recov * inFlood : 0;
     const ty = ml > 0.01 ? (move.y / Math.max(1, ml)) * P.SPEED * recov * inFlood : 0;
     p.vx += (tx - p.vx) * clamp(dt / P.ACCEL_T, 0, 1);
@@ -545,10 +545,25 @@ function collideObstacles(L, e) {
   }
 }
 
+// Radius pulau pada sudut tertentu. Bentuk pulau digambar sebagai blob (26 titik),
+// jadi batas gerak harus mengikuti BENTUK itu — bukan lingkaran. Kalau tidak, pemain
+// bisa berjalan di atas air tepat di lekukan pantai.
+export function shapeRadius(L, ang) {
+  const n = L.shape.length;
+  let a = ang % (Math.PI * 2);
+  if (a < 0) a += Math.PI * 2;
+  const f = (a / (Math.PI * 2)) * n;
+  const i0 = Math.floor(f) % n, i1 = (i0 + 1) % n;
+  const t = f - Math.floor(f);
+  return L.shape[i0].rr * (1 - t) + L.shape[i1].rr * t;
+}
+
 function clampToIsland(e, L) {
   const d = Math.hypot(e.x, e.y);
-  const max = L.playR;
-  if (d > max && d > 0) { e.x = e.x / d * max; e.y = e.y / d * max; }
+  if (d < 0.001) return;
+  const ang = Math.atan2(e.y, e.x);
+  const max = Math.min(L.playR, shapeRadius(L, ang) * 0.985);
+  if (d > max) { e.x = e.x / d * max; e.y = e.y / d * max; }
 }
 
 // ---------- kabut eksplorasi ----------
@@ -583,6 +598,16 @@ export function isRevealed(L, x, y) {
 }
 
 // Dipakai main.js untuk menyimpan muatan yang hilang saat mati.
+// Batas air banjir: satu rumus, dipakai gerak DAN gambar. Tidak boleh ada dua versi.
+export function floodRadius(L) {
+  return L.r * (1.06 - CFG.LAND.FLOOD * tideTint());
+}
+
+export function inFloodWater(L, x, y) {
+  if (!L) return false;
+  return Math.hypot(x, y) > floodRadius(L);
+}
+
 export function playerWorldPos() {
   const L = G.land;
   if (!L || !L.player) return null;
@@ -665,10 +690,8 @@ export function drawLand(ctx, vw, vh) {
   ctx.fillStyle = '#05121d';
   ctx.fillRect(0, 0, vw, vh);
 
-  ctx.save();
-  ctx.translate(vw / 2, vh / 2);
-  ctx.scale(zoom, zoom);
-  ctx.translate(-G.cam.x, -G.cam.y);
+  // Kamera miring: tanah diperas vertikal, benda berdiri tetap tegak (lihat camera.js).
+  beginWorld(ctx, vw, vh);
 
   const fl = CFG.FLAVORS[L.island.flavor];
 
@@ -688,7 +711,7 @@ export function drawLand(ctx, vw, vh) {
 
   // PASANG NAIK KE PANTAI — kanal informasi utama, bukan UI.
   // Garis air naik dari 1.06 (di luar pasir) ke 0.82 (menelan hampir seluruh pantai).
-  const flood = 1.06 - 0.34 * tint;
+  const flood = 1.06 - CFG.LAND.FLOOD * tint;
   blobPath(ctx, 0, 0, L.shape, flood);
   ctx.fillStyle = `rgba(20,66,92,${0.72 + tint * 0.2})`;
   ctx.fill();
@@ -704,65 +727,36 @@ export function drawLand(ctx, vw, vh) {
   // dermaga
   drawPier(ctx, L);
 
-  // batu & pohon
-  for (const rk of L.rocks) {
-    const img = ASSETS.rock;
-    if (img && img.complete && img.naturalWidth > 0) {
-      const sz = rk.s * 2.4;
-      ctx.drawImage(img, rk.x - sz / 2, rk.y - sz / 2, sz, sz);
-    } else {
-      ctx.fillStyle = '#52606d';
-      ctx.beginPath(); ctx.arc(rk.x, rk.y, rk.s, 0, Math.PI * 2); ctx.fill();
-    }
-  }
+  // ---- BAYANGAN DI TANAH (datar, ikut miring) ----
+  // Semua bayangan digambar lebih dulu: benda berdiri tanpa bayangan tampak melayang.
+  drawGroundShadows(ctx, L);
+  ctx.fillStyle = 'rgba(0,0,0,0.26)';
   for (const t of L.trees) {
-    // bayangan tanah dulu supaya pohon tidak terlihat melayang
-    ctx.fillStyle = 'rgba(0,0,0,0.22)';
-    ctx.beginPath(); ctx.ellipse(t.x, t.y + t.s * 0.8, t.s * 1.1, t.s * 0.45, 0, 0, Math.PI * 2); ctx.fill();
-    const img = ASSETS.tree;
-    if (img && img.complete && img.naturalWidth > 0) {
-      const sz = t.s * 3.1;
-      ctx.drawImage(img, t.x - sz / 2, t.y - sz * 0.78, sz, sz);
-    } else {
-      ctx.fillStyle = '#1c4627';
-      ctx.beginPath(); ctx.arc(t.x, t.y, t.s, 0, Math.PI * 2); ctx.fill();
-    }
+    ctx.beginPath(); ctx.ellipse(t.x, t.y + t.s * 0.35, t.s * 1.15, t.s * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  for (const rk of L.rocks) {
+    ctx.beginPath(); ctx.ellipse(rk.x, rk.y + rk.s * 0.2, rk.s * 1.1, rk.s * 0.45, 0, 0, Math.PI * 2); ctx.fill();
   }
 
-  // node resource — hanya yang sudah ditemukan
+  // ---- LAPISAN BERDIRI, DIURUTKAN MENURUT KEDALAMAN ----
+  // Aturan kamera miring: yang lebih dekat kamera (y lebih besar) digambar terakhir,
+  // sehingga pohon di depan benar-benar menutupi zombie di belakangnya.
+  const nearExtract = dist(L.player.x, L.player.y, L.extract.x, L.extract.y) < L.extract.r * 1.4;
+  const layer = [];
+  for (const rk of L.rocks) layer.push({ y: rk.y, draw: () => drawRock(ctx, rk) });
+  for (const t of L.trees) layer.push({ y: t.y, draw: () => drawTree(ctx, t) });
   for (const nd of L.nodes) {
     if (nd.taken) continue;
     if (!isRevealed(L, nd.x, nd.y) && !nd.forceShow) continue;
-    const bob = Math.sin(G.time * 2.6 + nd.bob) * 2.4;
-    const size = nd.kind === 'salvage' ? 30 : (nd.rich ? 30 : 22);
-    ctx.fillStyle = 'rgba(0,0,0,0.32)';
-    ctx.beginPath(); ctx.ellipse(nd.x, nd.y + 10, size * 0.38, size * 0.2, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.save();
-    ctx.translate(nd.x, nd.y + bob);
-    // glint lembut supaya tidak terlihat seperti "ikon yang harus ditabrak"
-    const gl = 0.35 + Math.sin(G.time * 3 + nd.bob) * 0.2;
-    ctx.globalAlpha = gl;
-    ctx.fillStyle = nd.kind === 'salvage' ? '#ffcf6a' : CFG.RESOURCES[nd.type].color;
-    ctx.beginPath(); ctx.arc(0, 0, size * 0.85, 0, Math.PI * 2); ctx.fill();
-    ctx.globalAlpha = 1;
-    drawNodeIcon(ctx, nd, 0, 0, size);
-    if (nd.rich && nd.kind === 'res') {
-      ctx.fillStyle = 'rgba(255,240,190,0.95)';
-      ctx.font = 'bold 11px Inter, system-ui, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('×2', 0, -size * 0.7);
-    }
-    ctx.restore();
+    layer.push({ y: nd.y, draw: () => drawNode(ctx, L, nd) });
   }
-
-  // zombie — yang di luar pandangan hanya siluet
-  for (const z of L.zombies) drawZombie(ctx, L, z);
-
-  // kapal — selalu terlihat, selalu terang: satu-satunya tempat aman
-  drawBoatAtLand(ctx, L);
-
-  // pemain
-  drawPlayer(ctx, L);
+  for (const z of L.zombies) layer.push({ y: z.y, draw: () => drawZombie(ctx, L, z) });
+  // Kapal duduk di buritan: paling dekat kamera. Kalau pemain berdiri di dermaga,
+  // ia diangkat sedikit supaya tidak tertutup lambung kapal saat naik.
+  layer.push({ y: L.boatPos.y + 6, draw: () => drawBoatAtLand(ctx, L) });
+  layer.push({ y: nearExtract ? L.boatPos.y + 14 : L.player.y, draw: () => drawPlayer(ctx, L) });
+  layer.sort(byDepth);
+  for (const item of layer) item.draw();
 
   // partikel dunia (fx)
   drawFxWorld(ctx, drawItemIcon);
@@ -797,7 +791,10 @@ export function drawLand(ctx, vw, vh) {
     ctx.restore();
   }
 
-  ctx.restore();
+  endWorld(ctx);
+
+  // kilat jauh juga terlihat dari darat: dunia ini punya langit yang sama
+  drawStormPulse(ctx, vw, vh, 0.55);
 
   // pasang: gelap + tepi merah
   if (tint > 0.3) {
@@ -843,10 +840,17 @@ function drawPier(ctx, L) {
 
 function drawBoatAtLand(ctx, L) {
   const bp = L.boatPos;
-  drawLanternPool(ctx, bp.x, bp.y, 190);
+  // Saat air naik, cahaya kapal tumbuh dan berdenyut lebih cepat: satu-satunya benda
+  // di pulau yang memanggil pemain pulang, tanpa satu kata pun.
+  const k = tideTint();
+  const poolR = 190 * (1 + k * 0.35);
+  drawLanternPool(ctx, bp.x, bp.y, poolR);
   const saved = { x: G.boat.x, y: G.boat.y, vx: G.boat.vx, vy: G.boat.vy, angle: G.boat.angle };
   G.boat.x = bp.x; G.boat.y = bp.y; G.boat.vx = 0; G.boat.vy = 0; G.boat.angle = -Math.PI / 2;
-  drawBoat(ctx, G.boat, 1.25);
+  atUpright(ctx, bp.x, bp.y, () => {
+    ctx.translate(-bp.x, -bp.y);      // batalkan translate drawBoat: asal = posisi kapal
+    drawBoat(ctx, G.boat, 1.25);
+  });
   G.boat.x = saved.x; G.boat.y = saved.y; G.boat.vx = saved.vx; G.boat.vy = saved.vy; G.boat.angle = saved.angle;
 
   // zona naik kapal
@@ -859,12 +863,76 @@ function drawBoatAtLand(ctx, L) {
   ctx.beginPath(); ctx.arc(L.extract.x, L.extract.y, L.extract.r, 0, Math.PI * 2); ctx.stroke();
   ctx.setLineDash([]);
   if (near) {
-    ctx.fillStyle = 'rgba(255,236,190,0.95)';
-    ctx.font = 'bold 13px Inter, system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('NAIK KAPAL', L.extract.x, L.extract.y - L.extract.r - 10);
+    atUpright(ctx, L.extract.x, L.extract.y, () => {
+      ctx.fillStyle = 'rgba(255,236,190,0.95)';
+      ctx.font = 'bold 13px Inter, system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('NAIK KAPAL', 0, -L.extract.r * 0.9);
+    });
   }
   ctx.restore();
+}
+
+// Bayangan semua yang berdiri, rata di tanah, digambar sebelum lapisan berdiri.
+function drawGroundShadows(ctx, L) {
+  const p = L.player;
+  ctx.fillStyle = 'rgba(0,0,0,0.30)';
+  ctx.beginPath(); ctx.ellipse(p.x, p.y + 3, CFG.PLAYER.RADIUS * 0.95, CFG.PLAYER.RADIUS * 0.45, 0, 0, Math.PI * 2); ctx.fill();
+  for (const z of L.zombies) {
+    ctx.globalAlpha = isRevealed(L, z.x, z.y) ? 0.3 : 0.16;
+    ctx.beginPath(); ctx.ellipse(z.x, z.y + 3, z.radius * 0.9, z.radius * 0.4, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// Batu & pohon: benda yang benar-benar berdiri di atas tanah, bukan tempelan pipih.
+function drawRock(ctx, rk) {
+  atUpright(ctx, rk.x, rk.y, (p) => {
+    const sz = rk.s * 2.4 * p;
+    const img = ASSETS.rock;
+    if (img && img.complete && img.naturalWidth > 0) {
+      ctx.drawImage(img, -sz / 2, -sz * 0.66, sz, sz);
+    } else {
+      ctx.fillStyle = '#52606d';
+      ctx.beginPath(); ctx.ellipse(0, -rk.s * 0.4 * p, rk.s * p, rk.s * 0.8 * p, 0, 0, Math.PI * 2); ctx.fill();
+    }
+  });
+}
+
+function drawTree(ctx, t) {
+  atUpright(ctx, t.x, t.y, (p) => {
+    const sz = t.s * 3.1 * p;
+    const img = ASSETS.tree;
+    if (img && img.complete && img.naturalWidth > 0) {
+      ctx.drawImage(img, -sz / 2, -sz * 0.88, sz, sz);
+    } else {
+      ctx.fillStyle = '#3b3122';
+      ctx.fillRect(-t.s * 0.14 * p, -t.s * 0.9 * p, t.s * 0.28 * p, t.s * 0.9 * p);
+      ctx.fillStyle = '#1c4627';
+      ctx.beginPath(); ctx.arc(0, -t.s * 1.25 * p, t.s * 0.95 * p, 0, Math.PI * 2); ctx.fill();
+    }
+  });
+}
+
+// Node resource: BARANG di tanah, bukan ikon datar yang ditempel di lantai.
+function drawNode(ctx, L, nd) {
+  const bob = Math.sin(G.time * 2.6 + nd.bob) * 2.4;
+  const size = nd.kind === 'salvage' ? 30 : (nd.rich ? 30 : 22);
+  const gl = 0.3 + Math.sin(G.time * 3 + nd.bob) * 0.16;
+  ctx.globalAlpha = gl;
+  ctx.fillStyle = nd.kind === 'salvage' ? '#ffcf6a' : CFG.RESOURCES[nd.type].color;
+  ctx.beginPath(); ctx.ellipse(nd.x, nd.y + 2, size * 0.85, size * 0.4, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.globalAlpha = 1;
+  atUpright(ctx, nd.x, nd.y, () => {
+    ctx.translate(0, -size * 0.32 + bob);
+    drawNodeIcon(ctx, nd, 0, 0, size);
+    if (nd.rich && nd.kind === 'res') {
+      ctx.fillStyle = 'rgba(255,240,190,0.95)';
+      ctx.font = 'bold 11px Inter, system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('×2', 0, -size * 0.72);
+    }
+  });
 }
 
 function drawZombie(ctx, L, z) {
@@ -872,74 +940,108 @@ function drawZombie(ctx, L, z) {
   const revealed = isRevealed(L, z.x, z.y);
   const img = ASSETS['zombie_' + z.type];
 
-  ctx.save();
-  if (!revealed) ctx.globalAlpha = 0.34;
-  ctx.translate(z.x, z.y + (revealed ? 0 : 6));
-  ctx.rotate((z.face !== undefined ? z.face : 0) + Math.PI / 2);
+  // Arah hadap dibaca dari TANAH: sektor tipis di depan kakinya. Di kamera miring,
+  // "ke mana ia berjalan" jadi pertanyaan spasial, bukan pertanyaan sprite.
+  if (revealed) {
+    const a = z.face !== undefined ? z.face : 0;
+    ctx.save();
+    ctx.globalAlpha = z.chasing ? 0.38 : 0.16;
+    ctx.fillStyle = z.chasing ? '#e0554a' : '#9fb0c0';
+    ctx.beginPath();
+    ctx.moveTo(z.x, z.y);
+    ctx.ellipse(z.x, z.y, z.radius * 1.9, z.radius * 0.85, 0, a - 0.5, a + 0.5);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
 
-  // siluet / bayangan
-  ctx.fillStyle = 'rgba(0,0,0,0.3)';
-  ctx.beginPath(); ctx.ellipse(0, z.radius * 0.6, z.radius * 0.8, z.radius * 0.34, 0, 0, Math.PI * 2); ctx.fill();
+  atUpright(ctx, z.x, z.y, () => {
+  if (!revealed) ctx.globalAlpha = 0.34;
+  // Menghadap kiri/kanan = cermin, bukan rotasi: kamera miring, jadi tubuh tetap tegak.
+  const flip = Math.cos(z.face || 0) < 0 ? -1 : 1;
+  ctx.scale(flip, 1);
 
   if (img && img.complete && img.naturalWidth > 0) {
-    const sz = z.radius * 2.6;
-    ctx.drawImage(img, -sz / 2, -sz / 2, sz, sz);
+    const sz = z.radius * 2.9;
+    ctx.drawImage(img, -sz / 2, -sz * 0.92, sz, sz);
   } else {
     ctx.fillStyle = def.color;
-    ctx.beginPath(); ctx.arc(0, 0, z.radius, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, -z.radius * 0.85, z.radius, z.radius * 1.1, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = def.outline;
+    ctx.beginPath(); ctx.ellipse(0, -z.radius * 1.55, z.radius * 0.6, z.radius * 0.55, 0, 0, Math.PI * 2); ctx.fill();
   }
 
   // kilatan kena pukul: lebih murah dari ctx.filter, lebih terbaca
   if (z.hitFlash > 0.34) {
     ctx.globalCompositeOperation = 'lighter';
     ctx.fillStyle = `rgba(255,240,200,${(z.hitFlash - 0.34) * 1.3})`;
-    ctx.beginPath(); ctx.arc(0, 0, z.radius * 1.15, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, -z.radius * 0.95, z.radius * 1.2, 0, Math.PI * 2); ctx.fill();
     ctx.globalCompositeOperation = 'source-over';
   }
-  ctx.restore();
 
   if (revealed) {
     // HP bar hanya untuk yang benar-benar ganas (raksasa) — sampah tidak perlu bar
     if (z.type === 'tank' || z.hp < z.maxHp) {
       const bw = 26;
+      const by = -z.radius * 2.7;
       ctx.fillStyle = 'rgba(0,0,0,0.55)';
-      ctx.fillRect(z.x - bw / 2, z.y - z.radius - 12, bw, 3.5);
+      ctx.fillRect(-bw / 2, by, bw, 3.5);
       ctx.fillStyle = '#e0554a';
-      ctx.fillRect(z.x - bw / 2, z.y - z.radius - 12, bw * Math.max(0, z.hp / z.maxHp), 3.5);
+      ctx.fillRect(-bw / 2, by, bw * Math.max(0, z.hp / z.maxHp), 3.5);
     }
   } else {
-    ctx.save();
     ctx.globalAlpha = 0.5;
     ctx.fillStyle = '#f1c40f';
     ctx.font = 'bold 13px Inter, system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('?', z.x, z.y - z.radius - 10);
-    ctx.restore();
+    ctx.fillText('?', 0, -z.radius * 2.5);
   }
+  });
 }
 
 function drawPlayer(ctx, L) {
   const p = L.player;
   const img = ASSETS.player;
-  ctx.save();
-  ctx.translate(p.x, p.y);
-  ctx.fillStyle = 'rgba(0,0,0,0.32)';
-  ctx.beginPath(); ctx.ellipse(0, CFG.PLAYER.RADIUS * 0.8, CFG.PLAYER.RADIUS * 0.9, CFG.PLAYER.RADIUS * 0.4, 0, 0, Math.PI * 2); ctx.fill();
 
-  if (p.invuln > 0 && Math.floor(G.time * 20) % 2 === 0) ctx.globalAlpha = 0.5;
+  // cincin "kau di sini" — rata di tanah, jadi ikut miring bersama tanah
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(p.x, p.y, CFG.PLAYER.RADIUS + 6, 0, Math.PI * 2); ctx.stroke();
 
-  ctx.rotate(p.face + Math.PI / 2);
-  if (img && img.complete && img.naturalWidth > 0) {
-    const sz = 32;
-    ctx.drawImage(img, -sz / 2, -sz / 2, sz, sz);
-  } else {
-    ctx.fillStyle = '#e67e22';
-    ctx.beginPath(); ctx.arc(0, 0, CFG.PLAYER.RADIUS, 0, Math.PI * 2); ctx.fill();
+  // Berdiri di air: kaki basah. Ini yang membuat "air naik" terasa di badan pemain,
+  // bukan cuma di latar belakang — dan menjelaskan mengapa ia melambat.
+  if (inFloodWater(L, p.x, p.y)) {
+    const t = G.time;
+    ctx.save();
+    ctx.strokeStyle = `rgba(178,224,255,${0.22 + 0.1 * Math.sin(t * 2.4)})`;
+    ctx.lineWidth = 1.6;
+    for (let i = 0; i < 2; i++) {
+      const k = (t * 0.7 + i * 0.5) % 1;
+      ctx.globalAlpha = (1 - k) * 0.45;
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y + 2, (10 + k * 20), (4 + k * 8), 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
   }
-  ctx.globalAlpha = 1;
-  ctx.restore();
 
-  // tebasan: digambar pada fase aktif, bukan setelah damage terjadi
+  atUpright(ctx, p.x, p.y, () => {
+    if (p.invuln > 0 && Math.floor(G.time * 20) % 2 === 0) ctx.globalAlpha = 0.5;
+    const flip = Math.cos(p.face) < 0 ? -1 : 1;
+    ctx.scale(flip, 1);
+    if (img && img.complete && img.naturalWidth > 0) {
+      const sz = 36;
+      ctx.drawImage(img, -sz / 2, -sz * 0.92, sz, sz);
+    } else {
+      ctx.fillStyle = '#e67e22';
+      ctx.beginPath(); ctx.ellipse(0, -15, 12, 16, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f0c39a';
+      ctx.beginPath(); ctx.arc(0, -27, 7, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  });
+
+  // tebasan: busur rata di tanah — sekaligus indikator jangkauan, bukan hiasan
   const a = p.atk;
   if (a.phase === 'windup' || a.phase === 'active') {
     const k = a.phase === 'windup' ? 1 - a.t / CFG.PLAYER.WINDUP : a.t / CFG.PLAYER.ACTIVE;
@@ -952,10 +1054,5 @@ function drawPlayer(ctx, L) {
     ctx.beginPath(); ctx.arc(0, 0, CFG.PLAYER.ATTACK_RANGE * 0.62, -spread, spread); ctx.stroke();
     ctx.restore();
   }
-
-  // cincin "kau di sini" yang tenang
-  ctx.strokeStyle = 'rgba(255,255,255,0.10)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.arc(p.x, p.y, CFG.PLAYER.RADIUS + 6, 0, Math.PI * 2); ctx.stroke();
 }
 

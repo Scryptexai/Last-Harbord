@@ -7,7 +7,9 @@ import { G } from './state.js';
 import { makeRng, clamp } from './util.js';
 import { ASSETS } from './assets.js';
 import { tideTint } from './tide.js';
+import { drawFxWorld } from './fx.js';
 import { drawBoat, drawLanternPool } from './boat.js';
+import { beginWorld, endWorld, upright, atUpright, byDepth, toScreen } from './camera.js';
 
 export const HARBOR = { x: 0, y: 0, r: 120 };
 
@@ -134,6 +136,131 @@ function mix(a, b, t) {
   return `#${((1 << 24) | (r << 16) | (g << 8) | bl).toString(16).slice(1)}`;
 }
 
+// CAKRAWALA — jawaban visual atas pertanyaan "kenapa aku harus tegang".
+// Warnanya bukan hiasan: ia satu-satunya hal yang bisa kau lihat dari mana pun,
+// dan ia memberi tahu fase pasang tanpa satu kata pun.
+//   tenang  -> kuning hangat, cakrawala rendah dan tenang
+//   berubah -> pucat, dingin, kabut naik
+//   pasang  -> merah, gelap, horizon naik menelan cahaya
+export function horizonBand() {
+  const k = tideTint();
+  const calmGlow = { r: 255, g: 208, b: 138 };
+  const turnGlow = { r: 150, g: 156, b: 168 };
+  const highGlow = { r: 190, g: 52, b: 30 };
+  const lerp = (a, b, t) => Math.round(a + (b - a) * t);
+  let glow;
+  if (k < 0.35) {
+    const t = Math.min(1, k / 0.35);
+    glow = { r: lerp(calmGlow.r, turnGlow.r, t), g: lerp(calmGlow.g, turnGlow.g, t), b: lerp(calmGlow.b, turnGlow.b, t) };
+  } else {
+    const t = Math.min(1, (k - 0.35) / 0.45);
+    glow = { r: lerp(turnGlow.r, highGlow.r, t), g: lerp(turnGlow.g, highGlow.g, t), b: lerp(turnGlow.b, highGlow.b, t) };
+  }
+  return {
+    k, glow,
+    css: `rgba(${glow.r},${glow.g},${glow.b},`,
+    height: 0.13 + k * 0.16,   // cakrawala naik saat pasang: laut menyempit
+  };
+}
+
+// BADAI DI CAKRAWALA — inilah jawabannya: "kenapa aku harus pulang?"
+// Bukan angka, bukan peringatan. Langit di utara menggelap, dan kadang menyala.
+// Pemain yang melihat ke atas akan mengerti tanpa satu kata pun.
+export function stormLevel() { return clamp((tideTint() - 0.16) / 0.54, 0, 1); }
+
+export function drawStorm(ctx, vw, vh, strength = 1) {
+  const s = stormLevel() * strength;
+  if (s <= 0.02) return;
+  const t = G.time;
+  const ly = vh * (0.115 + tideTint() * 0.17);        // sejajar garis cakrawala
+  const bandH = vh * (0.05 + 0.22 * s);
+
+  // massa awan yang bergerigi: puncaknya naik-turun pelan
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(0, ly + 26);
+  for (let x = 0; x <= vw; x += 40) {
+    const h = Math.sin(x * 0.004 + t * 0.22) * 0.5 + Math.sin(x * 0.011 - t * 0.31) * 0.5;
+    ctx.lineTo(x, ly - bandH * (0.5 + h * 0.5));
+  }
+  ctx.lineTo(vw, ly + 26);
+  ctx.closePath();
+  const g = ctx.createLinearGradient(0, ly - bandH, 0, ly + 26);
+  g.addColorStop(0, `rgba(9,11,18,${0.32 * s})`);
+  g.addColorStop(0.72, `rgba(11,12,18,${(0.34 + 0.42 * s)})`);
+  g.addColorStop(1, `rgba(26,13,10,${(0.3 + 0.5 * s)})`);
+  ctx.fillStyle = g;
+  ctx.fill();
+
+  // kilat jauh: dua denyut jarang yang bertumpuk, jadi tidak pernah berirama
+  const pulse = Math.pow(Math.max(0, Math.sin(t * 0.41 + 2.1)), 44)
+              + 0.6 * Math.pow(Math.max(0, Math.sin(t * 0.97 + 0.4)), 70);
+  const flash = Math.min(1, pulse) * s;
+  if (flash > 0.04) {
+    const fx0 = vw * (0.18 + 0.6 * ((Math.sin(t * 0.13) + 1) / 2));
+    const fg = ctx.createRadialGradient(fx0, ly, 4, fx0, ly, vw * 0.5);
+    fg.addColorStop(0, `rgba(196,206,255,${0.5 * flash})`);
+    fg.addColorStop(0.35, `rgba(150,140,190,${0.16 * flash})`);
+    fg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = fg;
+    ctx.fillRect(0, 0, vw, ly + 60);
+  }
+  ctx.restore();
+}
+
+// Hanya denyut kilatnya — dipakai di darat, di mana pita awan akan menutupi pulau.
+export function drawStormPulse(ctx, vw, vh, strength = 0.5) {
+  const s = stormLevel() * strength;
+  if (s <= 0.02) return;
+  const t = G.time;
+  const pulse = Math.pow(Math.max(0, Math.sin(t * 0.41 + 2.1)), 44)
+              + 0.6 * Math.pow(Math.max(0, Math.sin(t * 0.97 + 0.4)), 70);
+  const flash = Math.min(1, pulse) * s;
+  if (flash <= 0.04) return;
+  const ly = vh * 0.08;
+  const fx0 = vw * (0.18 + 0.6 * ((Math.sin(t * 0.13) + 1) / 2));
+  const fg = ctx.createRadialGradient(fx0, ly, 4, fx0, ly, vw * 0.55);
+  fg.addColorStop(0, `rgba(198,206,255,${0.34 * flash})`);
+  fg.addColorStop(0.4, `rgba(150,140,190,${0.11 * flash})`);
+  fg.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = fg;
+  ctx.fillRect(0, 0, vw, vh * 0.5);
+}
+
+// Pita cakrawala + cahaya yang jatuh di atasnya. Digambar sebelum dunia.
+export function drawHorizon(ctx, vw, vh) {
+  const h = horizonBand();
+  const bandH = vh * (0.30 + h.k * 0.16);
+  const g = ctx.createLinearGradient(0, 0, 0, bandH);
+  g.addColorStop(0, seaPalette().top);
+  g.addColorStop(0.72, `rgba(${h.glow.r},${h.glow.g},${h.glow.b},${0.05 + h.k * 0.16})`);
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, vw, bandH);
+
+  // garis cakrawala itu sendiri: satu garis tipis yang membuat laut punya ujung
+  const ly = vh * h.height;
+  ctx.strokeStyle = `rgba(${h.glow.r},${h.glow.g},${h.glow.b},${0.22 + h.k * 0.4})`;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let x = 0; x <= vw; x += 18) {
+    const y = ly + Math.sin(x * 0.006 + G.time * 0.5) * (2 + h.k * 3);
+    if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  drawStorm(ctx, vw, vh, 1);
+
+  // pasang: tepi atas layar ikut memerah, seolah cahaya mundur
+  if (h.k > 0.36) {
+    const rg = ctx.createLinearGradient(0, 0, 0, vh * 0.5);
+    rg.addColorStop(0, `rgba(120,24,12,${(h.k - 0.36) * 0.55})`);
+    rg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = rg;
+    ctx.fillRect(0, 0, vw, vh * 0.5);
+  }
+}
+
 export function drawOceanBackground(ctx, vw, vh, parX = 0, parY = 0) {
   const p = seaPalette();
   const g = ctx.createLinearGradient(0, 0, 0, vh);
@@ -173,10 +300,14 @@ export function drawOceanBackground(ctx, vw, vh, parX = 0, parY = 0) {
 // ---------- tanda-tanda pulau dari kejauhan ----------
 // Ini pengganti angka "Difficulty 3 · ⛽2🪵1". Pemain memilih risiko dengan membaca horizon.
 function drawTell(ctx, isl, alpha) {
+  // Tanda-tanda ini benda LANGSUNG di atas pulau (asap, menara, camar): digambar
+  // dalam ruang tegak supaya tidak ikut rebah oleh kemiringan kamera.
   const x = isl.x, y = isl.y - isl.r - 40;
   const t = G.time + isl.tellPhase;
   ctx.save();
   ctx.globalAlpha = alpha;
+  upright(ctx, x, y);            // sudah di dalam save/restore milik fungsi ini
+  ctx.translate(-x, -y);
   switch (isl.flavor) {
     case 'ash': // asap naik
       for (let i = 0; i < 4; i++) {
@@ -226,9 +357,15 @@ function drawIslandSea(ctx, isl, detail) {
   const { x, y, r } = isl;
   const fl = CFG.FLAVORS[isl.flavor];
 
-  // air dangkal
+  // air dangkal (rata di air)
   ctx.fillStyle = 'rgba(46,120,155,0.30)';
   ctx.beginPath(); ctx.arc(x, y, r * 1.16, 0, Math.PI * 2); ctx.fill();
+
+  // DINDING PANTAI: sisi selatan (menghadap kamera) sedikit lebih tinggi, jadi pulau
+  // terbaca sebagai daratan yang MENEKAN ke atas layar — bukan noda pipih di air.
+  blobPath(ctx, x, y + r * 0.07, isl.shape, 1.02);
+  ctx.fillStyle = shade(fl.sand, -0.34);
+  ctx.fill();
 
   // pasir
   blobPath(ctx, x, y, isl.shape, 1);
@@ -238,41 +375,65 @@ function drawIslandSea(ctx, isl, detail) {
   ctx.lineWidth = 3;
   ctx.stroke();
 
+  // busa di garis air, hanya di tepi yang menghadap kamera
+  ctx.strokeStyle = `rgba(196,232,255,${0.14 + Math.sin(G.time * 1.1 + isl.tellPhase) * 0.05})`;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(x, y + r * 0.72, r * 0.86, r * 0.16, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
   // rumput
   blobPath(ctx, x, y, isl.shape, 0.72);
   ctx.fillStyle = isl.surveyed ? shade(fl.grass, -0.12) : fl.grass;
   ctx.fill();
 
   if (detail) {
-    // pepohonan (siluet dari jauh)
+    // pepohonan: BERDIRI di atas pulau, diurutkan menurut kedalaman
     const rng = makeRng(isl.seed);
-    ctx.fillStyle = 'rgba(16,42,26,0.85)';
+    const trees = [];
     for (let i = 0; i < 12; i++) {
       const a = rng() * Math.PI * 2, d = Math.sqrt(rng()) * r * 0.55;
-      ctx.beginPath();
-      ctx.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, r * 0.045, 0, Math.PI * 2);
-      ctx.fill();
+      trees.push({ x: x + Math.cos(a) * d, y: y + Math.sin(a) * d, s: r * 0.10 * (0.8 + rng() * 0.5) });
     }
-    // label hanya kalau sudah dekat
-    ctx.textAlign = 'center';
-    ctx.font = 'bold 15px Inter, system-ui, sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 6;
-    ctx.fillText(isl.name, x, y - r - 22);
-    ctx.font = '12px Inter, system-ui, sans-serif';
-    ctx.fillStyle = 'rgba(255,231,170,0.92)';
-    const left = islandTotalRemaining(isl);
-    ctx.fillText(isDepleted(isl) ? 'sudah habis' : (left > 0 ? 'masih ada muatan' : ''), x, y + r + 26);
-    ctx.shadowBlur = 0;
+    trees.sort(byDepth);
+    for (const t of trees) {
+      atUpright(ctx, t.x, t.y, (p) => {
+        const sz = t.s * 2.6 * p;
+        const img = ASSETS.tree;
+        if (img && img.complete && img.naturalWidth > 0) {
+          ctx.drawImage(img, -sz / 2, -sz * 0.86, sz, sz);
+        } else {
+          ctx.fillStyle = 'rgba(16,42,26,0.9)';
+          ctx.beginPath(); ctx.arc(0, -t.s * 0.9 * p, t.s * 0.9 * p, 0, Math.PI * 2); ctx.fill();
+        }
+      });
+    }
+
+    // label hanya kalau sudah dekat — dan selalu tegak, tidak ikut miring
+    atUpright(ctx, x, y + r, () => {
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 15px Inter, system-ui, sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0,0,0,0.85)'; ctx.shadowBlur = 6;
+      ctx.fillText(isl.name, 0, -r * 1.55);
+      ctx.font = '12px Inter, system-ui, sans-serif';
+      ctx.fillStyle = 'rgba(255,231,170,0.92)';
+      const left = islandTotalRemaining(isl);
+      ctx.fillText(isDepleted(isl) ? 'sudah habis' : (left > 0 ? 'masih ada muatan' : ''), 0, -r * 1.55 + 16);
+      ctx.shadowBlur = 0;
+    });
   }
 
-  // penanda pelampung salvage
-  const sv = G.salvages.find((s) => s.islandId === isl.id);
+  // penanda pelampung salvage — selalu di atas, supaya terlihat dari jauh
+  const sv = G.salvages.find((sv2) => sv2.islandId === isl.id);
   if (sv) {
-    ctx.fillStyle = '#ffcf6a';
-    ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,207,106,0.6)'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(x, y, 10 + Math.sin(G.time * 3) * 2, 0, Math.PI * 2); ctx.stroke();
+    atUpright(ctx, x + r * 0.55, y - r * 0.1, () => {
+      ctx.fillStyle = '#ffcf6a';
+      ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,207,106,0.6)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(0, 0, 10 + Math.sin(G.time * 3) * 2, 0, Math.PI * 2); ctx.stroke();
+    });
   }
 }
 
@@ -286,8 +447,9 @@ function shade(hex, k) {
 
 // ---------- penunjuk arah navigasi (menggantikan autopilot) ----------
 export function drawNavPointer(ctx, vw, vh, wx, wy, label, color, sub = '') {
-  const sx = vw / 2 + (wx - G.cam.x) * (G.cam.zoom || 1);
-  const sy = vh / 2 + (wy - G.cam.y) * (G.cam.zoom || 1);
+  const scr = toScreen(wx, wy, vw, vh);
+  const sx = scr.x;
+  const sy = scr.y;
   const m = 54;
   const onScreen = sx > m && sx < vw - m && sy > m && sy < vh - m;
   const ang = Math.atan2(sy - vh / 2, sx - vw / 2);
@@ -331,25 +493,40 @@ export function drawNavPointer(ctx, vw, vh, wx, wy, label, color, sub = '') {
 export function drawSea(ctx, vw, vh) {
   const tint = tideTint();
   drawOceanBackground(ctx, vw, vh, G.cam.x * 0.3, G.cam.y * 0.3);
+  drawHorizon(ctx, vw, vh);
 
-  ctx.save();
-  ctx.translate(vw / 2 - G.cam.x, vh / 2 - G.cam.y);
+  beginWorld(ctx, vw, vh);
 
   const boat = G.boat;
+  // urut dari yang paling utara: yang dekat kamera digambar terakhir, jadi
+  // pulau di depan benar-benar menutupi pulau di belakangnya.
+  const visible = [];
   for (const isl of G.islands) {
     const d = Math.hypot(isl.x - boat.x, isl.y - boat.y);
     if (d > CFG.SEA.FOG + isl.r + 200) continue;
+    visible.push(isl);
+  }
+  visible.sort(byDepth);
+  for (const isl of visible) {
+    const d = Math.hypot(isl.x - boat.x, isl.y - boat.y);
     drawIslandSea(ctx, isl, d < CFG.SEA.FOG * 0.85);
   }
 
   // pelampung salvage yang jauh tetap tidak terlihat — hanya di pulau yang sudah disurvei
   drawLanternPool(ctx, boat.x, boat.y, 130 + (G.refit >= 6 ? 40 : 0));
-  drawBoat(ctx, boat, 1);
-  ctx.restore();
+  drawFxWorld(ctx, null);            // camar terbang & percikan laut
+  // kapal: benda berdiri terakhir sebelum kita keluar dari ruang dunia
+  atUpright(ctx, boat.x, boat.y, () => {
+    ctx.translate(-boat.x, -boat.y);   // batalkan translate drawBoat: asal = posisi kapal
+    drawBoat(ctx, boat, 1);
+  });
+  drawFxWorld(ctx, null);              // partikel hidup di ruang dunia biasa
+  endWorld(ctx);
 
-  // kabut: dunia di luar jarak pandang tidak ada
-  const cx = vw / 2 + (boat.x - G.cam.x);
-  const cy = vh / 2 + (boat.y - G.cam.y);
+  // kabut: dunia di luar jarak pandang tidak ada (posisi memakai proyeksi miring)
+  const scr = toScreen(boat.x, boat.y, vw, vh);
+  const cx = scr.x;
+  const cy = scr.y;
   const fog = ctx.createRadialGradient(cx, cy, CFG.SEA.FOG * 0.58, cx, cy, CFG.SEA.FOG * 1.06);
   fog.addColorStop(0, 'rgba(4,10,18,0)');
   fog.addColorStop(0.75, 'rgba(4,10,18,0.72)');
@@ -358,8 +535,7 @@ export function drawSea(ctx, vw, vh) {
   ctx.fillRect(0, 0, vw, vh);
 
   // tanda-tanda di atas kabut — horizon menjawab
-  ctx.save();
-  ctx.translate(vw / 2 - G.cam.x, vh / 2 - G.cam.y);
+  beginWorld(ctx, vw, vh);
   for (const isl of G.islands) {
     const d = Math.hypot(isl.x - boat.x, isl.y - boat.y) - isl.r;
     if (d > CFG.SEA.HINT || d < -isl.r) continue;
@@ -378,10 +554,9 @@ export function drawSea(ctx, vw, vh) {
   if (hd > 400) drawNavPointer(ctx, vw, vh, HARBOR.x, HARBOR.y, 'HARBOR', '#ffcf6a', Math.round(hd / 10) + ' m');
   if (hd < 260) {
     // dermaga terlihat
-    ctx.save();
-    ctx.translate(vw / 2 - G.cam.x, vh / 2 - G.cam.y);
+    beginWorld(ctx, vw, vh);
     drawHarborMarker(ctx);
-    ctx.restore();
+    endWorld(ctx);
   }
 
   // pasang: gelap + horizon merah
@@ -399,7 +574,7 @@ function drawHarborMarker(ctx) {
   const { x, y } = HARBOR;
   const s = 1.6;
   ctx.save();
-  ctx.translate(x, y);
+  upright(ctx, x, y);            // di dalam save/restore fungsi ini
   ctx.fillStyle = '#6b4522';
   ctx.fillRect(-14 * s, -4 * s, 28 * s, 46 * s);
   ctx.fillStyle = '#8a5c30';

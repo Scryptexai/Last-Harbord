@@ -13,7 +13,7 @@ import { buyNext, nextRung, canBuyNext, goalLabel, isMaxed, capacity } from './r
 import { resetTide, updateTide, tidePhase, seaDrainRate } from './tide.js';
 import { loadAssets } from './assets.js';
 import { sfx, initAudio, setAmbience, tickAmbience, setMuted } from './audio.js';
-import { fx, updateFx, timeScale, shakeOffset, drawFxScreen, resetFx, addFlash, addShake, ring } from './fx.js';
+import { fx, updateFx, timeScale, shakeOffset, drawFxScreen, resetFx, addFlash, addShake, ring, flushGulls } from './fx.js';
 import { clamp, dist, fmtTime } from './util.js';
 
 const canvas = document.getElementById('game');
@@ -56,7 +56,7 @@ function beginRun() {
   setAmbience('sea');
   sfx('anchor');
   saveGame();
-  if (first) tip('t_sail', 'Bertolak. Ikuti penunjuk arah, atau berlayar bebas — hanya kau yang tahu berapa jauh terlalu jauh.', 6000);
+  if (first) tip('t_sail', 'Bertolak. Ikuti penunjuk arah, atau berlayar bebas — hanya kau yang tahu berapa jauh terlalu jauh. Perhatikan cakrawala.', 6500);
 }
 
 function pickTarget(id) {
@@ -85,7 +85,7 @@ function enterIslandFlow(island) {
 
   const left = islandTotalRemaining(island);
   if (first) {
-    tip('t_land', 'Kau di pantai. Semua yang kau kumpulkan hilang kalau kau mati sebelum naik kapal.', 5600);
+    tip('t_land', 'Kapalmu ada di bawah layar. Semua yang kau kumpulkan hilang kalau kau mati sebelum naik kapal.', 6200);
     toast(`${island.name} · ${CFG.FLAVORS[island.flavor].label}`);
   } else if (left <= 0) {
     toast('Pulau ini sudah habis dikuras.');
@@ -432,12 +432,17 @@ function update(dt) {
     const ph = tidePhase(G.tide ? G.tide.t : 0);
     if (ph.justChanged && ph.key === 'turning') {
       sfx('waveChange');
-      tip('t_turn', 'Camar berhenti. Air mulai naik ke pantai — perhatikan garis air.', 6000);
+      // burung-burung pergi. Tidak ada teks — hanya langit yang tiba-tiba kosong.
+      const w = G.state === 'land' && G.land ? G.land.player : G.boat;
+      flushGulls(w.x, w.y * 0.96, 9);
+      addShake(0.14);
+      tip('t_turn', 'Camar terbang pergi. Perhatikan garis air di pantai.', 6000);
     }
     if (ph.justChanged && ph.key === 'high') {
       sfx('waveChange');
-      addShake(0.3);
-      tip('t_high', 'Air pasang. Sepanjang kau di luar, lambungmu terkuras. Pulang atau cari pulau.', 6500);
+      flushGulls(G.boat ? G.boat.x : 0, (G.boat ? G.boat.y : 0), 14);
+      addShake(0.34);
+      tip('t_high', 'Air pasang. Sepanjang kau di luar, lambungmu terkuras — kembali ke kapal, atau terus ke pulau lain.', 6500);
     }
     const amb = ph.key === 'high' ? 'high' : (G.state === 'land' ? 'land' : 'sea');
     setAmbience(amb);

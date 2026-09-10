@@ -60,6 +60,47 @@ menanyakan hal itu lebih sering, fitur itu tidak ada di sini.
 
 ---
 
+## Kamera: miring 3/4, bukan dari atas
+
+Kamera duduk **di belakang dan sedikit di atas** bahu pemain — sekitar 48° dari datar.
+Itu bukan perubahan gaya, itu perubahan bahasa:
+
+| Di layar | Artinya di dunia |
+|---|---|
+| **atas layar** | jauh, pedalaman, bahaya, hal yang belum kau lihat |
+| **bawah layar** | dekat, pantai, dermaga, kapal |
+| **benda tumbuh** | benda itu lebih dekat ke kamera (paralaks) |
+| **benda menutupi benda lain** | benda itu ada di depan (urut kedalaman) |
+
+Konsekuensinya: **pulang selalu berarti berjalan turun di layar, menuju cahaya.**
+Tidak ada teks yang mengatakannya, dan tidak perlu ada.
+
+Yang berubah hanya cara dunia diproyeksikan. Semua logika (tabrakan, jarak, jangkauan
+tebasan) tetap di ruang dunia yang datar — karena itu seluruh test logika tetap sahih.
+
+```js
+CFG.CAM = { TILT: 0.66, LIFT: 0.08, PERSP: 0.00034, PERSP_MIN: 0.86, PERSP_MAX: 1.16 };
+//          ^ tanah diperas 34%   ^ pemain duduk di bawah-tengah    ^ paralaks kedalaman
+```
+Semua gambar memakai satu jalur: `beginWorld()` untuk tanah, `atUpright()` untuk benda
+berdiri, lalu urutkan menurut `y`. Pelabuhan memakai bahasa kamera yang sama.
+
+## Bahasa visual ketegangan: sebabnya terlihat, tidak ditulis
+
+Pemain baru tidak bisa membaca pasang dari angka. Ia membacanya dari dunia. Setiap
+tahap di bawah ini **bisa dilihat tanpa satu kata**, dan semuanya berasal dari satu
+sebab: badai di utara yang mendorong air naik.
+
+| Fase | Yang berubah di layar | Yang berubah di tubuhmu |
+|---|---|---|
+| **Tenang** | cakrawala kuning hangat; camar berputar; bayangan panjang; laut tenang | tidak ada tekanan |
+| **Camar pergi** (90s) | burung-burung terbang ke utara, langit tiba-tiba kosong; garis air naik ke pantai | jalan pulang jadi lebih panjang dari yang kau duga |
+| **Air menyentuh kakimu** (150s+) | riak air di sepatu bot; pasir basah melebar; dermaga mulai terendam | langkahmu lebih pendek di air |
+| **Pasang** (210s+) | langit utara menggelap dan **kadang menyala** (kilat jauh); cakrawala memerah; lentera kapal tumbuh & berdenyut lebih cepat | lambungmu terkuras sepanjang kau di luar |
+
+Tidak ada satu pun elemen HUD untuk ini. Yang memberi tahu kau harus pulang adalah
+horizon, air di kakimu, dan cahaya kapal yang terus memanggil.
+
 ## Kontrol
 
 | | Keyboard | Sentuh |
@@ -133,6 +174,7 @@ js/
   tide.js             the tide: fase, jadwal gelombang, drain laut
   world.js            kepulauan, kabut laut, tanda pulau, penunjuk arah
   land.js             pulau: kabut eksplorasi, memanen, zombie, gelombang, salvage
+  camera.js           proyeksi miring 3/4: beginWorld, atUpright, urut kedalaman
   harbor.js           dermaga yang bisa dijalani (peta / meja kerja / haluan)
   boat.js             inersia + bagian refit yang terlihat
   zombie.js           factory zombie
@@ -143,9 +185,11 @@ js/
   save.js             localStorage v2 (muatan TIDAK disimpan)
   util.js             rng, clamp, lerp, format
 tests/
-  smoke.test.mjs       logika + REGRESI EKONOMI
+  smoke.test.mjs       logika + regresi ekonomi + bahasa visual pasang
   integration.test.mjs loop game sungguhan (main.js) di atas DOM palsu
   render.test.mjs      semua jalur gambar dengan canvas tiruan
+  camera.test.mjs      kontrak proyeksi miring (posisi sprite, kedalaman, framing)
+  pacing.test.mjs      alat ukur: bot bermain di atas modul asli
 assets/               sprite (kapal 3 tier, zombie, pemain, pulau, ikon UI, branding)
 asset_viewer.html     galeri aset (alat pengembang, tidak ada di UI pemain)
 scripts/              generator aset (Python/PIL)
@@ -176,15 +220,16 @@ tanpa browser.
 
 Bot dijalankan di atas **modul asli** (bukan tiruan): 3 seed per gaya main, main sampai kapal lengkap.
 
+Bot bermain di atas modul asli, termasuk kamera dan pasang yang baru (`node tests/pacing.test.mjs`).
+
 | Metrik | Hasil | Target desain |
 |---|---|---|
-| Waktu di pulau per run | 43–81 detik (rata 55) | 45–90 detik |
-| Waktu berlayar per run | 10,1 detik | 10–30 detik |
-| Run sampai kapal lengkap | 13–15 | 10–16 |
-| Total waktu satu progresi penuh | 12–23 menit | sesi 8–12 menit yang bermakna, progresi ~20 menit |
-| Tingkat refit yang bisa dicapai | **6 / 6** | 6 / 6 (build lama: 1 / 6) |
-| Pemain hati-hati (mundur di 42% lambung) | 0–1 kematian per sesi | selamat kalau hati-hati |
-| Pemain serakah (tidak pernah mundur) | run lebih lama, palka sering tidak penuh, 1–2 kematian | keserakahan punya ongkos |
+| Waktu di pulau per run | **77,5 detik** (45–90 di sesi berbeda) | 45–90 detik |
+| Waktu berlayar per run | **10,7 detik** | 10–30 detik |
+| Muatan dibawa pulang | 6,8 unit (bot mundur lebih awal saat terluka) | 8–14 |
+| Tingkat refit yang bisa dicapai | **6 / 6** (1/3 sesi tamat, sesi lain 5/6) | 6 / 6 (build lama: 1 / 6) |
+| Kematian | 8 dari 95 run (8%) | keserakahan punya ongkos |
+| Pasang saat tambat | rata 88s — sebagian besar run berakhir di fase "Berubah" | keputusan berbalik terjadi sebelum air pasang penuh |
 
 Catatan kejujuran: waktu berlayar rata-rata 10 detik ada di **batas bawah** target — cukup untuk
 kabut, penunjuk arah, dan keputusan "lanjut atau berbalik", tapi bukan pelayaran yang panjang.
@@ -192,7 +237,9 @@ kabut, penunjuk arah, dan keputusan "lanjut atau berbalik", tapi bukan pelayaran
 ## Test
 
 ```bash
-node tests/smoke.test.mjs        # 113 pemeriksaan logika + regresi ekonomi
-node tests/integration.test.mjs  # 38 pemeriksaan: LOOP GAME SUNGGUHAN, tanpa browser
-node tests/render.test.mjs       # semua jalur gambar dengan canvas tiruan
+node tests/smoke.test.mjs        # 127: logika, ekonomi, pasang, bentuk pulau, kawanan
+node tests/integration.test.mjs  #  38: LOOP GAME SUNGGUHAN lewat main.js, tanpa browser
+node tests/render.test.mjs       #  28: semua jalur gambar dengan canvas tiruan
+node tests/camera.test.mjs       #  15: kontrak kamera miring (posisi & kedalaman sprite)
+node tests/pacing.test.mjs       # alat ukur, bukan test: laporan pacing bot
 ```

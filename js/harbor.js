@@ -11,6 +11,7 @@ import { sfx } from './audio.js';
 import { drawBoat, drawLanternPool } from './boat.js';
 import { HARBOR } from './world.js';
 import { carriedLoad, bankLoad, RES_TYPES } from './inventory.js';
+import { beginWorld, endWorld, upright, atUpright } from './camera.js';
 
 const DECK = { x0: -30, x1: 30, y0: -46, y1: 44 };
 const PIER = { x0: -44, x1: 44, y0: 44, y1: 250 };
@@ -101,9 +102,11 @@ export function drawHarbor(ctx, vw, vh) {
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, vw, vh);
 
+  // Bahasa kamera yang sama dengan dunia: miring, bukan dari atas. Dermaga tetap
+  // terasa sebagai bagian dari dunia yang sama, bukan layar menu.
   ctx.save();
-  ctx.translate(vw / 2, vh / 2);
-  ctx.scale(CAM.zoom, CAM.zoom);
+  ctx.translate(vw / 2, vh / 2 + (CFG.CAM.LIFT || 0) * vh);
+  ctx.scale(CAM.zoom, CAM.zoom * CFG.CAM.TILT);
   ctx.translate(-CAM.x, -CAM.y);
 
   // riak air
@@ -124,16 +127,19 @@ export function drawHarbor(ctx, vw, vh) {
   // dermaga
   drawPier(ctx);
 
-  // kapal
-  drawBoat(ctx, { x: 0, y: 0, vx: 0, vy: 0, angle: -Math.PI / 2 }, 1.9, { noParts: false });
-  drawCargo(ctx);
+  // kapal (berdiri di air) + muatannya + meja — semuanya urut menurut kedalaman
+  atUpright(ctx, 0, 0, () => {
+    drawBoat(ctx, { x: 0, y: 0, vx: 0, vy: 0, angle: -Math.PI / 2 }, 1.9, { noParts: false });
+    drawCargo(ctx);
+  });
 
-  // meja peta & meja kerja
-  drawSpot(ctx, H, 'chart');
-  drawSpot(ctx, H, 'bench');
-
-  // pemain
-  drawPlayer(ctx, H.player);
+  const props = [
+    { y: H.spots.find((x) => x.key === 'chart').y, draw: () => drawSpot(ctx, H, 'chart') },
+    { y: H.spots.find((x) => x.key === 'bench').y, draw: () => drawSpot(ctx, H, 'bench') },
+    { y: H.player.y, draw: () => drawPlayer(ctx, H.player) },
+  ];
+  props.sort((a, b) => a.y - b.y);
+  for (const p of props) p.draw();
 
   ctx.restore();
 
@@ -143,7 +149,7 @@ export function drawHarbor(ctx, vw, vh) {
   ctx.textAlign = 'center';
   for (const s of H.spots) {
     const sx = vw / 2 + (s.x - CAM.x) * CAM.zoom;
-    const sy = vh / 2 + (s.y - CAM.y) * CAM.zoom;
+    const sy = vh / 2 + (CFG.CAM.LIFT || 0) * vh + (s.y - CAM.y) * CAM.zoom * CFG.CAM.TILT;
     const near = dist(H.player.x, H.player.y, s.x, s.y) < s.r;
     ctx.fillStyle = near ? 'rgba(255,226,160,0.98)' : 'rgba(210,225,240,0.5)';
     ctx.fillText(s.label, sx, sy - 34);
@@ -190,6 +196,9 @@ function drawSpot(ctx, H, key) {
   const s = H.spots.find((x) => x.key === key);
   if (!s) return;
   const near = dist(H.player.x, H.player.y, s.x, s.y) < s.r;
+  ctx.save();
+  upright(ctx, s.x, s.y);       // di dalam save/restore fungsi ini
+  ctx.translate(-s.x, -s.y);
   if (key === 'chart') {
     // meja peta: papan dengan peta tergelar
     ctx.fillStyle = '#3f2a15';
@@ -222,6 +231,7 @@ function drawSpot(ctx, H, key) {
     ctx.fillStyle = rg;
     ctx.beginPath(); ctx.arc(s.x, s.y - 6, 34 * flick, 0, Math.PI * 2); ctx.fill();
   }
+  ctx.restore();
 }
 
 // Gudang sebagai tumpukan peti di dek — inventory yang benar-benar terlihat.
@@ -260,17 +270,18 @@ function drawCargo(ctx) {
 
 function drawPlayer(ctx, p) {
   const img = ASSETS.player;
-  ctx.save();
-  ctx.translate(p.x, p.y);
+  // bayangan rata di dek
   ctx.fillStyle = 'rgba(0,0,0,0.3)';
-  ctx.beginPath(); ctx.ellipse(0, 9, 11, 4.5, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.rotate(p.face + Math.PI / 2);
-  if (img && img.complete && img.naturalWidth > 0) {
-    const sz = 30;
-    ctx.drawImage(img, -sz / 2, -sz / 2, sz, sz);
-  } else {
-    ctx.fillStyle = '#e67e22';
-    ctx.beginPath(); ctx.arc(0, 0, CFG.PLAYER.RADIUS, 0, Math.PI * 2); ctx.fill();
-  }
-  ctx.restore();
+  ctx.beginPath(); ctx.ellipse(p.x, p.y + 3, 11, 4.5, 0, 0, Math.PI * 2); ctx.fill();
+  atUpright(ctx, p.x, p.y, () => {
+    const flip = Math.cos(p.face) < 0 ? -1 : 1;
+    ctx.scale(flip, 1);
+    if (img && img.complete && img.naturalWidth > 0) {
+      const sz = 34;
+      ctx.drawImage(img, -sz / 2, -sz * 0.92, sz, sz);
+    } else {
+      ctx.fillStyle = '#e67e22';
+      ctx.beginPath(); ctx.ellipse(0, -14, 11, 15, 0, 0, Math.PI * 2); ctx.fill();
+    }
+  });
 }

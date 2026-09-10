@@ -648,12 +648,81 @@ diperluas: butuh umpan (1 makanan) dan menahanmu di tempat saat pasang naik.
 4. **`assets/ui/icon_*.png`** sebagian belum dipakai di UI (label teks + warna resource
    dipakai lebih dulu). Asetnya sudah ada, tinggal dipakai kalau HUD mau diperkaya.
 
+## Appendix D — KAMERA MIRING & BAHASA VISUAL KETEGANGAN (revisi arah)
+
+Permintaan setelah audit: kamera tidak boleh monoton dari atas, miringkan seperti game
+aksi mobile (3/4), dan **ketegangan harus punya sebab yang terlihat, bukan tertulis.**
+
+### 1. Kamera: miring 3/4
+
+`js/camera.js` (baru) + `CFG.CAM`:
+
+```
+TILT 0.66      tanah diperas 34% di layar — kemiringan ~48 derajat dari datar
+LIFT 0.08      titik jangkar naik 8% vh: pemain duduk di bawah-tengah, melihat ke depan
+PERSP 0.00034  paralaks kedalaman: 1.16x di depan, 0.86x di belakang
+```
+
+Aturannya:
+- **tanah** = `beginWorld()` (translate + scale non-seragam)
+- **benda berdiri** (pemain, zombie, pohon, batu, node, kapal, meja) = `atUpright()`;
+  transformasi lokalnya seragam, jadi sprite tetap tegak dan tidak gepeng
+- **urutan gambar** = `y` menaik: yang paling dekat kamera terakhir
+
+Konsekuensi desain yang tidak kosmetik:
+1. **Atas layar = jauh/bahaya, bawah layar = dekat/rumah.** "Pulang" secara harfiah
+   berarti berjalan turun di layar.
+2. Benda punya tinggi: pohon dan zombie menutupi yang di belakangnya.
+3. Kedalaman mengubah ukuran: makin dekat, makin besar.
+
+Logika permainan **tidak disentuh**: jarak, tabrakan, jangkauan tebasan tetap di ruang
+datar. Karena itu seluruh test lama tetap sahih dan `tests/camera.test.mjs` baru
+menguji kontraknya (posisi sprite meleset 0,0 px, urutan kedalaman, framing +38% ke depan).
+
+### 2. Sebab ketegangan, divisualkan
+
+Sebelum ini, pasang hanya mengubah angka di HUD. Sekarang satu rantai sebab yang
+semuanya bisa dilihat — dan semuanya berasal dari satu hal: **badai di utara**.
+
+| Waktu | Yang dilihat pemain | Yang dirasakannya |
+|---|---|---|
+| 0s | cakrawala kuning hangat, camar berputar, laut tenang | — |
+| 90s | camar terbang ke utara (`flushGulls`), langit kosong | jalan pulang terasa lebih panjang |
+| 120s | garis air naik ke pantai; cakrawala pucat; awan badai muncul di horizon | belum ada hukuman, hanya informasi |
+| 150s+ | riak air di kaki pemain saat mengarungi banjir; **langkah jadi 0.78x**; dermaga mulai terendam | pulang mulai berbiaya |
+| 210s+ | langit utara menggelap & **menyala** (kilat jauh, `drawStorm`); cakrawala memerah & naik; lentera kapal tumbuh 1.35x dan berdenyut lebih cepat; lambung terkuras di laut terbuka | tekanan penuh |
+
+Pantai sekarang **bisa dijalani sampai garis air** (`PLAY_RATIO` 0.84 -> 0.94), dan batas
+gerak mengikuti bentuk blob pulau (`shapeRadius`), bukan lingkaran — jadi pemain tidak
+pernah berjalan di atas air pada lekukan pantai. Saat pasang, 64-92px pantai yang bisa
+dijalani benar-benar terendam: kau **harus** mengarungi air untuk naik kapal.
+
+Tidak ada satu pun elemen HUD yang ditambahkan untuk ini. Horison, burung, air di kaki,
+dan lentera yang lebih terang adalah seluruh antarmukanya.
+
+### 3. Bug nyata yang ditemukan harness baru
+
+`tests/camera.test.mjs` menangkap bug yang tidak mungkin terlihat dari test logika:
+`upright()` tidak menyeimbangkan `save/restore`, sehingga transformasi **menumpuk** antar
+sprite (pemain meleset 191px, kapal 557px, dan memburuk tiap gambar). Perbaikannya:
+`atUpright(ctx, x, y, fn)` yang selalu menyeimbangkan save/restore, dan `upright()`
+diberi komentar tegas untuk hanya dipakai di dalam blok save/restore sendiri.
+
+### 4. Hasil pengukuran ulang (bot di atas modul asli)
+
+```
+node tests/pacing.test.mjs        -> pulau 77,5s (target 45-90), layar 10,7s (target 10-30)
+                                     8 kematian dari 95 run, 1/3 sesi tamat 6/6, sesi lain 5/6
+```
+
 ## Verifikasi (bukan klaim, hasil perintah)
 
 ```
-node tests/smoke.test.mjs        -> 113 pass, 0 fail
-node tests/integration.test.mjs  -> 38 pass, 0 fail
-node tests/render.test.mjs       -> 23 jalur gambar, 0 error
+node tests/smoke.test.mjs        -> 127 pass, 0 fail
+node tests/integration.test.mjs  ->  38 pass, 0 fail
+node tests/render.test.mjs       ->  28 jalur gambar, 0 error
+node tests/camera.test.mjs       ->  15 pass, 0 fail   (kontrak kamera miring)
+node tests/pacing.test.mjs       ->  alat ukur: pulau 77,5s / layar 10,7s / 8% mati
 ```
 
 Harness pengukuran pacing (bot di atas modul asli, 3 seed per gaya main):

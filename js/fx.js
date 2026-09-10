@@ -4,6 +4,9 @@
 import { CFG } from './config.js';
 import { clamp, lerp } from './util.js';
 
+let fxTime = 0;                    // akumulator waktu (fx tidak mengimpor state game)
+export function fxClock() { return fxTime; }
+
 export const fx = {
   shake: 0,          // trauma 0..1
   hitstop: 0,        // detik; waktu hampir berhenti
@@ -57,11 +60,33 @@ export function flyItem(x, y, target, type) {
   fx.parts.push({ kind: 'item', x, y, vx: 0, vy: 0, life: 0, dur: 0.42, type, target, size: 15, drag: 1 });
 }
 
+// CAMAR TERBANG — jam yang bisa dilihat.
+// Saat pasang berbalik, burung-burung meninggalkan pulau menuju utara. Tidak ada
+// teks, tidak ada ikon: hanya langit yang tiba-tiba kosong. Pemain yang jeli akan
+// belajar bahwa itu berarti "waktumu tinggal satu napas lagi".
+export function flushGulls(x, y, n = 8) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const d = 30 + Math.random() * 140;
+    fx.parts.push({
+      kind: 'gull',
+      x: x + Math.cos(a) * d,
+      y: y + Math.sin(a) * d * 0.6,
+      vx: (Math.random() - 0.5) * 70,
+      vy: -(150 + Math.random() * 110),   // terbang ke arah pedalaman/utara, menjauh
+      life: 0, dur: 2.6 + Math.random() * 1.8, color: 'rgba(238,244,252,0.95)',
+      size: 3 + Math.random() * 2, drag: 0.995, flap: Math.random() * 6.28,
+    });
+  }
+  if (fx.parts.length > MAX_PARTS) fx.parts.splice(0, fx.parts.length - MAX_PARTS);
+}
+
 export function ring(x, y, color, size = 34, dur = 0.4) {
   fx.parts.push({ kind: 'ring', x, y, life: 0, dur, color, size, drag: 1 });
 }
 
 export function updateFx(dt) {
+  fxTime += dt;
   fx.shake = Math.max(0, fx.shake - dt * 1.8);
   fx.hitstop = Math.max(0, fx.hitstop - dt);
   fx.flash = Math.max(0, fx.flash - dt * 2.2);
@@ -110,6 +135,19 @@ export function drawFxWorld(ctx, drawIcon) {
       ctx.globalAlpha = (1 - k) * 0.9;
       ctx.lineWidth = 3 * (1 - k) + 1;
       ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (0.4 + k), 0, Math.PI * 2); ctx.stroke();
+      ctx.globalAlpha = 1;
+    } else if (p.kind === 'gull') {
+      // Burung: dua goresan yang mengepak. Digambar rata di bidang dunia (bukan benda
+      // berdiri) — di kamera miring, burung yang terbang jauh memang terlihat pipih.
+      const flap = Math.sin(fxTime * 9 + p.flap) * 3;
+      ctx.globalAlpha = Math.max(0, Math.min(1, (p.life / p.dur) * 3)) * 0.9;
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = 1.7;
+      ctx.beginPath();
+      ctx.moveTo(p.x - p.size - 1, p.y + flap);
+      ctx.lineTo(p.x, p.y);
+      ctx.lineTo(p.x + p.size + 1, p.y + flap);
+      ctx.stroke();
       ctx.globalAlpha = 1;
     } else if (p.kind === 'item') {
       const a = 1 - k * k;

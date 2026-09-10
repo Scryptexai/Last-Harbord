@@ -106,4 +106,56 @@ stage('pelabuhan: semua posisi (pemain di tiap titik)', () => {
   }
 });
 
+// ---------- Kontrak kamera miring ----------
+const { beginWorld, endWorld, toScreen, depthAt, visibleWorldRect } = await import('../js/camera.js');
+const { G: G2, CFG: CFG2 } = { G, CFG };
+{
+  // Rekaman transformasi: membuktikan tanah benar-benar diperas, bukan sekadar gambar baru.
+  const rec = [];
+  const recCtx = (() => {
+    const c = cstub();
+    c.translate = (x, y) => rec.push(['translate', x, y]);
+    c.scale = (x, y) => rec.push(['scale', x, y]);
+    return c;
+  })();
+  G.cam.zoom = 1.45;
+  G.cam.x = 100; G.cam.y = 200;
+  beginWorld(recCtx, 1280, 720);
+  const scaleOp = rec.find((r) => r[0] === 'scale');
+  console.log(`  ok   beginWorld memakai skala (${scaleOp[1].toFixed(2)}, ${scaleOp[2].toFixed(2)}) -> tanah diperas ${(100 - scaleOp[2] / scaleOp[1] * 100).toFixed(0)}%`);
+  if (!(scaleOp[2] < scaleOp[1])) { console.log('  ERR  kamera TIDAK miring (skala y >= skala x)'); process.exitCode = 1; }
+
+  // Proyeksi: 100px ke utara harus tampak lebih pendek daripada 100px ke timur.
+  const a = toScreen(0, 0, 1280, 720);
+  const north = toScreen(0, -100, 1280, 720);
+  const east = toScreen(100, 0, 1280, 720);
+  const dy = Math.abs(north.y - a.y), dx = Math.abs(east.x - a.x);
+  console.log(`  ok   100px utara = ${dy.toFixed(0)}px layar, 100px timur = ${dx.toFixed(0)}px layar`);
+  if (!(dy < dx)) { console.log('  ERR  proyeksi tidak memiringkan sumbu Y'); process.exitCode = 1; }
+
+  // Kedalaman: benda yang lebih dekat kamera harus lebih besar.
+  G.cam.y = 0;
+  const near = depthAt(300), far = depthAt(-300);
+  console.log(`  ok   paralaks kedalaman: dekat ${near.toFixed(2)}x, jauh ${far.toFixed(2)}x`);
+  if (!(near > far)) { console.log('  ERR  tidak ada paralaks kedalaman'); process.exitCode = 1; }
+
+  // Framing: pemain harus melihat LEBIH BANYAK ke depan (utara) daripada ke belakang.
+  G.cam.y = 0;
+  const r = visibleWorldRect(1280, 720);
+  const ahead = Math.abs(r.y0), behind = Math.abs(r.y1);
+  console.log(`  ok   framing: ${Math.round(ahead)}px ruang di depan, ${Math.round(behind)}px di belakang`);
+  if (!(ahead > behind)) { console.log('  ERR  kamera tidak mengangkat fokus ke depan'); process.exitCode = 1; }
+
+  // Cakrawala: bahasa visual fase pasang, dan bukan cuma warna.
+  const hz = (await import('../js/world.js')).horizonBand;
+  G.tide.t = 30; resetTide();
+  const c1 = hz();
+  G.tide.t = 260;
+  const c3 = hz();
+  console.log(`  ok   cakrawala tenang rgb(${c1.glow.r},${c1.glow.g},${c1.glow.b}) h ${c1.height.toFixed(2)} -> pasang rgb(${c3.glow.r},${c3.glow.g},${c3.glow.b}) h ${c3.height.toFixed(2)}`);
+  const warm = c1.glow.r > c1.glow.b && c1.glow.g > c1.glow.b;
+  const red = c3.glow.r > c3.glow.g * 2;
+  if (!warm || !red || !(c3.height > c1.height)) { console.log('  ERR  cakrawala tidak berubah makna antar fase'); process.exitCode = 1; }
+}
+
 console.log(process.exitCode ? '\nADA JALUR GAMBAR YANG GAGAL.' : '\nSemua jalur gambar berjalan tanpa error.');

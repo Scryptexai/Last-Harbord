@@ -28,6 +28,9 @@ import {
 } from '../js/land.js';
 import { makeZombie } from '../js/zombie.js';
 import { resetTide, updateTide, tidePhase, timeToNextPhase, tideTint, seaDrainRate, consumeReinforce } from '../js/tide.js';
+import { inFloodWater, floodRadius, shapeRadius } from '../js/land.js';
+import { fx, flushGulls, updateFx } from '../js/fx.js';
+import { horizonBand, stormLevel } from '../js/world.js';
 import { initUI, updateHUD, toast, openModal, closeModal } from '../js/ui.js';
 import { enterHarbor, updateHarbor, harborContext, SPOTS } from '../js/harbor.js';
 import { ASSETS } from '../js/assets.js';
@@ -462,7 +465,90 @@ console.log('\n== 12. Kawanan: pedalaman bisa menghukum rasa aman ==');
   ok(far.alertT === 0, `zombie di luar radius panggilan (${Math.round(R)}px) tetap tidur`);
 }
 
-console.log('\n== 13. Target bantuan & HUD ==');
+console.log('\n== 13. Ketegangan punya SEBAB, dan sebebnya terlihat ==');
+{
+  // (a) air banjir: satu rumus untuk gerak dan gambar
+  const { L: LF } = freshLand(5150, 0);
+  resetTide();
+  G.tide.t = 0;
+  const rCalm = floodRadius(LF);
+  G.tide.t = 260;
+  const rHigh = floodRadius(LF);
+  ok(rHigh < rCalm, `saat pasang, batas air naik ke darat (${Math.round(rCalm)}px -> ${Math.round(rHigh)}px)`);
+  ok(!inFloodWater(LF, 0, 0), 'di tengah pulau tidak pernah terendam — pedalaman tetap aman');
+  ok(inFloodWater(LF, 0, LF.r * 1.02), 'di luar batas pasir, air menutupi tanah saat pasang');
+
+  // (b) mengarungi banjir melambatkan pemain — SEBAB yang bisa dirasakan
+  const yTest = (floodRadius(LF) + LF.playR) / 2;      // titik di pantai yang terendam saat pasang
+  const walk = (tideT, frames) => {
+    G.tide.t = tideT;
+    LF.player.x = 0; LF.player.y = yTest;
+    LF.player.vx = 0; LF.player.vy = 0;
+    LF.player.gather = null; LF.player.atk.phase = 'idle';
+    LF.zombies.length = 0;
+    for (let i = 0; i < frames; i++) updateLand(1 / 60, { x: 0, y: 1 }, { gatherHeld: false });
+    return LF.player.y;
+  };
+  G.tide.t = 0;
+  const dryHere = !inFloodWater(LF, 0, yTest);
+  G.tide.t = 260;
+  const wetHere = inFloodWater(LF, 0, yTest);
+  ok(dryHere && wetHere, `titik uji: kering saat tenang, terendam saat pasang (y=${Math.round(yTest)}px)`);
+  const calmEnd = walk(0, 10);
+  const highEnd = walk(260, 10);
+  const dCalm = calmEnd - yTest, dHigh = highEnd - yTest;
+  ok(dCalm > dHigh * 1.1, `langkah di air banjir lebih pendek (${dHigh.toFixed(1)}px vs ${dCalm.toFixed(1)}px dalam 10 frame)`);
+  ok(dHigh > 0, 'pemain tetap bisa berjalan di air — lambat, bukan terhenti (bisa dipelajari, bukan hukuman)');
+
+  // (b2) batas gerak mengikuti BENTUK pulau, bukan lingkaran: jangan pernah berjalan di air
+  let worst = 0;
+  for (let i = 0; i < 720; i++) {
+    const a = (i / 720) * Math.PI * 2;
+    const r = shapeRadius(LF, a);
+    if (r < LF.playR) worst = Math.max(worst, 0);
+  }
+  ok(LF.shape.every((p) => p.rr > 0), 'bentuk pulau punya radius di setiap arah');
+  const lean = LF.shape.reduce((m, p) => Math.min(m, p.rr), Infinity) / LF.r;
+  ok(lean >= 0.84, `lekukan terdalam pulau ${(lean * 100).toFixed(0)}% — batas gerak menyesuaikan bentuk, bukan lingkaran`);
+  {
+    // pemain dipaksa ke tepi di semua arah: tidak boleh melewati bentuk pulau
+    let worst = 0;
+    for (let i = 0; i < 48; i++) {
+      const a = (i / 48) * Math.PI * 2;
+      LF.player.x = Math.cos(a) * 9999; LF.player.y = Math.sin(a) * 9999;
+      updateLand(1 / 60, { x: 0, y: 0 }, { gatherHeld: false });
+      const d = Math.hypot(LF.player.x, LF.player.y);
+      const lim = shapeRadius(LF, Math.atan2(LF.player.y, LF.player.x));
+      worst = Math.max(worst, d - lim);
+    }
+    ok(worst <= 0.5, `pemain tidak pernah keluar dari bentuk pulau (kelebihan maks ${worst.toFixed(2)}px)`);
+  }
+
+  // (c) camar terbang pergi: jam yang bisa dilihat
+  fx.parts.length = 0;
+  flushGulls(0, 0, 8);
+  const gulls = fx.parts.length;
+  ok(gulls === 8, `camar terbang berjumlah ${gulls}`);
+  const anyUp = fx.parts.filter((p) => p.vy < 0).length;
+  ok(anyUp === gulls, 'semua camar terbang MENJAUH (ke utara), bukan berputar di tempat');
+  for (let i = 0; i < 60 * 6; i++) updateFx(1 / 60);
+  ok(fx.parts.length === 0, 'langit bersih lagi setelah camar pergi — tidak ada partikel yang tertinggal');
+
+  // (d) badai: alasan visual, tumbuh bersama pasang
+  G.tide.t = 0;
+  const s0 = stormLevel();
+  G.tide.t = 120;
+  const s1 = stormLevel();
+  G.tide.t = 260;
+  const s2 = stormLevel();
+  ok(s0 === 0 && s1 > 0 && s2 > 0.95, `badai tumbuh seiring pasang (${s0.toFixed(2)} -> ${s1.toFixed(2)} -> ${s2.toFixed(2)})`);
+  const h0 = horizonBand(), h2 = (G.tide.t = 260, horizonBand());
+  ok(h0.glow.r > h0.glow.b && h2.glow.r > h2.glow.b * 1.6,
+    `cakrawala berubah warna dari hangat ke merah (rgb(${h0.glow.r},${h0.glow.g},${h0.glow.b}) -> rgb(${h2.glow.r},${h2.glow.g},${h2.glow.b}))`);
+  G.tide.t = 0;
+}
+
+console.log('\n== 14. Target bantuan & HUD ==');
 G.target = islandById(0);
 ok(G.target && G.target.name, 'tujuan navigasi bisa dipilih dari peta');
 const minim = { kind: null };

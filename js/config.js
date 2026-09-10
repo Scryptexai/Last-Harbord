@@ -4,6 +4,18 @@
 export const CFG = {
   SAVE_KEY: 'last-harbor-save-v2',
 
+  // KAMERA — proyeksi miring 3/4, bukan pandangan atas.
+  // TILT = seberapa gepeng tanah di layar (1 = tampak atas, 0.5 = sangat miring).
+  // Bawaannya sengaja TIDAK ekstrem: cukup untuk memberi kedalaman dan membuat
+  // "berjalan pulang" terasa seperti menuruni layar, tanpa merusak keterbacaan.
+  CAM: {
+    TILT: 0.66,        // cos sudut pandang terhadap tanah
+    LIFT: 0.08,        // kamera mengangkat fokus: pemain duduk di bawah-tengah
+    PERSP: 0.00034,    // perubahan ukuran per px kedalaman (paralaks)
+    PERSP_MIN: 0.86,
+    PERSP_MAX: 1.16,
+  },
+
   BOAT: {
     BASE_HP: 100,       // hull = nyawa pemain (lihat catatan desain di README)
     BASE_STORAGE: 10,   // kapasitas palka awal
@@ -47,8 +59,9 @@ export const CFG = {
 
   LAND: {
     ZOOM: 1.45,        // kamera darat: pulau terasa 3-4x lebih luas
-    PLAY_RATIO: 0.84,  // batas gerak dari radius pulau
+    PLAY_RATIO: 0.94,  // batas gerak dari radius pulau — pantai bisa dijalani sampai garis air
     SAND_RATIO: 0.70,  // di luar rasio ini = pantai (zombie melambat)
+    FLOOD: 0.42,       // seberapa jauh air pasang naik ke pantai (0.42 = dari 1.06r ke 0.76r)
     WATER_SLOW: 0.5,   // zombie melambat di pantai
     FOG_CELL: 22,      // ukuran sel kabut eksplorasi (px dunia)
   },
