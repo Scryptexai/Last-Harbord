@@ -1,61 +1,198 @@
 # ⚓ Last Harbor
 
-Game HTML5 survival — berlayar di laut, jelajahi pulau, kumpulkan resource, hadapi zombie, upgrade perahumu, dan bertahan hidup selama mungkin.
+Game survival HTML5: berlayar dari dermaga, mendarat di pulau, memanen sebelum air pasang
+menutup jalan pulang, dan membangun kapalmu satu bagian demi satu bagian.
 
-Dibuat dengan **vanilla JavaScript (ES6 modules) + Canvas 2D + HTML/CSS overlay + localStorage**. Tanpa build step, tanpa dependency.
-
-## Cara Menjalankan
-
-Module ES6 perlu disajikan lewat HTTP (bukan `file://`):
+Vanilla JavaScript (ES modules) + Canvas 2D + overlay HTML/CSS. **Tanpa build step,
+tanpa dependency.** Audio disintesis penuh dengan WebAudio — tidak ada file suara.
 
 ```bash
 python3 -m http.server 8000
 # buka http://localhost:8000
 ```
 
-## Cara Main
+---
 
-1. **Dashboard** — lihat status perahu, lalu tekan `SAIL` untuk berlayar (atau `EXPLORE` untuk autopilot ke pulau terdekat).
-2. **Laut** — kendalikan perahu dengan `WASD`/Arrow/joystick (perahu punya inertia). Dekati pulau → tekan `EXPLORE` / `E` untuk mendarat. `FISH` untuk memancing (dapat Food/Wood), `ANCHOR` untuk berhenti, `SAIL` untuk kembali ke harbor.
-3. **Daratan** — gerakkan karakter (lingkaran hijau), kumpulkan resource (⛽ Fuel, 🪵 Wood, 🍖 Food, 💊 Medicine) dengan mendekati, serang zombie (`SPACE` / tombol ATTACK), lalu `BACK TO BOAT` (`B`) untuk pulang.
-4. **Upgrade** — belanjakan resource di menu UPGRADE: Storage (+5 slot), Speed (+20%), Defense (+20 HP), masing-masing 2 level.
-5. **Mati** = seluruh resource di inventory hilang. Upgrade perahu tetap tersimpan (localStorage).
+## Kalimat yang harus dijawab game ini
 
-## Tipe Zombie
+> **"Seberapa jauh aku mau pergi sebelum aku berbalik?"**
 
-| Tipe | HP | Speed | Damage | Ciri |
-|------|----|-------|--------|------|
-| Slow | 60 | Lambat | 6 | Merah gelap, aggro jarak menengah |
-| Fast | 25 | Cepat | 4 | Merah terang, aggro jarak jauh |
-| Tank | 130 | Sangat lambat | 14 | Ungu, besar, HP sangat tinggi |
+Semua sistem melayani pertanyaan itu. Kalau ada fitur yang tidak membuat pemain
+menanyakan hal itu lebih sering, fitur itu tidak ada di sini.
 
-Difficulty pulau (1–3) menentukan jumlah zombie & resource.
+| Elemen | Arti |
+|---|---|
+| Perahu | rumah, bank, dan nyawa. Hull = nyawa pemain. |
+| Pulau | tawaran. Makin dalam, makin kaya, makin mahal. |
+| Laut | ketidakpastian. Kabut, dan waktu yang terus berjalan. |
+| Pasang | jam. Ambience → informasi → gigi. |
+| Pelampung | kematian yang bisa ditebus. |
+
+---
+
+## Aturan inti (yang membedakan build ini dari versi lama)
+
+1. **Muatan hanya jadi milikmu setelah dibongkar di dermaga.**
+   `carried` (bisa hilang) vs `banked` (aman). Bertemu kapal bukan berarti aman —
+   kau harus sampai ke dermaga. Mati = muatan di tangan jatuh menjadi **pelampung**
+   yang bisa diambil kembali di pulau itu.
+2. **Memanen menahanmu di tempat** (0.8 / 1.2 / 1.4 detik). Menahan tombol = risiko.
+   Melepas = batal, dan node-nya tidak hilang. Tidak ada auto-pickup.
+3. **Kau harus berjalan kembali ke kapal.** Tidak ada tombol teleport.
+   Dermaga adalah satu-satunya jalan keluar.
+4. **Zombie melambat di pantai.** Kalau kau bisa mencapai air, kau bisa lolos.
+   Ini aturan yang bisa dipelajari, bukan hukuman acak.
+5. **Pasang terus naik selama kau di luar.**
+
+   | Fase | Mulai | Yang terjadi |
+   |---|---|---|
+   | **Tenang** | 0s | camar, laut tenang, tidak ada ancaman |
+   | **Berubah** | 90s | garis air naik ke pantai, camar berhenti, angin naik, gelombang zombie mulai datang |
+   | **Pasang** | 210s | gelap, horizon merah, gelombang lebih sering & lebih besar, lambung terkuras di laut terbuka, mengarungi air banjir melambatkanmu |
+
+6. **Satu tombol konteks.** Tidak ada deretan tombol. Aksi yang muncul = apa pun
+   yang masuk akal dilakukan saat itu (`MENDARAT`, `PANEN`, `AMBIL MUATAN`, `NAIK KAPAL`,
+   `BERTAMBAT`, `MEMANCING`, `BUKA PETA`, `PERBAIKI KAPAL`, `BERLAYAR`).
+7. **Refit adalah satu tangga berurutan** (6 tingkat). Selalu ada satu tujuan bernama,
+   dan layar selalu memberitahu berapa lagi yang dibutuhkan.
+8. **Tidak ada angka yang dibocorkan dari kejauhan.** Pulau punya tanda-tanda: asap,
+   camar, menara roboh, bangkai kapal. Kau memilih risiko dengan membaca horizon.
+
+---
+
+## Kontrol
+
+| | Keyboard | Sentuh |
+|---|---|---|
+| Gerak | `WASD` / panah | joystick kiri bawah |
+| Aksi konteks | `E` (tahan untuk memanen) | tombol kanan bawah (tahan) |
+| Serang | `SPASI` | tombol SERANG |
+| Bekal | tombol yang muncul saat hull turun | sama |
+| Suara | `M` | tombol ♪ |
+| Tutup menu | `ESC` | ✕ |
+
+---
+
+## Perjalanan pemain
+
+```
+DERMAGA (berjalan di dek: peta → meja kerja → haluan)
+   → BERLAYAR (8-20 detik, kabut terbuka, tanda pulau muncul)
+   → MENDARAT (sekoci jatuh, kamera membuka pulau)
+   → PULAU (memanen = rentan; makin dalam = makin kaya)
+   → KEPUTUSAN BERBALIK (tidak ada prompt; hanya garis air dan waktumu sendiri)
+   → KEMBALI (berjalan ke dermaga membawa semuanya)
+   → NAIK KAPAL → BERTAMBAT (muatan dibongkar, terlihat)
+   → MEJA KERJA (satu tingkat terpasang, kapal berubah)
+   → tujuan berikutnya sudah menunggu
+```
+
+## Pulau
+
+Jarak dari dermaga **adalah** tingkat kesulitannya. Tidak ada label "Difficulty 3".
+
+| Cincin | Jarak | Pulau | Muatan per pulau | Zombie | Tank |
+|---|---|---|---|---|---|
+| Perairan Dekat | 900–1600 px | 5 | ~12 unit | 5 | — |
+| Perairan Tengah | 2000–2700 px | 5 | ~18 unit | 8 | kadang |
+| Perairan Jauh | 3100–3900 px | 5 | ~24 unit | 11 | sering |
+
+Lima varian pulau (Sunyi / Karam / Abu / Reruntuhan / Karang) mengubah komposisi muatan,
+kepadatan zombie, dan tanda yang terlihat dari laut.
+
+## Zombie
+
+| Tipe | HP | Kecepatan | Damage | Ciri |
+|---|---|---|---|---|
+| Berjalan | 60 | 42 px/s | 6 | lambat, aggro 150 |
+| Pelari | 25 | 104 px/s | 4 | cepat, aggro 210 — masih bisa dikejar (pemain 148) |
+| Raksasa | 130 | 30 px/s | 14 | 5 tebasan, aggro 130 |
+
+Di pantai (di luar `SAND_RATIO`) semua zombie bergerak **setengah kecepatan**.
+
+## Serangan
+
+`windup 0.10s` (tanpa damage) → `active 0.12s` (damage mendarat di sini) →
+`recovery 0.23s` (gerak penuh, tapi kau tidak bisa menyerang). Total 0.45s.
+Damage tidak instan: serangan adalah komitmen. Saat memanen atau di windup/active,
+kau **tidak bisa bergerak**.
+
+---
 
 ## Struktur
 
 ```
-index.html          — markup + overlay UI
-asset_viewer.html   — galeri untuk melihat semua aset visual
-css/style.css       — styling UI (dark & moody, glassmorphism)
-assets/             — suite aset visual (perahu 3 level, zombie, player, pulau, ikon UI, branding)
-scripts/            — generator aset (Python/PIL)
-tests/
-  smoke.test.mjs    — smoke test logika (jalankan: node tests/smoke.test.mjs)
+index.html            markup HUD + 3 modal (peta, meja kerja, debrief)
+css/style.css         HUD instrumen gelap, bukan dashboard
 js/
-  main.js           — bootstrap, state machine, game loop
-  assets.js         — loader aset PNG (dengan fallback vector bila gagal load)
-  config.js         — konstanta & balance
-  state.js          — state global shared
-  save.js           — localStorage save/load
-  input.js          — keyboard WASD + virtual joystick
-  ui.js             — DOM overlay (dashboard, HUD, modal)
-  boat.js           — perahu (gerak inertia, stat, render sprite/fallback)
-  world.js          — laut, gelombang, pulau
-  land.js           — mode daratan (player, zombie AI, resource)
-  zombie.js         — factory zombie (Slow/Fast/Tank)
-  inventory.js      — inventory & kapasitas storage
-  util.js           — util kecil (rng, format waktu)
+  main.js             bootstrap, state machine, loop, onboarding bertahap
+  config.js           SEMUA angka balancing ada di sini
+  state.js            state global
+  refit.js            tangga progresi + stat turunan (palka/layar/lambung)
+  inventory.js        carried vs banked
+  tide.js             the tide: fase, jadwal gelombang, drain laut
+  world.js            kepulauan, kabut laut, tanda pulau, penunjuk arah
+  land.js             pulau: kabut eksplorasi, memanen, zombie, gelombang, salvage
+  harbor.js           dermaga yang bisa dijalani (peta / meja kerja / haluan)
+  boat.js             inersia + bagian refit yang terlihat
+  zombie.js           factory zombie
+  input.js            keyboard + joystick + aksi konteks (ditahan)
+  ui.js               HUD, peta, meja kerja, debrief, toast
+  audio.js            seluruh SFX & ambience (WebAudio, disintesis, tanpa file)
+  fx.js               partikel, hit-stop, guncangan, indikator arah
+  save.js             localStorage v2 (muatan TIDAK disimpan)
+  util.js             rng, clamp, lerp, format
+tests/
+  smoke.test.mjs       logika + REGRESI EKONOMI
+  integration.test.mjs loop game sungguhan (main.js) di atas DOM palsu
+  render.test.mjs      semua jalur gambar dengan canvas tiruan
+assets/               sprite (kapal 3 tier, zombie, pemain, pulau, ikon UI, branding)
+asset_viewer.html     galeri aset (alat pengembang, tidak ada di UI pemain)
+scripts/              generator aset (Python/PIL)
 ```
 
-Semua render Canvas memakai sprite dari `assets/` dan otomatis jatuh kembali ke
-gambar vector (shape dasar) bila aset gagal dimuat.
+`smoke.test.mjs` memuat **regresi ekonomi**: versi lama game punya progresi yang
+secara matematis mustahil (hanya 1 dari 6 upgrade bisa dibeli, terbukti dengan BFS
+atas 2.002 state). Test ini memastikan setiap tingkat refit selalu bisa dibeli dan
+tidak pernah ada tembok yang tidak terlihat.
+
+`integration.test.mjs` menjalankan `main.js` apa adanya: boot di dermaga, berjalan ke
+meja peta, berlayar, mendarat, memanen, kembali ke dermaga, tambat, membuka meja kerja,
+sampai mati di pulau dan mengambil pelampungnya. Semua lewat input palsu (WASD/E/SPASI/ESC),
+tanpa browser.
+
+## Catatan desain
+
+- **Hull adalah nyawa.** Lambung kapal dan tubuhmu adalah satu hal — kalau kau
+  dikoyak di darat, kapalmu yang menerima lukanya. Ini metafora inti game, bukan
+  angka terpisah.
+- **Tidak ada kotak merah layar penuh.** Damage memakai busur arah + guncangan +
+  hit-stop + suara. Kau tahu dari mana pukulan datang dan seberapa besar.
+- **Tidak ada auto-pickup.** Resource diambil dengan waktu, bukan dengan menyentuh.
+- **Reload bukan jalan pintas.** Muatan yang dibawa tidak disimpan; kalau kau
+  memuat ulang di tengah run, muatannya hilang seperti kau mati di sana.
+
+## Hasil pengukuran (simulasi bot atas modul asli)
+
+Bot dijalankan di atas **modul asli** (bukan tiruan): 3 seed per gaya main, main sampai kapal lengkap.
+
+| Metrik | Hasil | Target desain |
+|---|---|---|
+| Waktu di pulau per run | 43–81 detik (rata 55) | 45–90 detik |
+| Waktu berlayar per run | 10,1 detik | 10–30 detik |
+| Run sampai kapal lengkap | 13–15 | 10–16 |
+| Total waktu satu progresi penuh | 12–23 menit | sesi 8–12 menit yang bermakna, progresi ~20 menit |
+| Tingkat refit yang bisa dicapai | **6 / 6** | 6 / 6 (build lama: 1 / 6) |
+| Pemain hati-hati (mundur di 42% lambung) | 0–1 kematian per sesi | selamat kalau hati-hati |
+| Pemain serakah (tidak pernah mundur) | run lebih lama, palka sering tidak penuh, 1–2 kematian | keserakahan punya ongkos |
+
+Catatan kejujuran: waktu berlayar rata-rata 10 detik ada di **batas bawah** target — cukup untuk
+kabut, penunjuk arah, dan keputusan "lanjut atau berbalik", tapi bukan pelayaran yang panjang.
+
+## Test
+
+```bash
+node tests/smoke.test.mjs        # 113 pemeriksaan logika + regresi ekonomi
+node tests/integration.test.mjs  # 38 pemeriksaan: LOOP GAME SUNGGUHAN, tanpa browser
+node tests/render.test.mjs       # semua jalur gambar dengan canvas tiruan
+```

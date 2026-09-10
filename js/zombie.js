@@ -11,7 +11,11 @@ export function makeZombie(type, x, y) {
     wanderA: Math.random() * Math.PI * 2,
     wanderT: Math.random() * 2,
     attackCd: Math.random() * 0.5,
+    groanCd: Math.random() * 6,
     hitFlash: 0,
     chasing: false,
+    alertT: 0,     // sedang terbangun oleh teriakan kawanan
+    callCd: 0,     // jeda sebelum boleh memanggil lagi
+    face: Math.random() * Math.PI * 2,
   };
 }
