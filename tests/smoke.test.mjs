@@ -266,36 +266,38 @@ function freshLand(seed = 4242, islandIdx = 0) {
   const minDist = Math.min(...L.nodes.filter((n) => n.kind === 'res').map((n) => Math.hypot(n.x - L.extract.x, n.y - L.extract.y)));
   ok(minDist > L.r * 0.2, `node resource tidak menumpuk di dermaga (terdekat ${Math.round(minDist)}px)`);
 
-  // --- memanen: tanpa menahan tombol, tidak ada progres ---
+  // --- AUTO-COLLECT: berhenti di dekat node langsung memanen, tanpa tombol ---
   const nd = L.nodes.filter((n) => n.kind === 'res')[0];
-  L.player.x = nd.x; L.player.y = nd.y;
-  contextAction();
-  ok(!!L.player.gather, 'menekan aksi memulai pemanenan');
   const dt = 1 / 60;
+  L.player.x = nd.x; L.player.y = nd.y;
+  L.player.vx = 0; L.player.vy = 0;
+  updateLand(dt, { x: 0, y: 0 }, { gatherHeld: false });
+  ok(!!L.player.gather, 'berhenti di dekat node otomatis memulai pemanenan (tanpa tombol)');
+
+  // --- bergerak membatalkan panen: bisa kabur dari zombie ---
   for (let i = 0; i < 30; i++) updateLand(dt, { x: 1, y: 0 }, { gatherHeld: false });
-  ok(L.player.gather === null, 'melepas tombol membatalkan pemanenan');
+  ok(L.player.gather === null, 'bergerak saat memanen membatalkan panen');
   ok(!nd.taken, 'membatalkan TIDAK menghilangkan node (tidak ada kehilangan)');
   ok(carriedLoad() === 0, 'tidak ada yang masuk palka saat dibatalkan');
 
-  // --- gerak terkunci saat memanen ---
+  // --- gerak terkunci selama memanen (inilah risikonya) ---
   L.player.x = nd.x; L.player.y = nd.y;
-  contextAction();
+  L.player.vx = 0; L.player.vy = 0;
+  updateLand(dt, { x: 0, y: 0 }, { gatherHeld: false });   // mulai otomatis
   const x0 = L.player.x;
-  for (let i = 0; i < 20; i++) updateLand(dt, { x: 1, y: 0 }, { gatherHeld: true });
+  for (let i = 0; i < 20; i++) updateLand(dt, { x: 0, y: 0 }, { gatherHeld: false });
   ok(Math.abs(L.player.x - x0) < 2, 'gerak terkunci selama memanen (inilah risiko memanen)');
   const need = L.player.gather ? L.player.gather.need : 0.8;
-  for (let i = 0; i < Math.ceil(need / dt) + 6; i++) updateLand(dt, { x: 0, y: 0 }, { gatherHeld: true });
-  ok(nd.taken, 'menahan sampai selesai -> node terambil');
+  for (let i = 0; i < Math.ceil(need / dt) + 6; i++) updateLand(dt, { x: 0, y: 0 }, { gatherHeld: false });
+  ok(nd.taken, 'diam sampai selesai -> node terambil otomatis');
   ok(carriedLoad() > 0, `hasil masuk ke muatan yang dibawa (${carriedLoad()})`);
   ok(landContext().kind !== 'board' || true, 'konteks tetap konsisten setelah memanen');
 
-  // --- panen di luar jangkauan tidak bisa dimulai ---
-  L.player.x = 0; L.player.y = 0;
-  const far = L.nodes.filter((n) => n.kind === 'res').find((n) => Math.hypot(n.x, n.y) > 120);
-  if (far) {
-    contextAction();
-    ok(L.player.gather === null, 'tidak bisa memanen dari jauh');
-  }
+  // --- di luar jangkauan tidak ada panen otomatis ---
+  L.player.x = L.extract.x; L.player.y = L.extract.y;
+  L.player.vx = 0; L.player.vy = 0;
+  updateLand(dt, { x: 0, y: 0 }, { gatherHeld: false });
+  ok(L.player.gather === null, 'di dermaga (jauh dari node) tidak ada panen otomatis');
 
   // --- kabut eksplorasi ---
   ok(isRevealed(L, L.extract.x, L.extract.y - 60), 'titik pendaratan sudah terlihat');
@@ -368,9 +370,10 @@ console.log('\n== 8. Kematian & pelampung salvage ==');
   ok(!!sv, 'kunjungan berikutnya menemukan pelampung salvage di pulau yang sama');
   ok(sv && sv.cargo.wood === 4, 'muatan yang hilang tersimpan di pelampung');
   L2.player.x = sv.x; L2.player.y = sv.y;
-  contextAction();
-  for (let i = 0; i < 60 * 4; i++) updateLand(1 / 60, { x: 0, y: 0 }, { gatherHeld: true });
-  ok(carriedLoad() === 6, `muatan berhasil diambil kembali (${carriedLoad()}/6)`);
+  L2.player.vx = 0; L2.player.vy = 0;
+  updateLand(1 / 60, { x: 0, y: 0 }, { gatherHeld: false });   // auto-collect mulai
+  for (let i = 0; i < 60 * 4; i++) updateLand(1 / 60, { x: 0, y: 0 }, { gatherHeld: false });
+  ok(carriedLoad() === 6, `muatan berhasil diambil kembali otomatis (${carriedLoad()}/6)`);
   ok(!L2.nodes.some((n) => n.kind === 'salvage' && !n.taken), 'pelampung hilang setelah diambil');
 }
 
@@ -465,11 +468,13 @@ console.log('\n== 12. Kawanan: pedalaman bisa menghukum rasa aman ==');
   for (const zz of [caller, sleeper, far]) zz.wanderT = 1e9;
   LB.zombies.push(caller, sleeper, far);
 
-  // (a) berjalan biasa: tak ada yang dipanggil
+  // (a) berjalan biasa (tanpa node di bawah kaki -> tanpa auto-panen): tak ada yang dipanggil
+  nd2.x = -1e4; nd2.y = -1e4;                     // jauhkan node sementara dari pemain
   for (let i = 0; i < 60; i++) updateLand(1 / 60, { x: 0, y: 0 }, { gatherHeld: false });
   ok(sleeper.alertT === 0 && !sleeper.chasing, `berjalan biasa TIDAK membangunkan zombie jauh (${nearD}px > aggro 202)`);
 
   // (b) memanen = lengah: si dekat berteriak, yang di dalam radius terbangun, yang di luar tidak
+  nd2.x = 0; nd2.y = 0;
   LB.player.x = 0; LB.player.y = 0; LB.player.gather = { node: nd2, t: 0, need: 0.8 };
   caller.x = 40; caller.y = 0; caller.chasing = false; caller.callCd = 0;
   sleeper.x = nearD; sleeper.y = 0; sleeper.alertT = 0; sleeper.chasing = false;

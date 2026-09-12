@@ -181,17 +181,18 @@ const L = G.land;
 L.zombies.length = 0;                             // pulau tanpa gangguan: yang diuji pemanenan
 const node = L.nodes.find((n) => n.kind === 'res');
 L.player.x = node.x; L.player.y = node.y;
-step(2);
+step(2);                                          // mendekat, berhenti -> auto-collect mulai
 const before = carriedLoad();
-hold('e', 90);                                    // tahan aksi > 1.4 detik
-ok(carriedLoad() > before, `menahan aksi memanen (${before} -> ${carriedLoad()} unit)`);
-ok(node.taken, 'node habis setelah dipanen');
+step(120);                                        // diam 2 detik -> panen otomatis selesai
+ok(carriedLoad() > before, `mendekat otomatis memanen (${before} -> ${carriedLoad()} unit)`);
+ok(node.taken, 'node habis setelah dipanen otomatis');
 
-// memanen lagi tanpa menahan: tidak ada progres
+// berjalan MELEWATI node tidak memanen: harus berhenti dulu
 const node2 = L.nodes.find((n) => n.kind === 'res' && !n.taken);
-L.player.x = node2.x; L.player.y = node2.y; step(2);
-tap('e');
-ok(carriedLoad() === 1, 'tap singkat tidak memanen apa pun (harus DITAHAN)');
+const before2 = carriedLoad();
+L.player.x = node2.x - 60; L.player.y = node2.y;
+keyDown('d'); step(30); keyUp('d'); step(1);      // berjalan terus, tidak berhenti di node
+ok(carriedLoad() === before2, 'berjalan melewati node tidak memanen (harus berhenti sejenak)');
 
 // serangan tidak boleh melempar error walau tidak ada target
 keyDown(' '); step(20); keyUp(' ');
@@ -208,12 +209,13 @@ ok(carriedLoad() > 0, `muatan ikut (${carriedLoad()} unit) — belum aman sampai
 
 console.log('\n== 5. Tambat: muatan baru jadi milikmu ==');
 const bankBefore = bankLoad();
+const carriedBeforeMoor = carriedLoad();
 G.boat.x = HARBOR.x + 40; G.boat.y = HARBOR.y + 20; G.boat.vx = 0; G.boat.vy = 0;
 step(3);
 tap('e');
 ok(G.state === 'harbor', `aksi di dermaga -> masuk pelabuhan (state=${G.state})`);
 ok(carriedLoad() === 0, 'palka kosong setelah dibongkar');
-ok(bankLoad() === bankBefore + 1, `gudang bertambah tepat sebanyak muatan (${bankBefore} -> ${bankLoad()})`);
+ok(bankLoad() === bankBefore + carriedBeforeMoor, `gudang bertambah tepat sebanyak muatan (${bankBefore} -> ${bankLoad()})`);
 ok(G.harbor && G.harbor.player, 'pemain ditempatkan di dek pelabuhan (bukan di pulau terakhir)');
 
 console.log('\n== 6. Meja kerja: tangga refit bisa dibeli ==');
@@ -237,10 +239,10 @@ console.log('\n== 7. Kematian di darat: pelampung, bukan kehilangan ==');
   const L2 = G.land;
   L2.zombies.length = 0;
   const n2 = L2.nodes.find((n) => n.kind === 'res');
-  L2.player.x = n2.x; L2.player.y = n2.y; step(2);
-  hold('e', 90);
+  L2.player.x = n2.x; L2.player.y = n2.y; step(2);   // auto-collect mulai
+  step(120);                                         // diam -> panen otomatis selesai
   const held = carriedLoad();
-  ok(held > 0, `membawa ${held} unit di tangan`);
+  ok(held > 0, `membawa ${held} unit di tangan (dipanen otomatis)`);
   G.hull = 1;
   const zz = (await import('../js/zombie.js')).makeZombie('slow', L2.player.x + 8, L2.player.y);
   L2.zombies.push(zz);

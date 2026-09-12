@@ -36,8 +36,9 @@ menanyakan hal itu lebih sering, fitur itu tidak ada di sini.
    `carried` (bisa hilang) vs `banked` (aman). Bertemu kapal bukan berarti aman —
    kau harus sampai ke dermaga. Mati = muatan di tangan jatuh menjadi **pelampung**
    yang bisa diambil kembali di pulau itu.
-2. **Memanen menahanmu di tempat** (0.8 / 1.2 / 1.4 detik). Menahan tombol = risiko.
-   Melepas = batal, dan node-nya tidak hilang. Tidak ada auto-pickup.
+2. **Memanen menahanmu di tempat** (0.8 / 1.2 / 1.4 detik). Mendekati node langsung
+   memanen secara otomatis; selama panen kau terkunci di tempat (itulah risikonya).
+   Bergerak membatalkan panen, dan node-nya tidak hilang.
 3. **Kau harus berjalan kembali ke kapal.** Tidak ada tombol teleport.
    Dermaga adalah satu-satunya jalan keluar.
 4. **Zombie melambat di pantai.** Kalau kau bisa mencapai air, kau bisa lolos.
@@ -51,8 +52,9 @@ menanyakan hal itu lebih sering, fitur itu tidak ada di sini.
    | **Pasang** | 210s | gelap, horizon merah, gelombang lebih sering & lebih besar, lambung terkuras di laut terbuka, mengarungi air banjir melambatkanmu |
 
 6. **Satu tombol konteks.** Tidak ada deretan tombol. Aksi yang muncul = apa pun
-   yang masuk akal dilakukan saat itu (`MENDARAT`, `PANEN`, `AMBIL MUATAN`, `NAIK KAPAL`,
-   `BERTAMBAT`, `MEMANCING`, `BUKA PETA`, `PERBAIKI KAPAL`, `BERLAYAR`).
+   yang masuk akal dilakukan saat itu (`MENDARAT`, `NAIK KAPAL`, `BERTAMBAT`,
+   `MEMANCING`, `BUKA PETA`, `PERBAIKI KAPAL`, `BERLAYAR`). Panen tidak butuh tombol —
+   mendekat saja sudah memanen.
 7. **Refit adalah satu tangga berurutan** (6 tingkat). Selalu ada satu tujuan bernama,
    dan layar selalu memberitahu berapa lagi yang dibutuhkan.
 8. **Tidak ada angka yang dibocorkan dari kejauhan.** Pulau punya tanda-tanda: asap,
@@ -170,7 +172,7 @@ Dasar eksternalnya (bukan asumsi — ini data perilaku pemain sungguhan):
 | | Keyboard | Sentuh |
 |---|---|---|
 | Gerak | `WASD` / panah | joystick kiri bawah |
-| Aksi konteks | `E` (tahan untuk memanen) | tombol kanan bawah (tahan) |
+| Aksi konteks | `E` (naik kapal, buka peta/meja, berlayar) | tombol kanan bawah |
 | Serang | `SPASI` | tombol SERANG |
 | Bekal | tombol yang muncul saat hull turun | sama |
 | Suara | `M` | tombol ♪ |
@@ -244,7 +246,7 @@ js/
   harbor.js           dermaga yang bisa dijalani (peta / meja kerja / haluan)
   boat.js             inersia + bagian refit yang terlihat
   zombie.js           factory zombie
-  input.js            keyboard + joystick + aksi konteks (ditahan)
+  input.js            keyboard + joystick + aksi konteks
   ui.js               HUD, peta, meja kerja, debrief, toast
   audio.js            seluruh SFX & ambience (WebAudio, disintesis, tanpa file)
   fx.js               partikel, hit-stop, guncangan, indikator arah
@@ -278,7 +280,9 @@ tanpa browser.
   angka terpisah.
 - **Tidak ada kotak merah layar penuh.** Damage memakai busur arah + guncangan +
   hit-stop + suara. Kau tahu dari mana pukulan datang dan seberapa besar.
-- **Tidak ada auto-pickup.** Resource diambil dengan waktu, bukan dengan menyentuh.
+- **Panen otomatis dengan ongkos.** Mendekati node langsung memanen tanpa tombol,
+  tapi tetap butuh waktu (0.8–1.4 detik) dan menahanmu di tempat — jadi dekat dengan
+  barang bukan berarti gratis dari zombie.
 - **Reload bukan jalan pintas.** Muatan yang dibawa tidak disimpan; kalau kau
   memuat ulang di tengah run, muatannya hilang seperti kau mati di sana.
 

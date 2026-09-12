@@ -148,16 +148,11 @@ function pickZombieType(rng, island) {
 
 // ---------- input aksi ----------
 // Satu tombol konteks: apa pun yang masuk akal dilakukan pemain saat ini.
+// Panen kini OTOMATIS (mendekati node langsung memanen, lihat updateLand), jadi
+// satu-satunya aksi konteks di darat adalah naik kapal — dan itu pun di dermaga.
 export function landContext() {
   const L = G.land;
   if (!L || !L.player) return { kind: null };
-  const p = L.player;
-  if (p.gather) return { kind: 'gather', label: 'LEPAS', target: p.gather.node };
-  const node = nearestNode(p);
-  if (node) {
-    const rich = node.kind === 'salvage' ? 'AMBIL MUATAN' : (node.rich ? 'PANEN (BANYAK)' : 'PANEN');
-    return { kind: node.kind === 'salvage' ? 'salvage' : 'gather', label: rich, target: node };
-  }
   if (atExtract()) return { kind: 'board', label: 'NAIK KAPAL' };
   return { kind: null };
 }
@@ -179,19 +174,19 @@ function nearestNode(p) {
   return best;
 }
 
-// Dipanggil tombol konteks (ketuk) / tombol E.
+// Dipanggil tombol konteks (ketuk) / tombol E. Dengan panen otomatis, satu-satunya
+// tindakan yang tersisa adalah naik kapal dari dermaga.
 export function contextAction() {
   const L = G.land;
   if (!L || !L.player) return;
-  const p = L.player;
-  if (p.gather) { cancelGather(); return; }
-  const node = nearestNode(p);
-  if (node) {
-    const need = node.kind === 'salvage' ? P.GATHER_SALVAGE : (node.rich ? P.GATHER_RICH : P.GATHER_SMALL);
-    p.gather = { node, t: 0, need };
-    return;
-  }
   if (atExtract()) return 'board';
+}
+
+// Mulai memanen sebuah node. Dipanggil otomatis saat pemain berhenti di dekat node.
+function startGather(node) {
+  const p = G.land.player;
+  const need = node.kind === 'salvage' ? P.GATHER_SALVAGE : (node.rich ? P.GATHER_RICH : P.GATHER_SMALL);
+  p.gather = { node, t: 0, need };
 }
 
 function cancelGather() {
@@ -256,7 +251,9 @@ export function updateLand(dt, move, opts = {}) {
   const L = G.land;
   if (!L || !L.player) return;
   const p = L.player;
-  const held = !!opts.gatherHeld;
+  // Panen kini OTOMATIS: `opts.gatherHeld` (tombol aksi ditahan) tidak lagi dipakai,
+  // tapi tetap diterima supaya pemanggil (main.js, test) tidak berubah tanda tangan.
+  const moving = Math.hypot(move.x, move.y) > 0.01;
 
   p.invuln = Math.max(0, p.invuln - dt);
   p.gatherFade = Math.max(0, p.gatherFade - dt * 2);
@@ -290,12 +287,21 @@ export function updateLand(dt, move, opts = {}) {
     }
   } else {
     p.vx *= Math.pow(0.7, dt * 60); p.vy *= Math.pow(0.7, dt * 60);
+    // AUTO-COLLECT: menekan arah gerak saat memanen membatalkan panen, supaya bisa kabur.
+    if (p.gather && moving) cancelGather();
   }
 
   collideObstacles(L, p);
   clampToIsland(p, L);
 
-  updateGather(dt, held);
+  // AUTO-COLLECT: berhenti di dekat node (tidak sedang menyerang) -> mulai memanen
+  // otomatis. Berjalan terus tidak memicu panen, jadi pemain tetap bebas lewat.
+  if (!p.gather && !moving && p.atk.phase === 'idle') {
+    const node = nearestNode(p);
+    if (node) startGather(node);
+  }
+
+  updateGather(dt);
   updateZombies(dt, L);
   updateFog(L, p);
 
@@ -386,18 +392,14 @@ function killZombie(L, z) {
   G.saveDirty = true;
 }
 
-function updateGather(dt, held) {
+function updateGather(dt) {
   const L = G.land;
   const p = L.player;
   if (!p.gather) return;
   const g = p.gather;
   const nd = g.node;
   if (nd.taken || dist(nd.x, nd.y, p.x, p.y) > P.GATHER_NEAR + 16) { cancelGather(); return; }
-  if (!held) {
-    // tombol dilepas: progres hangus, node tetap ada (tidak ada kehilangan barang)
-    cancelGather();
-    return;
-  }
+  // panen otomatis: progres jalan terus selama pemain diam di dekat node.
   g.t += dt;
   if (Math.floor(g.t * 8) !== Math.floor((g.t - dt) * 8)) sfx('gather_tick');
   if (g.t >= g.need) {
