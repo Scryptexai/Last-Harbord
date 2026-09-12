@@ -6,7 +6,7 @@
 //  - Harus kembali ke dermaga untuk naik kapal. Tidak ada teleport.
 import { CFG } from './config.js';
 import { G } from './state.js';
-import { makeRng, clamp, dist } from './util.js';
+import { makeRng, clamp, dist, lerp } from './util.js';
 import { addCarried, carriedFull } from './inventory.js';
 import { makeZombie } from './zombie.js';
 import { sfx } from './audio.js';
@@ -134,6 +134,7 @@ function buildLand(island) {
       x: extract.x, y: extract.y, vx: 0, vy: 0, face: -Math.PI / 2,
       atk: { phase: 'idle', t: 0, hitDone: false }, gather: null, invuln: 0,
       stepT: 0, gatherFade: 0,
+      walkT: 0, walkAmp: 0, hurtT: 0,  // animasi (bob, condong, squash)
     },
   };
 }
@@ -279,17 +280,23 @@ export function updateLand(dt, move, opts = {}) {
       while (d < -Math.PI) d += Math.PI * 2;
       p.face += d * clamp(dt / P.TURN_T, 0, 1);
     }
-    // langkah kaki
+    // langkah kaki + jejak debu: kaki harus terasa menyentuh tanah
     const sp = Math.hypot(p.vx, p.vy);
     if (sp > 20) {
       p.stepT -= dt;
-      if (p.stepT <= 0) { p.stepT = 0.36; sfx('step'); }
+      if (p.stepT <= 0) { p.stepT = 0.30; sfx('step'); burst(p.x, p.y, 'rgba(206,193,160,0.7)', 4, 70, 'spark', 2.4); }
     }
   } else {
     p.vx *= Math.pow(0.7, dt * 60); p.vy *= Math.pow(0.7, dt * 60);
     // AUTO-COLLECT: menekan arah gerak saat memanen membatalkan panen, supaya bisa kabur.
     if (p.gather && moving) cancelGather();
   }
+
+  // ---- penggerak animasi: fase langkah & seberapa "sedang berlari" ----
+  const spN = clamp(Math.hypot(p.vx, p.vy) / P.SPEED, 0, 1);
+  p.walkAmp = lerp(p.walkAmp, spN, Math.min(1, dt * 7));
+  p.walkT += Math.hypot(p.vx, p.vy) * dt * 0.055;
+  p.hurtT = Math.max(0, p.hurtT - dt);
 
   collideObstacles(L, p);
   clampToIsland(p, L);
@@ -457,6 +464,9 @@ function updateZombies(dt, L) {
       z.y += Math.sin(z.wanderA) * sp * 0.45 * dt;
       z.face = z.wanderA;
     }
+    // penggerak animasi: langkah mengikuti kecepatan nyata, condong mengikuti pengejaran
+    z.walkT += sp * dt * 0.06;
+    z.lunge = clamp(z.lunge + (z.chasing ? dt * 5 : -dt * 5), 0, 1);
     collideObstacles(L, z);
     clampToIsland(z, L);
 
@@ -501,6 +511,7 @@ function hurtPlayer(dmg, angle, type) {
   G.hurtFlash = 0.4;
   const p = G.land.player;
   p.invuln = P.INVULN;
+  p.hurtT = 0.32;                       // reaksi badan: squash keras (lihat drawPlayer)
   addHurtDir(angle, clamp(dmg / 12, 0.35, 1));
   addShake(clamp(dmg / 20, 0.15, 0.5));
   sfx('hurt');
@@ -730,6 +741,19 @@ export function drawLand(ctx, vw, vh) {
   ctx.fillStyle = tint > 0.6 ? shadeHex(fl.grass, -0.2) : fl.grass;
   ctx.fill();
 
+  // ---- ART PASS: ketinggian & jalur (tanah terbaca sebagai tempat, bukan lingkaran) ----
+  // Dua undakan ke pedalaman yang makin gelap: tutupan lebih rapat = lebih dalam = lebih
+  // berbahaya. Isyarat visual, bukan angka — sejalan dengan "pedalaman = ongkos".
+  blobPath(ctx, 0, 0, L.shape, 0.48);
+  ctx.fillStyle = shadeHex(fl.grass, tint > 0.6 ? -0.30 : -0.12);
+  ctx.fill();
+  blobPath(ctx, 0, 0, L.shape, 0.28);
+  ctx.fillStyle = shadeHex(fl.grass, tint > 0.6 ? -0.40 : -0.22);
+  ctx.fill();
+
+  // jalur tanah dari dermaga ke pedalaman: menyempit ke atas (resesi perspektif kamera)
+  drawIslandPath(ctx, L, tint);
+
   // dermaga
   drawPier(ctx, L);
 
@@ -823,6 +847,33 @@ function shadeHex(hex, k) {
   return `rgb(${r},${g},${b})`;
 }
 
+// Jalur tanah yang memotong rumput dari dermaga ke pedalaman. Melebar di dekat kamera
+// (bawah) dan menyempit ke atas — satu garis pandang "masuk ke dalam" tanpa satu kata pun.
+function drawIslandPath(ctx, L, tint) {
+  const r = L.r;
+  const baseW = 30, topW = 11;
+  const y0 = r * 0.60, y1 = -r * 0.10;
+  ctx.fillStyle = tint > 0.6 ? shadeHex('#7a5a32', -0.18) : '#7a5a32';
+  ctx.beginPath();
+  ctx.moveTo(-baseW / 2, y0);
+  ctx.lineTo(-topW / 2, y1);
+  ctx.lineTo(topW / 2, y1);
+  ctx.lineTo(baseW / 2, y0);
+  ctx.closePath();
+  ctx.fill();
+  // tapak samar di jalur: garis melintang, makin ke atas makin rapat (kedalaman)
+  ctx.strokeStyle = 'rgba(0,0,0,0.13)';
+  ctx.lineWidth = 1.4;
+  for (let k = 0; k <= 1; k += 0.16) {
+    const y = y0 + (y1 - y0) * k;
+    const w = (baseW + (topW - baseW) * k) * 0.42;
+    ctx.beginPath();
+    ctx.moveTo(-w, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  }
+}
+
 function drawPier(ctx, L) {
   const y0 = L.r * 0.66, y1 = L.r * 0.99;
   const w = 34;
@@ -882,8 +933,11 @@ function drawBoatAtLand(ctx, L) {
 // Bayangan semua yang berdiri, rata di tanah, digambar sebelum lapisan berdiri.
 function drawGroundShadows(ctx, L) {
   const p = L.player;
-  ctx.fillStyle = 'rgba(0,0,0,0.30)';
-  ctx.beginPath(); ctx.ellipse(p.x, p.y + 3, CFG.PLAYER.RADIUS * 0.95, CFG.PLAYER.RADIUS * 0.45, 0, 0, Math.PI * 2); ctx.fill();
+  // bayangan mengecil & memudar saat badan terangkat (bob) — karakter menapak, bukan melayang
+  const lift = playerAnim(p).bob;
+  const shR = CFG.PLAYER.RADIUS * (0.95 - clamp(lift, -5, 5) * 0.035);
+  ctx.fillStyle = `rgba(0,0,0,${0.30 - clamp(lift, -5, 5) * 0.018})`;
+  ctx.beginPath(); ctx.ellipse(p.x, p.y + 3, shR, shR * 0.47, 0, 0, Math.PI * 2); ctx.fill();
   for (const z of L.zombies) {
     ctx.globalAlpha = isRevealed(L, z.x, z.y) ? 0.3 : 0.16;
     ctx.beginPath(); ctx.ellipse(z.x, z.y + 3, z.radius * 0.9, z.radius * 0.4, 0, 0, Math.PI * 2); ctx.fill();
@@ -964,7 +1018,22 @@ function drawZombie(ctx, L, z) {
   if (!revealed) ctx.globalAlpha = 0.34;
   // Menghadap kiri/kanan = cermin, bukan rotasi: kamera miring, jadi tubuh tetap tegak.
   const flip = Math.cos(z.face || 0) < 0 ? -1 : 1;
+
+  // ---- animasi: gontai yang berbeda per tipe ----
+  // slow = goyangan lebar, fast = getar cepat, tank = bob berat (langkah menghentak)
+  const sway = Math.sin(z.walkT) * (z.type === 'slow' ? 2.8 : z.type === 'fast' ? 1.6 : 1.4);
+  const thud = z.type === 'tank' ? Math.abs(Math.sin(z.walkT)) * 2.2 : 0;
+  const bob = (z.type === 'fast' ? Math.sin(z.walkT * 2.4) : Math.sin(z.walkT)) * (z.type === 'slow' ? 1.4 : 1.0) + thud;
+  // mengejar = condong ke depan (lebih tajam untuk pelari)
+  const lean = z.lunge * (z.type === 'fast' ? 0.14 : 0.08);
+  // kena pukul = squash
+  let sqX = 1, sqY = 1;
+  if (z.hitFlash > 0.3) { const k = (z.hitFlash - 0.3) / 0.7; sqX = 1 + 0.2 * k; sqY = 1 - 0.22 * k; }
+
   ctx.scale(flip, 1);
+  ctx.translate(sway * 0.4, -bob);
+  ctx.rotate(lean);
+  ctx.scale(sqX, sqY);
 
   if (img && img.complete && img.naturalWidth > 0) {
     const sz = z.radius * 2.9;
@@ -1004,6 +1073,34 @@ function drawZombie(ctx, L, z) {
   });
 }
 
+// Satu sumber kebenaran untuk animasi tubuh pemain — dipakai gambar badan DAN bayangan
+// (bayangan mengecil saat badan terangkat, supaya karakter terasa menapak, bukan melayang).
+function playerAnim(p) {
+  // napas saat diam + bob langkah saat bergerak, bercampur halus
+  const idle = Math.sin(G.time * 2.4) * 2.0;
+  const stride = Math.sin(p.walkT) * 5.0;
+  const bob = idle * (1 - p.walkAmp) + stride * p.walkAmp;
+  // condong ke depan seiring kecepatan (+x = arah hadap setelah flip)
+  const lean = p.walkAmp * 0.10;
+  // squash/stretch langkah: menekan tiap menginjak
+  const stepSq = 1 + Math.cos(p.walkT * 2) * 0.06 * p.walkAmp;
+
+  // serangan: ancang = mundur & squash, tebas = lunge & stretch
+  let lunge = 0, sqX = stepSq, sqY = 2 - stepSq;
+  const a = p.atk;
+  if (a.phase === 'windup') {
+    const k = 1 - a.t / P.WINDUP;
+    lunge = -7 * k; sqX = 1 + 0.18 * k; sqY = 1 - 0.18 * k;
+  } else if (a.phase === 'active') {
+    const k = a.t / P.ACTIVE;          // 1 -> 0
+    lunge = 13 * (1 - k); sqX = 1 - 0.14 * (1 - k); sqY = 1 + 0.22 * (1 - k);
+  }
+  // terkena: squash keras sesaat
+  if (p.hurtT > 0) { const k = p.hurtT / 0.32; sqX = 1 + 0.28 * k; sqY = 1 - 0.30 * k; }
+
+  return { bob, lean, lunge, sqX, sqY };
+}
+
 function drawPlayer(ctx, L) {
   const p = L.player;
   const img = ASSETS.player;
@@ -1034,9 +1131,17 @@ function drawPlayer(ctx, L) {
   atUpright(ctx, p.x, p.y, () => {
     if (p.invuln > 0 && Math.floor(G.time * 20) % 2 === 0) ctx.globalAlpha = 0.5;
     const flip = Math.cos(p.face) < 0 ? -1 : 1;
+    const sz = 48;
+
+    // ---- animasi: badan hidup, bukan foto yang digeser ----
+    const an = playerAnim(p);
+
     ctx.scale(flip, 1);
+    ctx.translate(an.lunge, an.bob);
+    ctx.rotate(an.lean);
+    ctx.scale(an.sqX, an.sqY);
+
     if (img && img.complete && img.naturalWidth > 0) {
-      const sz = 48;
       ctx.drawImage(img, -sz / 2, -sz * 0.92, sz, sz);
     } else {
       ctx.fillStyle = '#e67e22';

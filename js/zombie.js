@@ -17,5 +17,7 @@ export function makeZombie(type, x, y) {
     alertT: 0,     // sedang terbangun oleh teriakan kawanan
     callCd: 0,     // jeda sebelum boleh memanggil lagi
     face: Math.random() * Math.PI * 2,
+    walkT: Math.random() * 6.28,   // fase langkah (animasi)
+    lunge: 0,                       // 0..1 condong ke depan saat mengejar
   };
 }
