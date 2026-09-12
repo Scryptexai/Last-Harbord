@@ -9,7 +9,7 @@ import { G } from './state.js';
 import { makeRng, clamp, dist, lerp } from './util.js';
 import { addCarried, carriedFull } from './inventory.js';
 import { makeZombie } from './zombie.js';
-import { sfx } from './audio.js';
+import { sfx, haptic } from './audio.js';
 import { fx, burst, splash, flyItem, ring, addShake, addHitstop, addHurtDir, drawFxWorld } from './fx.js';
 import { blobPath, markTaken, survey, islandRemaining, drawStormPulse } from './world.js';
 import { ASSETS } from './assets.js';
@@ -26,7 +26,10 @@ export function enterIsland(island) {
   G.land = L;
   G.cam.x = L.player.x;
   G.cam.y = L.player.y;
-  G.cam.zoom = CFG.LAND.ZOOM;
+  // shot pembuka: mulai LEBAR (pulau terbaca utuh) lalu menyusut ke zoom main — ini
+  // "reveal" pendaratan. Kamera membawa pemain masuk, bukan hard-cut.
+  G.cam.zoom = CFG.LAND.ZOOM * 0.70;
+  G.camReveal = 1.2;
   const first = survey(island);
   sfx('anchor');
   splash(L.extract.x, L.extract.y, 14);
@@ -220,7 +223,7 @@ function completeGather(node) {
       if (svIdx >= 0) G.salvages[svIdx].cargo = left;
     }
     if (added > 0) {
-      sfx('salvage'); ring(p.x, p.y, '#ffcf6a', 40, 0.5);
+      sfx('salvage'); haptic([14, 30, 20]); ring(p.x, p.y, '#ffcf6a', 40, 0.5);
       flyItem(node.x, node.y, p, Object.keys(cargo)[0]);
       addShake(0.12);
     } else {
@@ -232,7 +235,7 @@ function completeGather(node) {
       node.taken = true;
       markTaken(G.land.island, type, added);
       flyItem(node.x, node.y, p, type);
-      sfx('gather_done');
+      sfx('gather_done'); haptic(16);
       burst(node.x, node.y, CFG.RESOURCES[type].color, 6, 70, 'spark', 2);
       if (added < node.qty) {
         // sisa tidak muat — tetap di tanah
@@ -380,6 +383,7 @@ function hitZombie(L, p, z) {
   addHitstop(0.07);
   addShake(0.10);
   sfx('hit', def.pitch);
+  haptic(12);
   burst(z.x, z.y, '#ffe9b0', 7, 120, 'spark', 2.4);
   ring(z.x, z.y, 'rgba(255,235,190,0.9)', z.radius + 8, 0.26);
 
@@ -390,6 +394,7 @@ function killZombie(L, z) {
   const i = L.zombies.indexOf(z);
   if (i >= 0) L.zombies.splice(i, 1);
   sfx('kill', CFG.ZOMBIES[z.type].pitch);
+  haptic([18, 40, 24]);
   addShake(0.16);
   burst(z.x, z.y, '#7a1f1f', 14, 150, 'spark', 3);
   // drop: harus dipanen seperti node lain (tidak ada auto-pickup)
@@ -433,7 +438,11 @@ function updateZombies(dt, L) {
 
     if (d < aggro) {
       z.chasing = true;
-      if (z.groanCd <= 0) { z.groanCd = 4 + Math.random() * 7; if (d < 320) sfx('groan', CFG.ZOMBIES[z.type].pitch); }
+      if (z.groanCd <= 0) {
+        z.groanCd = 4 + Math.random() * 7;
+        // atenuasi jarak: dekat = menggelegar, jauh = samar — suara punya ruang
+        if (d < 320) sfx('groan', CFG.ZOMBIES[z.type].pitch, clamp(1.15 - d / 300, 0.18, 1));
+      }
     } else {
       z.chasing = false;
       z.wanderT -= dt;
@@ -516,6 +525,7 @@ function hurtPlayer(dmg, angle, type) {
   addShake(clamp(dmg / 20, 0.15, 0.5));
   sfx('hurt');
   sfx('crack');
+  haptic([30, 30, 50]);
   burst(p.x, p.y, '#e05a4a', 8, 90, 'spark', 2.2);
   G.saveDirty = true;
 }

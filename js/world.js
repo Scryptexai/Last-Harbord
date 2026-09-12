@@ -227,6 +227,40 @@ export function drawStormPulse(ctx, vw, vh, strength = 0.5) {
   ctx.fillRect(0, 0, vw, vh * 0.5);
 }
 
+// HUJAN — varian pasang, bukan sistem terpisah. Semakin dekat ke puncak pasang,
+// semakin deras. Drops di-seed deterministik (bukan Math.random per frame), jadi tidak
+// berkedip; posisi hanya fungsi waktu + indeks. Digambar sebagai overlay layar.
+export function drawRain(ctx, vw, vh) {
+  const s = stormLevel();
+  if (s <= 0.03) return;
+  const t = G.time;
+  const wind = 0.10 + 0.24 * s;          // makin kencang saat badai
+  const count = Math.round(54 * s);
+  ctx.save();
+  ctx.lineWidth = 1.1;
+  ctx.strokeStyle = `rgba(158,190,222,${0.16 + 0.22 * s})`;
+  ctx.beginPath();
+  for (let i = 0; i < count; i++) {
+    const lane = (i * 137.508 + 11.3) % vw;              // sebaran merata (sudut emas)
+    const speed = (640 + ((i * 61) % 360)) * (0.7 + 0.5 * s);
+    const y = ((i * 211.7 + t * speed) % (vh + 60)) - 30;
+    const len = 13 + (i % 11);
+    const dx = len * Math.sin(wind);
+    ctx.moveTo(lane, y);
+    ctx.lineTo(lane - dx, y - len);
+  }
+  ctx.stroke();
+  // kabut tipis di dasar layar: dunia terasa lembap, bukan sekadar garis-garis
+  if (s > 0.4) {
+    const g = ctx.createLinearGradient(0, vh * 0.55, 0, vh);
+    g.addColorStop(0, 'rgba(150,170,195,0)');
+    g.addColorStop(1, `rgba(150,170,195,${0.05 + 0.10 * s})`);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, vh * 0.55, vw, vh * 0.45);
+  }
+  ctx.restore();
+}
+
 // Pita cakrawala + cahaya yang jatuh di atasnya. Digambar sebelum dunia.
 export function drawHorizon(ctx, vw, vh) {
   const h = horizonBand();

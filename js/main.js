@@ -5,16 +5,16 @@ import { loadGame, saveGame, clearSave } from './save.js';
 import { initInput, getMove, input, pressContext, releaseContext, pressAttack, clearQueued } from './input.js';
 import { initUI, showScreen, openModal, closeModal, isModalOpen, toast, updateHUD, renderDebrief, renderChart, renderBench, showHint, refreshIfOpen } from './ui.js';
 import { createBoat, updateBoat, drawBoat, drawLanternPool, maxHP, speedMult, boatTier } from './boat.js';
-import { generateWorld, nearestIsland, drawSea, drawOceanBackground, HARBOR, harborDist, survey, islandRemaining, islandTotalRemaining, islandById } from './world.js';
+import { generateWorld, nearestIsland, drawSea, drawOceanBackground, drawRain, HARBOR, harborDist, survey, islandRemaining, islandTotalRemaining, islandById } from './world.js';
 import { enterIsland, updateLand, drawLand, tryAttack, contextAction, landContext, atExtract, playerWorldPos } from './land.js';
 import { enterHarbor, updateHarbor, drawHarbor, harborContext } from './harbor.js';
 import { addCarried, bankCarried, carriedLoad, emptyBag, RES_TYPES, dropCarried } from './inventory.js';
 import { buyNext, nextRung, canBuyNext, goalLabel, isMaxed, capacity } from './refit.js';
 import { resetTide, updateTide, tidePhase, seaDrainRate } from './tide.js';
 import { loadAssets } from './assets.js';
-import { sfx, initAudio, setAmbience, tickAmbience, setMuted } from './audio.js';
+import { sfx, haptic, initAudio, setAmbience, tickAmbience, setMuted } from './audio.js';
 import { fx, updateFx, timeScale, shakeOffset, drawFxScreen, resetFx, addFlash, addShake, ring, flushGulls, returnGulls } from './fx.js';
-import { clamp, dist, fmtTime } from './util.js';
+import { clamp, dist, lerp, fmtTime } from './util.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -110,6 +110,7 @@ function backToBoat() {
   G.nearIsland = nearestIsland(G.boat.x, G.boat.y);
   setAmbience('sea');
   sfx('board');
+  haptic(20);
   addFlash(0.25);
   showScreen('sea');
   if (carriedLoad() >= capacity()) {
@@ -136,6 +137,7 @@ function moorHarbor() {
 
   if (total > 0) {
     sfx('bank');
+    haptic([22, 40, 30, 60, 40]);
     addFlash(0.3);
     showBankBeat(moved);
     if (canBuyNext()) {
@@ -159,6 +161,16 @@ function showBankBeat(cargo) {
   requestAnimationFrame(() => el.classList.add('show'));
   clearTimeout(el._t);
   el._t = setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.classList.add('hidden'), 400); }, 1500);
+}
+
+// Kematian bukan hard-cut: 0.8s slow-mo dulu (waktu berjalan 1/4 kecepatan, guncangan,
+// suara tenggelam), baru debrief. Ini memberi "framing" kematian — momen, bukan popup.
+function beginDeath(cause) {
+  if (G.dying) return;
+  G.dying = { t: 0.8, cause };
+  addShake(0.5);
+  sfx('death');
+  haptic([60, 60, 120]);
 }
 
 function die(cause) {
@@ -198,7 +210,6 @@ function die(cause) {
   G.target = null;
   G.pendingDeath = false;
 
-  sfx('death');
   resetFx();
   saveGame();
   enterHarbor();
@@ -374,7 +385,7 @@ function updateSea(dt) {
     if (Math.random() < dt * 1.4) { sfx('crack'); addShake(0.12); }
     if (G.hull <= 0) {
       G.hull = 0;
-      die('Lambung tidak kuat menahan pasang di laut terbuka.');
+      beginDeath('Lambung tidak kuat menahan pasang di laut terbuka.');
       return;
     }
   }
@@ -410,11 +421,18 @@ function updateLandState(dt) {
     G.cam.x += (p.x - G.cam.x) * Math.min(1, dt * 6);
     G.cam.y += (p.y - G.cam.y) * Math.min(1, dt * 6);
   }
+  // reveal pendaratan: zoom lebar menyusut mulus ke zoom main selama ~1.2s
+  if (G.camReveal > 0) {
+    G.camReveal = Math.max(0, G.camReveal - dt);
+    const k = 1 - G.camReveal / 1.2;
+    const ease = 1 - Math.pow(1 - Math.min(1, k), 3);   // ease-out: cepat di awal, halus di akhir
+    G.cam.zoom = lerp(CFG.LAND.ZOOM * 0.70, CFG.LAND.ZOOM, ease);
+  }
   flushSave();
 
   if (G.pendingDeath) {
     G.pendingDeath = false;
-    die('Kau kalah di daratan. Kapal menunggu, tapi kau tidak sampai.');
+    beginDeath('Kau kalah di daratan. Kapal menunggu, tapi kau tidak sampai.');
   }
 }
 
@@ -424,7 +442,19 @@ function update(dt) {
 
   // hit-stop: satu-satunya tempat waktu boleh berhenti
   const ts = timeScale();
-  const d = dt * ts;
+  let d = dt * ts;
+
+  // kematian: slow-mo 0.8s dulu, lalu debrief — waktu bermain melambat, jam nyata jalan
+  if (G.dying) {
+    G.dying.t -= dt;
+    d *= 0.25;
+    if (G.dying.t <= 0) {
+      const cause = G.dying.cause;
+      G.dying = null;
+      die(cause);
+      return;
+    }
+  }
 
   updateFx(dt);
 
@@ -494,6 +524,8 @@ function render() {
     else if (G.state === 'land') drawLand(ctx, vw, vh);
     else drawHarbor(ctx, vw, vh);
     ctx.restore();
+    // cuaca (hujan + kabut) hidup di atas dunia — satu bahasa dengan pasang, bukan UI
+    if (G.state === 'sea' || G.state === 'land') drawRain(ctx, vw, vh);
   } else {
     drawOceanBackground(ctx, vw, vh, 0, 0);
   }

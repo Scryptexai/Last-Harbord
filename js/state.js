@@ -34,6 +34,8 @@ export const G = {
   hurtFlash: 0,
   hurtDir: null,        // { angle, t } indikator arah serangan
   pendingDeath: false,
+  dying: null,          // { t, cause } slow-mo kematian sebelum debrief
+  camReveal: 0,         // >0 = shot pembuka pendaratan (zoom menyusut ke main)
   deathInfo: null,
   saveDirty: false,
   bankBeat: 0,          // 0..1 animasi pembongkaran muatan
