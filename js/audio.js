@@ -139,6 +139,58 @@ export function haptic(pattern = 8) {
   } catch (e) { /* opsional */ }
 }
 
+// ---------- music bed: satu drone rendah yang bernapas mengikuti pasang ----------
+// Bukan lagu: dua nada rendah yang intervalnya melebar dari konsonan (tenang) menuju
+// tritone (pasang tinggi) — ketegangan terdengar, bukan diumumkan. Sangat pelan, di
+// bawah semua SFX. Ini "musik" yang dulu tidak ada (lihat Appendix E.7).
+let music = null;
+
+function ensureMusic() {
+  const c = ac();
+  if (!c || music) return;
+  music = {
+    gain: c.createGain(),
+    filter: c.createBiquadFilter(),
+    o1: c.createOscillator(),
+    o2: c.createOscillator(),
+    lfo: c.createOscillator(),
+    lfoGain: c.createGain(),
+  };
+  music.gain.gain.value = 0;
+  music.filter.type = 'lowpass';
+  music.filter.frequency.value = 200;
+  music.filter.Q.value = 0.6;
+  music.o1.type = 'sine';
+  music.o2.type = 'sine';
+  music.o1.frequency.value = 65.4;
+  music.o2.frequency.value = 98.1;
+  music.lfo.type = 'sine';
+  music.lfo.frequency.value = 0.08;
+  music.lfoGain.gain.value = 3.5;
+  music.lfo.connect(music.lfoGain);
+  music.lfoGain.connect(music.o1.frequency);
+  music.o1.connect(music.filter);
+  music.o2.connect(music.filter);
+  music.filter.connect(music.gain);
+  music.gain.connect(master);
+  music.o1.start(); music.o2.start(); music.lfo.start();
+}
+
+// tint = tideTint() 0..1. Dipanggil tiap frame dari main.js.
+export function updateMusic(tint) {
+  const c = ac();
+  if (!c) return;
+  ensureMusic();
+  if (G.muted || !music) { if (music) music.gain.gain.value = 0; return; }
+  const t = c.currentTime;
+  const root = 65.4 - 17 * tint;             // C2 turun ke ~G1: makin rendah makin gelap
+  const ratio = 1.5 - 0.086 * tint;          // perfect fifth -> tritone: makin sumbang
+  music.o1.frequency.setTargetAtTime(root, t, 1.8);
+  music.o2.frequency.setTargetAtTime(root * ratio, t, 1.8);
+  music.filter.frequency.setTargetAtTime(180 + 150 * tint, t, 1.8);
+  music.gain.gain.setTargetAtTime(G.muted ? 0 : (0.045 - 0.014 * tint), t, 1.8);
+}
+
 // ---------- ambience ----------
 // kind: 'harbor' | 'sea' | 'land' | 'high'
 export function setAmbience(kind) {

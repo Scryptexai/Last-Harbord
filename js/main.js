@@ -10,9 +10,9 @@ import { enterIsland, updateLand, drawLand, tryAttack, contextAction, landContex
 import { enterHarbor, updateHarbor, drawHarbor, harborContext } from './harbor.js';
 import { addCarried, bankCarried, carriedLoad, emptyBag, RES_TYPES, dropCarried } from './inventory.js';
 import { buyNext, nextRung, canBuyNext, goalLabel, isMaxed, capacity } from './refit.js';
-import { resetTide, updateTide, tidePhase, seaDrainRate } from './tide.js';
+import { resetTide, updateTide, tidePhase, tideTint, seaDrainRate } from './tide.js';
 import { loadAssets } from './assets.js';
-import { sfx, haptic, initAudio, setAmbience, tickAmbience, setMuted } from './audio.js';
+import { sfx, haptic, initAudio, setAmbience, tickAmbience, updateMusic, setMuted } from './audio.js';
 import { fx, updateFx, timeScale, shakeOffset, drawFxScreen, resetFx, addFlash, addShake, ring, flushGulls, returnGulls } from './fx.js';
 import { clamp, dist, lerp, fmtTime } from './util.js';
 
@@ -457,6 +457,10 @@ function update(dt) {
   }
 
   updateFx(dt);
+
+  // music bed mengikuti pasang — di dermaga pun malam yang datang terdengar
+  updateMusic(G.state === 'sea' || G.state === 'land' || G.state === 'harbor'
+    ? tideTint() : 0);
 
   if (G.state === 'sea' && fx.vignetteTarget) fx.vignetteTarget = 0;
 
