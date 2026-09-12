@@ -477,6 +477,16 @@ button.heal {
 .res-chip i { width: 8px; height: 8px; display: inline-block; }
 
 /* ---------- Peta ---------- */
+.chart-map { width: 100%; }
+.chart-map canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 1px solid rgba(120, 150, 180, 0.22);
+  border-radius: 6px;
+  cursor: pointer;
+  image-rendering: auto;
+}
 .chart-rows { display: flex; flex-direction: column; gap: 6px; }
 .chart-band {
   display: flex;

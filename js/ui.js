@@ -24,7 +24,7 @@ const IDS = [
   'hud', 'hud-top', 'hull-fill', 'hull-text', 'hold-pips', 'hold-text',
   'tide-name', 'tide-fill', 'tide-block', 'goal-chip', 'toasts',
   'btn-context', 'btn-attack', 'btn-heal', 'btn-mute', 'joystick', 'joy-knob',
-  'modal-chart', 'chart-rows', 'chart-hint', 'chart-bank', 'chart-close', 'chart-sail',
+  'modal-chart', 'chart-map', 'chart-hint', 'chart-bank', 'chart-close', 'chart-sail',
   'modal-bench', 'bench-rows', 'bench-bank', 'bench-close', 'bench-title', 'bench-sub',
   'modal-debrief', 'db-title', 'db-cause', 'db-lost', 'db-kept', 'db-salvage', 'db-night', 'db-goal', 'db-close',
   'hint-line',
@@ -202,53 +202,172 @@ export function showHint(text, ms = 4200) {
 // ---------- Peta ----------
 function distToHarbor(isl) { return Math.hypot(isl.x - HARBOR.x, isl.y - HARBOR.y); }
 
+// Peta perairan sekarang SPASIAL, bukan daftar baris: dermaga di tengah, pulau-pulau
+// digambar sebagai node pada bidang 2D sesuai posisi dunianya. Yang belum disurvei
+// tampil samar (tanda tanya), yang sudah dikenal tampil jelas dengan nama — insentif
+// visual untuk eksplorasi. Pemain men-tap titik untuk memilih tujuan.
+const CHART_MAP = 440;   // ukuran logis peta (px)
+let chartCanvas = null;
+
 export function renderChart() {
   els['chart-bank'].innerHTML = bankChips();
-  const rows = els['chart-rows'];
-  rows.innerHTML = '';
-  const list = [...G.islands].sort((a, b) => distToHarbor(a) - distToHarbor(b));
-  const rings = ['Perairan Dekat', 'Perairan Tengah', 'Perairan Jauh'];
-
-  let lastRing = -1;
-  for (const isl of list) {
-    if (isl.ringIdx !== lastRing) {
-      lastRing = isl.ringIdx;
-      const h = document.createElement('div');
-      h.className = 'chart-band';
-      h.innerHTML = `<span>${rings[isl.ringIdx] || ''}</span><span class="muted">${Math.round(distToHarbor(isl) / 10)} m dari dermaga</span>`;
-      rows.appendChild(h);
-    }
-    const known = !!G.surveyed[isl.id];
-    const left = islandTotalRemaining(isl);
-    const sv = G.salvages.find((s) => s.islandId === isl.id);
-    const fl = CFG.FLAVORS[isl.flavor];
-
-    const row = document.createElement('div');
-    row.className = 'chart-row' + (isDepleted(isl) ? ' spent' : '') + (G.target === isl ? ' chosen' : '');
-    const hint = known ? `${fl.label} · ${fl.hint}` : 'Belum disurvei';
-    row.innerHTML = `
-      <div class="cr-main">
-        <b>${known ? isl.name : 'Perairan belum bernama'}</b>
-        <span class="muted">${hint}</span>
-        ${sv ? '<span class="sv">◉ pelampung muatan</span>' : ''}
-      </div>
-      <div class="cr-side">
-        <span class="muted">${Math.round(distToHarbor(isl) / 10)} m</span>
-        <span class="${left > 0 ? 'ok' : 'bad'}">${left > 0 ? 'ada muatan' : 'habis'}</span>
-      </div>`;
-    const b = document.createElement('button');
-    b.className = 'btn small';
-    b.textContent = 'PILIH';
-    b.onclick = () => { if (H.onPickTarget) H.onPickTarget(isl.id); renderChart(); };
-    row.appendChild(b);
-    rows.appendChild(row);
-  }
-
+  drawChartMap();
   const sel = G.target;
+  const selName = sel ? (G.surveyed[sel.id] ? sel.name : 'perairan belum bernama') : null;
   els['chart-hint'].textContent = sel
-    ? `Tujuan: ${G.surveyed[sel.id] ? sel.name : 'perairan belum bernama'} · ${Math.round(distToHarbor(sel) / 10)} m`
-    : 'Belum ada tujuan. Pilih satu pulau, lalu naik ke haluan kapal untuk berlayar.';
+    ? `Tujuan: ${selName} · ${Math.round(distToHarbor(sel) / 10)} m dari dermaga`
+    : 'Tap satu titik di peta untuk memilih tujuan, lalu berlayar.';
   els['chart-sail'].textContent = sel ? 'BERLAYAR SEKARANG' : 'BERLAYAR TANPA TUJUAN';
+}
+
+function chartProject() {
+  // Cincin terjauh (jarak maksimum + radius pulau) harus muat di dalam peta.
+  const R = CHART_MAP / 2;
+  const maxWorld = CFG.SEA.RINGS[CFG.SEA.RINGS.length - 1].dist[1] + 620;
+  const scale = (R - 28) / maxWorld;
+  return { cx: R, cy: R, scale };
+}
+
+function drawChartMap() {
+  const wrap = els['chart-map'];
+  if (!wrap) return;
+  if (!chartCanvas) {
+    chartCanvas = document.createElement('canvas');
+    wrap.appendChild(chartCanvas);
+    chartCanvas.addEventListener('click', onChartMapClick);
+  }
+  const cv = chartCanvas;
+  const dpr = Math.min((typeof window !== 'undefined' ? window.devicePixelRatio : 1) || 1, 2);
+  cv.width = CHART_MAP * dpr;
+  cv.height = CHART_MAP * dpr;
+  cv.style.width = '100%';
+  cv.style.height = 'auto';
+  cv.style.display = 'block';
+  const ctx = cv.getContext && cv.getContext('2d');
+  if (!ctx) return;   // headless (tanpa canvas asli): aman, tidak menggambar
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const { cx, cy, scale } = chartProject();
+  const sx = (wx) => cx + wx * scale;
+  const sy = (wy) => cy + wy * scale;
+
+  // latar peta (perairan gelap, lebih terang di tengah)
+  const bg = ctx.createRadialGradient(cx, cy, 16, cx, cy, CHART_MAP / 2);
+  bg.addColorStop(0, 'rgba(22,42,58,0.95)');
+  bg.addColorStop(1, 'rgba(5,11,19,0.98)');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, CHART_MAP, CHART_MAP);
+
+  // cincin jarak — tiga perairan yang terlihat, bukan angka yang dibaca
+  ctx.setLineDash([5, 7]);
+  for (const ring of CFG.SEA.RINGS) {
+    const mid = (ring.dist[0] + ring.dist[1]) / 2;
+    ctx.strokeStyle = 'rgba(120,150,180,0.14)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, mid * scale, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = '600 9px Inter, system-ui, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(150,180,205,0.45)';
+    ctx.fillText(ring.name, cx + 8, cy - mid * scale + 6);
+    ctx.setLineDash([5, 7]);
+  }
+  ctx.setLineDash([]);
+
+  drawHarborOnChart(ctx, cx, cy);
+
+  const hits = [];
+  for (const isl of G.islands) {
+    const px = sx(isl.x), py = sy(isl.y);
+    const surveyed = !!G.surveyed[isl.id];
+    const depleted = isDepleted(isl);
+    const sv = G.salvages.find((s) => s.islandId === isl.id);
+    const chosen = G.target === isl;
+    const r = Math.max(7, Math.min(14, 7 + isl.ringIdx * 2.5));
+
+    if (chosen) {
+      const g = ctx.createRadialGradient(px, py, 2, px, py, r * 2.7);
+      g.addColorStop(0, 'rgba(255,207,106,0.5)');
+      g.addColorStop(1, 'rgba(255,207,106,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(px, py, r * 2.7, 0, Math.PI * 2); ctx.fill();
+    }
+
+    if (surveyed) {
+      ctx.fillStyle = depleted ? 'rgba(120,122,126,0.55)' : '#d9c79a';
+      ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = depleted ? 'rgba(120,122,126,0.4)' : 'rgba(120,105,70,0.75)';
+      ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.font = '700 10px Inter, system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = depleted ? 'rgba(165,175,185,0.7)' : '#e7eef6';
+      ctx.fillText(isl.name, px, py - r - 5);
+      if (depleted) {
+        ctx.font = '600 8px Inter, system-ui, sans-serif';
+        ctx.fillStyle = 'rgba(165,175,185,0.5)';
+        ctx.fillText('habis', px, py + r + 11);
+      }
+    } else {
+      // belum disurvei: penanda samar — "ada sesuatu di sini, tapi kau belum tahu"
+      ctx.setLineDash([3, 3]);
+      ctx.strokeStyle = 'rgba(150,180,205,0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font = '700 12px Inter, system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(150,180,205,0.65)';
+      ctx.fillText('?', px, py + 4);
+    }
+
+    // pelampung salvage: bintang emas kecil di atas pulau tempat kau mati
+    if (sv) {
+      ctx.fillStyle = '#ffcf6a';
+      ctx.beginPath(); ctx.arc(px + r * 0.9, py - r * 0.9, 3.2, 0, Math.PI * 2); ctx.fill();
+    }
+
+    hits.push({ id: isl.id, px, py, r: Math.max(r, 17) });
+  }
+  cv._hits = hits;
+  cv._proj = { cx, cy, scale };
+}
+
+function drawHarborOnChart(ctx, cx, cy) {
+  const g = ctx.createRadialGradient(cx, cy, 2, cx, cy, 22);
+  g.addColorStop(0, 'rgba(255,200,120,0.5)');
+  g.addColorStop(1, 'rgba(255,170,80,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(cx, cy, 22, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#6b4522';
+  ctx.fillRect(cx - 7, cy - 6, 14, 28);
+  ctx.fillStyle = '#8a5c30';
+  for (let i = 0; i < 5; i++) ctx.fillRect(cx - 7, cy - 6 + i * 5, 14, 1.5);
+  ctx.fillStyle = '#ffd79a';
+  ctx.beginPath(); ctx.arc(cx, cy + 19, 2.6, 0, Math.PI * 2); ctx.fill();
+  ctx.font = '700 10px Inter, system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#ffcf6a';
+  ctx.fillText('DERMAGA', cx, cy + 38);
+}
+
+function onChartMapClick(e) {
+  const cv = chartCanvas;
+  const hits = (cv && cv._hits) || [];
+  if (!hits.length || !cv.getBoundingClientRect) return;
+  const rect = cv.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) / Math.max(1, rect.width) * CHART_MAP;
+  const my = (e.clientY - rect.top) / Math.max(1, rect.height) * CHART_MAP;
+  let best = null, bd = 24;
+  for (const h of hits) {
+    const d = Math.hypot(h.px - mx, h.py - my);
+    if (d < bd) { bd = d; best = h; }
+  }
+  if (best) {
+    if (H.onPickTarget) H.onPickTarget(best.id);
+    renderChart();
+  }
 }
 
 function bankChips() {
