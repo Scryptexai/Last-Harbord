@@ -34,6 +34,7 @@ import { horizonBand, stormLevel } from '../js/world.js';
 import { initUI, updateHUD, toast, openModal, closeModal } from '../js/ui.js';
 import { enterHarbor, updateHarbor, harborContext, SPOTS } from '../js/harbor.js';
 import { ASSETS } from '../js/assets.js';
+import { directionOf, sheetFrame, SHEET_DIRS } from '../js/sheets.js';
 
 // ---------- DOM stub ----------
 function elStub() {
@@ -584,6 +585,59 @@ toast('tes');
 ok(true, 'toast aman tanpa DOM nyata');
 openModal('chart'); closeModal();
 ok(true, 'modal peta bisa dibuka & ditutup');
+
+// ============================================================
+console.log('\n== 15. Karakter 8 arah: animasi dibulatkan, gerak tetap bebas ==');
+// Input joystick kontinu (sudut bebas) harus DIBULATKAN ke kelipatan 45° terdekat
+// untuk memilih animasi; posisi/gerak TIDAK ikut terkunci. Arah barat (W/NW/SW)
+// tidak digambar ulang — dicerminkan dari sisi kanan (E/NE/SE).
+ok(SHEET_DIRS.join() === 'front,back,side,ne,se',
+  `5 arah unik digambar (${SHEET_DIRS.join(',')}), sisanya dicerminkan`);
+
+// --- tabel arah: setiap 8 arah utama memetakan ke (dir, flip) yang benar ---
+const DIRS = [
+  [[1, 0], 'side', 1],   // E
+  [[1, 1], 'se', 1],     // SE
+  [[0, 1], 'front', 1],  // S
+  [[-1, 1], 'se', -1],   // SW (cermin SE)
+  [[-1, 0], 'side', -1], // W  (cermin side)
+  [[-1, -1], 'ne', -1],  // NW (cermin NE)
+  [[0, -1], 'back', 1],  // N
+  [[1, -1], 'ne', 1],    // NE
+];
+for (const [[dx, dy], dir, flip] of DIRS) {
+  const got = directionOf(dx, dy);
+  ok(got.dir === dir && got.flip === flip,
+    `arah (${dx},${dy}) -> ${got.dir}${got.flip < 0 ? ' (cermin)' : ''} (harap ${dir}${flip < 0 ? ' cermin' : ''})`);
+}
+
+// --- pembulatan: sudut kontinu dekat batas tetap jatuh ke kelipatan 45° terdekat ---
+// 20° dari timur = lebih dekat E daripada NE; -20° = masih E (bukan N).
+ok(directionOf(Math.cos(0.35), Math.sin(0.35)).dir === 'side', '20° di atas timur -> E (bukan NE)');
+ok(directionOf(Math.cos(-0.35), Math.sin(-0.35)).dir === 'side', '20° di bawah timur -> E (bukan N)');
+// Konvensi: +x=timur, +y=selatan. 135° = kiri-bawah (SW) -> SE dicerminkan, bukan selatan.
+const sw = directionOf(Math.cos(Math.PI * 0.75), Math.sin(Math.PI * 0.75));
+ok(sw.dir === 'se' && sw.flip === -1, `135° (kiri-bawah) -> SW = SE dicerminkan (${sw.dir}, flip ${sw.flip})`);
+// 60° = antara SE (45°) dan S (90°), lebih dekat SE
+ok(directionOf(Math.cos(Math.PI / 3), Math.sin(Math.PI / 3)).dir === 'se', '60° -> SE (lebih dekat SE daripada S)');
+
+// --- pemilihan frame: diam = frame 0, jalan = siklus 1..2, dan cermin ikut arah ---
+{
+  const fake = { front: ['f0', 'f1', 'f2'], back: ['b0', 'b1', 'b2'], side: ['s0', 's1', 's2'], ne: ['n0', 'n1', 'n2'], se: ['e0', 'e1', 'e2'] };
+  ASSETS.sheets = { player: fake };
+  const idle = sheetFrame('player', 0, 1, 0, false);      // menghadap selatan, diam
+  ok(idle.img === 'f0' && idle.flip === 1, `diam menghadap S -> frame idle depan (${idle.img})`);
+  const w1 = sheetFrame('player', 0, 1, Math.PI * 2 * 0.1, true);   // awal siklus
+  const w2 = sheetFrame('player', 0, 1, Math.PI * 2 * 0.6, true);   // paruh siklus
+  ok(w1.img === 'f1' && w2.img === 'f2', `jalan menghadap S -> siklus frame 1/2 (${w1.img},${w2.img})`);
+  const wside = sheetFrame('player', -1, 0, 0, true);     // berjalan ke BARAT
+  ok(wside.img === 's1' && wside.flip === -1, `jalan ke barat -> side DI-CERMIN (${wside.img}, flip ${wside.flip})`);
+  const idleN = sheetFrame('player', 0, -1, 0, false);    // diam menghadap utara
+  ok(idleN.img === 'b0', `diam menghadap N -> frame idle belakang (${idleN.img})`);
+  // arah yang belum digambar (diagonal 4 tersisa) tidak menabrak: null aman
+  ASSETS.sheets = {};
+  ok(sheetFrame('player', 0, 1, 0, false) === null, 'sheet belum termuat -> null (render fallback aman)');
+}
 
 console.log(`\nHasil: ${pass} pass, ${fail} fail`);
 if (fail > 0) process.exit(1);

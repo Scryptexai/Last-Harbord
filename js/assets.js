@@ -1,10 +1,11 @@
 // ============ Asset Loader ============
 export const ASSETS = {};
 
-// Karakter arah + animasi (diproduksi dari sheet 3x3 / 3x5). Frame 0 = diam,
-// frame 1..n = siklus langkah. Arah 'side' menghadap kanan (di-cermin di render).
-const SHEET_SPEC = { player: 3, zombie_slow: 3, zombie_fast: 5, zombie_tank: 5 };
-const SHEET_DIRS = ['up', 'down', 'side'];
+// Karakter arah + animasi (diproduksi dari strip 5 arah × 3 frame). Frame 0 = diam,
+// frame 1..n = siklus langkah. 'side' menghadap kanan (di-cermin untuk kiri);
+// 'ne'/'se' diagonal, di-cermin untuk NW/SW.
+const SHEET_SPEC = { player: 3, zombie_slow: 3, zombie_fast: 3, zombie_tank: 3 };
+const SHEET_DIRS = ['front', 'back', 'side', 'ne', 'se'];
 
 const ASSET_PATHS = {
   // Characters & Entities
@@ -56,7 +57,7 @@ export function loadAssets() {
   const sheetPaths = [];
   ASSETS.sheets = {};
   for (const [name, n] of Object.entries(SHEET_SPEC)) {
-    ASSETS.sheets[name] = { up: [], down: [], side: [] };
+    ASSETS.sheets[name] = { front: [], back: [], side: [], ne: [], se: [] };
     for (const dir of SHEET_DIRS) {
       for (let f = 0; f < n; f++) {
         sheetPaths.push({ name, dir, f, src: `assets/characters/${name}_${dir}_${f}.png` });

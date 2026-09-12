@@ -1,82 +1,89 @@
 {
   "player": {
-    "up": [
-      "assets/characters/player_up_0.png",
-      "assets/characters/player_up_1.png",
-      "assets/characters/player_up_2.png"
+    "front": [
+      "assets/characters/player_front_0.png",
+      "assets/characters/player_front_1.png",
+      "assets/characters/player_front_2.png"
     ],
-    "down": [
-      "assets/characters/player_down_0.png",
-      "assets/characters/player_down_1.png",
-      "assets/characters/player_down_2.png"
+    "back": [
+      "assets/characters/player_back_0.png",
+      "assets/characters/player_back_1.png",
+      "assets/characters/player_back_2.png"
     ],
     "side": [
       "assets/characters/player_side_0.png",
       "assets/characters/player_side_1.png",
       "assets/characters/player_side_2.png"
+    ],
+    "ne": [
+      "assets/characters/player_ne_0.png",
+      "assets/characters/player_ne_1.png",
+      "assets/characters/player_ne_2.png"
+    ],
+    "se": [
+      "assets/characters/player_se_0.png",
+      "assets/characters/player_se_1.png",
+      "assets/characters/player_se_2.png"
     ]
   },
   "zombie_slow": {
-    "up": [
-      "assets/characters/zombie_slow_up_0.png",
-      "assets/characters/zombie_slow_up_1.png",
-      "assets/characters/zombie_slow_up_2.png"
+    "front": [
+      "assets/characters/zombie_slow_front_0.png",
+      "assets/characters/zombie_slow_front_1.png",
+      "assets/characters/zombie_slow_front_2.png"
     ],
-    "down": [
-      "assets/characters/zombie_slow_down_0.png",
-      "assets/characters/zombie_slow_down_1.png",
-      "assets/characters/zombie_slow_down_2.png"
+    "back": [
+      "assets/characters/zombie_slow_back_0.png",
+      "assets/characters/zombie_slow_back_1.png",
+      "assets/characters/zombie_slow_back_2.png"
     ],
     "side": [
       "assets/characters/zombie_slow_side_0.png",
       "assets/characters/zombie_slow_side_1.png",
       "assets/characters/zombie_slow_side_2.png"
+    ],
+    "ne": [
+      "assets/characters/zombie_slow_ne_0.png",
+      "assets/characters/zombie_slow_ne_1.png",
+      "assets/characters/zombie_slow_ne_2.png"
+    ],
+    "se": [
+      "assets/characters/zombie_slow_se_0.png",
+      "assets/characters/zombie_slow_se_1.png",
+      "assets/characters/zombie_slow_se_2.png"
     ]
   },
   "zombie_fast": {
-    "up": [
-      "assets/characters/zombie_fast_up_0.png",
-      "assets/characters/zombie_fast_up_1.png",
-      "assets/characters/zombie_fast_up_2.png",
-      "assets/characters/zombie_fast_up_3.png",
-      "assets/characters/zombie_fast_up_4.png"
+    "front": [
+      "assets/characters/zombie_fast_front_0.png",
+      "assets/characters/zombie_fast_front_1.png",
+      "assets/characters/zombie_fast_front_2.png"
     ],
-    "down": [
-      "assets/characters/zombie_fast_down_0.png",
-      "assets/characters/zombie_fast_down_1.png",
-      "assets/characters/zombie_fast_down_2.png",
-      "assets/characters/zombie_fast_down_3.png",
-      "assets/characters/zombie_fast_down_4.png"
+    "back": [
+      "assets/characters/zombie_fast_back_0.png",
+      "assets/characters/zombie_fast_back_1.png",
+      "assets/characters/zombie_fast_back_2.png"
     ],
     "side": [
       "assets/characters/zombie_fast_side_0.png",
       "assets/characters/zombie_fast_side_1.png",
-      "assets/characters/zombie_fast_side_2.png",
-      "assets/characters/zombie_fast_side_3.png",
-      "assets/characters/zombie_fast_side_4.png"
+      "assets/characters/zombie_fast_side_2.png"
     ]
   },
   "zombie_tank": {
-    "up": [
-      "assets/characters/zombie_tank_up_0.png",
-      "assets/characters/zombie_tank_up_1.png",
-      "assets/characters/zombie_tank_up_2.png",
-      "assets/characters/zombie_tank_up_3.png",
-      "assets/characters/zombie_tank_up_4.png"
+    "front": [
+      "assets/characters/zombie_tank_front_0.png",
+      "assets/characters/zombie_tank_front_1.png",
+      "assets/characters/zombie_tank_front_2.png"
     ],
-    "down": [
-      "assets/characters/zombie_tank_down_0.png",
-      "assets/characters/zombie_tank_down_1.png",
-      "assets/characters/zombie_tank_down_2.png",
-      "assets/characters/zombie_tank_down_3.png",
-      "assets/characters/zombie_tank_down_4.png"
+    "back": [
+      "assets/characters/zombie_tank_back_0.png",
+      "assets/characters/zombie_tank_back_1.png",
+      "assets/characters/zombie_tank_back_2.png"
     ],
     "side": [
       "assets/characters/zombie_tank_side_0.png",
-      "assets/characters/zombie_tank_side_1.png",
-      "assets/characters/zombie_tank_side_2.png",
-      "assets/characters/zombie_tank_side_3.png",
-      "assets/characters/zombie_tank_side_4.png"
+      "assets/characters/zombie_tank_side_1.png"
     ]
   }
 }
