@@ -143,7 +143,7 @@ console.log('\n== 1. Tanah: benda berdiri mendarat di posisi yang benar ==');
   if (process.env.DEBUG_CAM) {
     console.log(`    [debug] harap pemain di (${want.x.toFixed(1)}, ${want.y.toFixed(1)}) zoom=${zoom} cam=(${G.cam.x.toFixed(0)},${G.cam.y.toFixed(0)})`);
   }
-  standsOn(near(want.x, want.y - 15), want, 36, zoom, 'pemain');
+  standsOn(near(want.x, want.y - 15), want, 48, zoom, 'pemain');
 
   // kapal di pulau: digambar di atas air, pusat sprite = posisi kapal
   const wantBoat = toScreen(L.boatPos.x, L.boatPos.y, VW, VH);

@@ -1036,7 +1036,7 @@ function drawPlayer(ctx, L) {
     const flip = Math.cos(p.face) < 0 ? -1 : 1;
     ctx.scale(flip, 1);
     if (img && img.complete && img.naturalWidth > 0) {
-      const sz = 36;
+      const sz = 48;
       ctx.drawImage(img, -sz / 2, -sz * 0.92, sz, sz);
     } else {
       ctx.fillStyle = '#e67e22';
