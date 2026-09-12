@@ -13,6 +13,7 @@ import { sfx, haptic } from './audio.js';
 import { fx, burst, splash, flyItem, ring, addShake, addHitstop, addHurtDir, drawFxWorld } from './fx.js';
 import { blobPath, markTaken, survey, islandRemaining, drawStormPulse } from './world.js';
 import { ASSETS } from './assets.js';
+import { sheetFrame } from './sheets.js';
 import { consumeReinforce, tideTint, tideDanger, tidePhase } from './tide.js';
 import { beginWorld, endWorld, upright, atUpright, byDepth } from './camera.js';
 import { drawBoat, drawLanternPool } from './boat.js';
@@ -135,6 +136,7 @@ function buildLand(island) {
     fog: { cw, ch, cell, x0: -span, y0: -span, cells: new Uint8Array(cw * ch), dirty: true, lastX: 1e9, lastY: 1e9 },
     player: {
       x: extract.x, y: extract.y, vx: 0, vy: 0, face: -Math.PI / 2,
+      faceDirX: 0, faceDirY: -1,   // arah hadap terakhir (dipakai saat diam)
       atk: { phase: 'idle', t: 0, hitDone: false }, gather: null, invuln: 0,
       stepT: 0, gatherFade: 0,
       walkT: 0, walkAmp: 0, hurtT: 0,  // animasi (bob, condong, squash)
@@ -278,6 +280,7 @@ export function updateLand(dt, move, opts = {}) {
     p.y += p.vy * dt;
     if (ml > 0.01) {
       const want = Math.atan2(move.y, move.x);
+      p.faceDirX = Math.cos(want); p.faceDirY = Math.sin(want);
       let d = want - p.face;
       while (d > Math.PI) d -= Math.PI * 2;
       while (d < -Math.PI) d += Math.PI * 2;
@@ -1026,8 +1029,10 @@ function drawZombie(ctx, L, z) {
 
   atUpright(ctx, z.x, z.y, () => {
   if (!revealed) ctx.globalAlpha = 0.34;
-  // Menghadap kiri/kanan = cermin, bukan rotasi: kamera miring, jadi tubuh tetap tegak.
-  const flip = Math.cos(z.face || 0) < 0 ? -1 : 1;
+  // Arah hadap & siklus langkah dari sheet; 'side' di-cermin untuk kiri/kanan.
+  const dx = Math.cos(z.face || 0), dy = Math.sin(z.face || 0);
+  const fr = sheetFrame('zombie_' + z.type, dx, dy, z.walkT, true);
+  const flip = fr ? fr.flip : (Math.cos(z.face || 0) < 0 ? -1 : 1);
 
   // ---- animasi: gontai yang berbeda per tipe ----
   // slow = goyangan lebar, fast = getar cepat, tank = bob berat (langkah menghentak)
@@ -1045,7 +1050,10 @@ function drawZombie(ctx, L, z) {
   ctx.rotate(lean);
   ctx.scale(sqX, sqY);
 
-  if (img && img.complete && img.naturalWidth > 0) {
+  if (fr && fr.img && fr.img.complete && fr.img.naturalWidth > 0) {
+    const sz = z.radius * 2.9;
+    ctx.drawImage(fr.img, -sz / 2, -sz * 0.92, sz, sz);
+  } else if (img && img.complete && img.naturalWidth > 0) {
     const sz = z.radius * 2.9;
     ctx.drawImage(img, -sz / 2, -sz * 0.92, sz, sz);
   } else {
@@ -1140,18 +1148,24 @@ function drawPlayer(ctx, L) {
 
   atUpright(ctx, p.x, p.y, () => {
     if (p.invuln > 0 && Math.floor(G.time * 20) % 2 === 0) ctx.globalAlpha = 0.5;
-    const flip = Math.cos(p.face) < 0 ? -1 : 1;
     const sz = 48;
 
-    // ---- animasi: badan hidup, bukan foto yang digeser ----
+    // ---- animasi: badan hidup + arah hadap + siklus langkah ----
     const an = playerAnim(p);
+    const moving = p.walkAmp > 0.15;
+    const fdx = moving ? p.vx : (p.faceDirX || 0);
+    const fdy = moving ? p.vy : (p.faceDirY || -1);
+    const fr = sheetFrame('player', fdx, fdy, p.walkT, moving);
+    const flip = fr ? fr.flip : (Math.cos(p.face) < 0 ? -1 : 1);
 
     ctx.scale(flip, 1);
     ctx.translate(an.lunge, an.bob);
     ctx.rotate(an.lean);
     ctx.scale(an.sqX, an.sqY);
 
-    if (img && img.complete && img.naturalWidth > 0) {
+    if (fr && fr.img && fr.img.complete && fr.img.naturalWidth > 0) {
+      ctx.drawImage(fr.img, -sz / 2, -sz * 0.92, sz, sz);
+    } else if (img && img.complete && img.naturalWidth > 0) {
       ctx.drawImage(img, -sz / 2, -sz * 0.92, sz, sz);
     } else {
       ctx.fillStyle = '#e67e22';

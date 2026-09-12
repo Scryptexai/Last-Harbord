@@ -7,6 +7,7 @@ import { G } from './state.js';
 import { clamp, dist, makeRng } from './util.js';
 import { capacity, nextRung, goalLabel, isMaxed } from './refit.js';
 import { ASSETS } from './assets.js';
+import { sheetFrame } from './sheets.js';
 import { sfx } from './audio.js';
 import { drawBoat, drawLanternPool } from './boat.js';
 import { HARBOR } from './world.js';
@@ -30,7 +31,7 @@ export function enterHarbor() {
   G.state = 'harbor';
   G.cam.x = CAM.x; G.cam.y = CAM.y; G.cam.zoom = CAM.zoom;
   G.harbor = {
-    player: { x: 0, y: 18, vx: 0, vy: 0, face: -Math.PI / 2, stepT: 0 },
+    player: { x: 0, y: 18, vx: 0, vy: 0, face: -Math.PI / 2, faceDirX: 0, faceDirY: -1, stepT: 0, walkT: 0, walkAmp: 0 },
     spots: SPOTS.map((s) => ({ ...s })),
     t: 0,
   };
@@ -68,6 +69,7 @@ export function updateHarbor(dt, move, ctxBusy) {
     p.y += p.vy * dt;
     if (ml > 0.01) {
       const want = Math.atan2(move.y, move.x);
+      p.faceDirX = Math.cos(want); p.faceDirY = Math.sin(want);
       let d = want - p.face;
       while (d > Math.PI) d -= Math.PI * 2;
       while (d < -Math.PI) d += Math.PI * 2;
@@ -79,6 +81,9 @@ export function updateHarbor(dt, move, ctxBusy) {
       if (p.stepT <= 0) { p.stepT = 0.42; sfx('step'); }
     }
   }
+  // penggerak animasi berjalan (untuk sheet arah + siklus langkah)
+  p.walkAmp = clamp(p.walkAmp + ((Math.hypot(p.vx, p.vy) > 0.01 ? 1 : 0) - p.walkAmp) * Math.min(1, dt * 7), 0, 1);
+  p.walkT += Math.hypot(p.vx, p.vy) * dt * 0.055;
   clampToWalkable(p);
 }
 
@@ -440,9 +445,19 @@ function drawPlayer(ctx, p) {
   ctx.fillStyle = 'rgba(0,0,0,0.3)';
   ctx.beginPath(); ctx.ellipse(p.x, p.y + 3, 11, 4.5, 0, 0, Math.PI * 2); ctx.fill();
   atUpright(ctx, p.x, p.y, () => {
-    const flip = Math.cos(p.face) < 0 ? -1 : 1;
+    // arah hadap + siklus langkah dari sheet; napas halus saat diam
+    const mv = Math.hypot(p.vx, p.vy) > 0.01;
+    const fdx = mv ? p.vx : (p.faceDirX || 0);
+    const fdy = mv ? p.vy : (p.faceDirY || -1);
+    const fr = sheetFrame('player', fdx, fdy, p.walkT, mv);
+    const flip = fr ? fr.flip : (Math.cos(p.face) < 0 ? -1 : 1);
+    const bob = Math.sin(G.time * 2.4) * (mv ? 0 : 1.4);
     ctx.scale(flip, 1);
-    if (img && img.complete && img.naturalWidth > 0) {
+    ctx.translate(0, bob);
+    if (fr && fr.img && fr.img.complete && fr.img.naturalWidth > 0) {
+      const sz = 44;
+      ctx.drawImage(fr.img, -sz / 2, -sz * 0.92, sz, sz);
+    } else if (img && img.complete && img.naturalWidth > 0) {
       const sz = 44;
       ctx.drawImage(img, -sz / 2, -sz * 0.92, sz, sz);
     } else {
