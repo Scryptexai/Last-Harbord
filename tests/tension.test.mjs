@@ -125,10 +125,10 @@ ok(high.flood < calm.flood * 0.85, `pantai yang bisa dijalani menyusut ${Math.ro
 const wet = rows.filter((r) => r.water !== null);
 const rising = wet.slice(0, wet.findIndex((r) => r.phase === 'high') + 1);
 ok(rows[0].water === null, 'tenang: papan dermaga kering — tidak ada air di atasnya');
-ok(rising.every((r, i) => i === 0 || r.water <= rising[i - 1].water + 0.01),
+ok(rising.every((r, i) => i === 0 || r.water >= rising[i - 1].water - 0.01),
   `air merangkak naik sepanjang malam tanpa mundur (${rising.map((r) => Math.round(r.water)).join(' -> ')}px)`);
-ok(high.water !== null && high.water < 190, `pasang: air sampai ke tengah dermaga (${high.water && Math.round(high.water)}px dari 254px)`);
-ok(dawnRow.water > high.water && after.water === null,
+ok(high.water !== null && high.water > 100, `pasang: air sampai ke tengah dermaga (${high.water && Math.round(high.water)}px dari tepi)`);
+ok(dawnRow.water < high.water && after.water === null,
   `fajar: air turun lagi (${Math.round(high.water)} -> ${Math.round(dawnRow.water)} -> ` +
   `${after.water === null ? 'dermaga kering lagi' : Math.round(after.water) + 'px'})`);
 ok(dawnRow.tint < high.tint, `fajar mulai menurunkan air (${high.tint.toFixed(2)} -> ${dawnRow.tint.toFixed(2)})`);

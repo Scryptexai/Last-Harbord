@@ -4,7 +4,7 @@
 // Kapal terlihat tumbuh setiap kali kau kembali — itu seluruh isi pilar pertama.
 import { CFG } from './config.js';
 import { G } from './state.js';
-import { clamp, dist } from './util.js';
+import { clamp, dist, makeRng } from './util.js';
 import { capacity, nextRung, goalLabel, isMaxed } from './refit.js';
 import { ASSETS } from './assets.js';
 import { sfx } from './audio.js';
@@ -14,9 +14,11 @@ import { carriedLoad, bankLoad, RES_TYPES } from './inventory.js';
 import { beginWorld, endWorld, upright, atUpright } from './camera.js';
 import { tideTint, tideDanger } from './tide.js';
 
-const DECK = { x0: -30, x1: 30, y0: -46, y1: 44 };
-const PIER = { x0: -44, x1: 44, y0: 44, y1: 250 };
-const CAM = { x: 0, y: 86, zoom: 1.35 };
+// Dermaga adalah waterfront selebar layar, bukan pulau kecil di tengah laut:
+// papan kayu membentang dari ujung kiri ke kanan tanpa celah air di sisi,
+// air hanya di utara (belakang) tempat kapal bersandar.
+const BOARDWALK = { x0: -500, x1: 500, y0: -46, y1: 470 };
+const CAM = { x: 0, y: 110, zoom: 1.35 };
 
 export const SPOTS = [
   { key: 'chart', x: -30, y: 158, r: 52, label: 'MEJA PETA' },
@@ -81,13 +83,8 @@ export function updateHarbor(dt, move, ctxBusy) {
 }
 
 function clampToWalkable(p) {
-  const inDeck = p.x >= DECK.x0 && p.x <= DECK.x1 && p.y >= DECK.y0 && p.y <= DECK.y1;
-  const inPier = p.x >= PIER.x0 && p.x <= PIER.x1 && p.y >= PIER.y0 && p.y <= PIER.y1;
-  if (inDeck || inPier) return;
-  const cx1 = clamp(p.x, DECK.x0, DECK.x1), cy1 = clamp(p.y, DECK.y0, DECK.y1);
-  const cx2 = clamp(p.x, PIER.x0, PIER.x1), cy2 = clamp(p.y, PIER.y0, PIER.y1);
-  const d1 = dist(p.x, p.y, cx1, cy1), d2 = dist(p.x, p.y, cx2, cy2);
-  if (d1 <= d2) { p.x = cx1; p.y = cy1; } else { p.x = cx2; p.y = cy2; }
+  p.x = clamp(p.x, BOARDWALK.x0, BOARDWALK.x1);
+  p.y = clamp(p.y, BOARDWALK.y0, BOARDWALK.y1);
 }
 
 // ---------- render ----------
@@ -109,71 +106,36 @@ export function drawHarbor(ctx, vw, vh) {
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, vw, vh);
 
-  // Bahasa kamera yang sama dengan dunia: miring, bukan dari atas. Dermaga tetap
-  // terasa sebagai bagian dari dunia yang sama, bukan layar menu.
+  // Bahasa kamera yang sama dengan dunia: miring, bukan dari atas.
   ctx.save();
   ctx.translate(vw / 2, vh / 2 + (CFG.CAM.LIFT || 0) * vh);
   ctx.scale(CAM.zoom, CAM.zoom * CFG.CAM.TILT);
   ctx.translate(-CAM.x, -CAM.y);
 
-  // riak air
-  ctx.strokeStyle = 'rgba(150,210,255,0.06)';
-  ctx.lineWidth = 2;
-  for (let i = 0; i < 22; i++) {
-    const y = -260 + i * 26 + Math.sin(H.t * 1.2 + i) * 3;
-    ctx.beginPath();
-    for (let x = -320; x <= 320; x += 34) {
-      const yy = y + Math.sin(x * 0.02 + H.t * 1.6 + i) * 3;
-      if (x === -320) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
-    }
-    ctx.stroke();
-  }
+  // air terbuka di utara (tempat kapal bersandar) — riak + pantulan cahaya
+  drawOpenWater(ctx, H.t);
 
-  // lampu dermaga menyusut saat malam bertambah tua: rumah tetap aman, tapi hangatnya
-  // berkurang — itu satu-satunya tekanan yang dibutuhkan di tempat yang tidak berbahaya
-  drawLanternPool(ctx, 0, 0, 260 * (1 - 0.35 * tideK));
+  // kolam cahaya lentera kapal di atas air (menyusut saat malam menua)
+  drawLanternPool(ctx, 0, -4, 260 * (1 - 0.35 * tideK));
 
-  // dermaga
-  drawPier(ctx);
+  // dermaga: papan kayu membentang selebar layar
+  drawBoardwalk(ctx, H.t);
+
+  // garis air: saat pasang, air merambat naik ke atas papan
   drawTideLine(ctx, H.t, dangerK);
 
-  // kapal (berdiri di air) + muatannya + meja — semuanya urut menurut kedalaman
+  // kapal bersandar di tepi air + muatannya di dek
   atUpright(ctx, 0, 0, () => {
     drawBoat(ctx, { x: 0, y: 0, vx: 0, vy: 0, angle: -Math.PI / 2 }, 1.9, { noParts: false });
     drawCargo(ctx);
   });
 
-  const props = [
-    { y: H.spots.find((x) => x.key === 'chart').y, draw: () => drawSpot(ctx, H, 'chart') },
-    { y: H.spots.find((x) => x.key === 'bench').y, draw: () => drawSpot(ctx, H, 'bench') },
-    { y: H.player.y, draw: () => drawPlayer(ctx, H.player) },
-  ];
-  props.sort((a, b) => a.y - b.y);
-  for (const p of props) p.draw();
+  // struktur dermaga + pemain, diurutkan menurut kedalaman (tanpa teks mengambang)
+  drawDockProps(ctx, H);
 
   ctx.restore();
 
-  // label lokasi mengambang di layar (mudah dibaca, tidak menutupi dunia)
-  ctx.save();
-  ctx.font = 'bold 11px Inter, system-ui, sans-serif';
-  ctx.textAlign = 'center';
-  for (const s of H.spots) {
-    const sx = vw / 2 + (s.x - CAM.x) * CAM.zoom;
-    const sy = vh / 2 + (CFG.CAM.LIFT || 0) * vh + (s.y - CAM.y) * CAM.zoom * CFG.CAM.TILT;
-    const near = dist(H.player.x, H.player.y, s.x, s.y) < s.r;
-    ctx.fillStyle = near ? 'rgba(255,226,160,0.98)' : 'rgba(210,225,240,0.5)';
-    ctx.fillText(s.label, sx, sy - 34);
-    if (s.key === 'bench') {
-      const gl = goalLabel();
-      ctx.font = '11px Inter, system-ui, sans-serif';
-      ctx.fillStyle = gl.ready ? 'rgba(150,235,170,0.9)' : 'rgba(190,205,220,0.55)';
-      ctx.fillText(gl.text, sx, sy - 20);
-      ctx.font = 'bold 11px Inter, system-ui, sans-serif';
-    }
-  }
-  ctx.restore();
-
-  // pasang surut tidak berjalan di dermaga — hanya bintang & tenang
+  // vignette: gelap di tepi
   const vg = ctx.createRadialGradient(vw / 2, vh / 2, Math.min(vw, vh) * 0.34, vw / 2, vh / 2, Math.max(vw, vh) * 0.7);
   vg.addColorStop(0, 'rgba(0,0,0,0)');
   vg.addColorStop(1, 'rgba(0,0,0,0.55)');
@@ -190,17 +152,18 @@ export function tideLineY() { return lastWaterLine; }
 
 function drawTideLine(ctx, t, k) {
   if (k <= 0.02) { lastWaterLine = null; return; }
-  const y0 = 254 - k * 132;
+  // Air pasang merambat dari tepi dermaga (utara) turun ke atas papan menuju kamera.
+  const y0 = 8 + k * 190;
   lastWaterLine = y0;
-  const w = 96;
+  const x0 = BOARDWALK.x0, x1 = BOARDWALK.x1;
   ctx.save();
   ctx.beginPath();
-  ctx.moveTo(-w / 2 - 10, 256);
-  ctx.lineTo(-w / 2 - 10, y0);
-  for (let x = -w / 2 - 10; x <= w / 2 + 10; x += 10) {
+  ctx.moveTo(x0, y0 - 160);
+  ctx.lineTo(x0, y0);
+  for (let x = x0; x <= x1; x += 16) {
     ctx.lineTo(x, y0 + Math.sin(x * 0.09 + t * 1.7) * 3.5 + Math.sin(x * 0.21 - t * 2.3) * 1.6);
   }
-  ctx.lineTo(w / 2 + 10, 256);
+  ctx.lineTo(x1, y0 - 160);
   ctx.closePath();
   ctx.fillStyle = `rgba(${Math.round(18 + 30 * k)},${Math.round(46 - 14 * k)},${Math.round(66 - 30 * k)},${0.52 + 0.16 * k})`;
   ctx.fill();
@@ -210,67 +173,231 @@ function drawTideLine(ctx, t, k) {
   ctx.restore();
 }
 
-function drawPier(ctx) {
-  const w = 88;
-  ctx.fillStyle = '#5b3a1d';
-  ctx.fillRect(-w / 2, 44, w, 210);
-  ctx.fillStyle = '#6f4826';
-  for (let y = 46; y < 252; y += 13) ctx.fillRect(-w / 2, y, w, 9);
-  ctx.fillStyle = 'rgba(0,0,0,0.3)';
-  for (let y = 44; y < 254; y += 13) ctx.fillRect(-w / 2, y + 9, w, 3);
-  // tiang pancang
-  ctx.fillStyle = '#3d2712';
-  ctx.fillRect(-w / 2 - 6, 60, 8, 170);
-  ctx.fillRect(w / 2 - 2, 60, 8, 170);
-  // tali tambatan
-  ctx.strokeStyle = 'rgba(220,205,170,0.5)';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.moveTo(-20, 46); ctx.quadraticCurveTo(-24, 20, -12, -2);
-  ctx.moveTo(20, 46); ctx.quadraticCurveTo(26, 20, 12, -2);
-  ctx.stroke();
+// ---------- elemen visual dermaga (tanpa teks mengambang) ----------
+
+function drawOpenWater(ctx, t) {
+  // riak air di utara dermaga, berhenti di tepi papan
+  ctx.strokeStyle = 'rgba(150,210,255,0.07)';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 18; i++) {
+    const y = -260 + i * 22 + Math.sin(t * 1.2 + i) * 3;
+    if (y > -8) break;
+    ctx.beginPath();
+    for (let x = -520; x <= 520; x += 36) {
+      const yy = y + Math.sin(x * 0.02 + t * 1.6 + i) * 3;
+      if (x === -520) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+    }
+    ctx.stroke();
+  }
+  // pantulan cahaya lentera yang berkedip di air
+  const flick = 0.5 + Math.sin(t * 2.1) * 0.15;
+  const g = ctx.createLinearGradient(0, -260, 0, -4);
+  g.addColorStop(0, 'rgba(255,196,110,0)');
+  g.addColorStop(0.7, `rgba(255,180,90,${0.05 + 0.06 * flick})`);
+  g.addColorStop(1, 'rgba(255,160,70,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(-520, -260, 1040, 256);
 }
 
-function drawSpot(ctx, H, key) {
-  const s = H.spots.find((x) => x.key === key);
-  if (!s) return;
+function drawBoardwalk(ctx) {
+  const { x0, x1, y1 } = BOARDWALK;
+  const w = x1 - x0;
+  const top = -4;   // tepi air
+
+  // dasar gelap
+  ctx.fillStyle = '#33200f';
+  ctx.fillRect(x0, top, w, y1 - top);
+
+  // papan horizontal dengan variasi tone (stabil per seed)
+  const rng = makeRng(1337);
+  for (let y = top; y < y1; y += 14) {
+    const tone = 0.9 + rng() * 0.2;
+    ctx.fillStyle = `rgb(${Math.round(107 * tone)},${Math.round(69 * tone)},${Math.round(34 * tone)})`;
+    ctx.fillRect(x0, y, w, 11);
+    if (rng() < 0.4) {
+      ctx.fillStyle = 'rgba(0,0,0,0.10)';
+      ctx.fillRect(x0 + rng() * (w - 60), y, 40 + rng() * 60, 11);
+    }
+  }
+  // celah antar papan
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  for (let y = top; y < y1; y += 14) ctx.fillRect(x0, y + 11, w, 3);
+  // sambungan vertikal
+  ctx.strokeStyle = 'rgba(0,0,0,0.16)';
+  ctx.lineWidth = 1;
+  for (let x = x0 + 23; x < x1; x += 46) {
+    ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, y1); ctx.stroke();
+  }
+
+  // rel kayu di tepi air (utara)
+  ctx.fillStyle = '#5b3a1d';
+  ctx.fillRect(x0, top - 3, w, 7);
+  ctx.fillStyle = '#7a4e26';
+  ctx.fillRect(x0, top - 3, w, 2);
+  // tepi depan (selatan, menghadap kamera)
+  ctx.fillStyle = '#8a5c30';
+  ctx.fillRect(x0, y1 - 4, w, 4);
+}
+
+function drawDockProps(ctx, H) {
+  // tiang pancang di tepi air
+  ctx.fillStyle = '#3d2712';
+  for (let x = -470; x <= 470; x += 60) ctx.fillRect(x - 3, -26, 8, 26);
+  ctx.fillStyle = '#4a2f17';
+  for (let x = -470; x <= 470; x += 60) ctx.fillRect(x - 5, -28, 12, 4);
+
+  // lentera di kiri & kanan
+  drawLanternPost(ctx, -360, H.t);
+  drawLanternPost(ctx, 360, H.t);
+
+  const props = [
+    { y: H.spots.find((x) => x.key === 'chart').y, draw: () => drawChartTable(ctx, H) },
+    { y: H.spots.find((x) => x.key === 'bench').y, draw: () => drawWorkbench(ctx, H) },
+    { y: 120, draw: () => drawBarrels(ctx, H.t) },
+    { y: 320, draw: () => drawLowerDeck(ctx) },
+    { y: H.player.y, draw: () => drawPlayer(ctx, H.player) },
+  ];
+  props.sort((a, b) => a.y - b.y);
+  for (const p of props) p.draw();
+}
+
+// Peti + tumpukan jala + bollard di dek bawah: mengisi ruang agar dermaga
+// terasa besar dan hidup, bukan papan kosong.
+function drawLowerDeck(ctx) {
+  // tumpukan peti
+  const crates = [
+    { x: -180, y: 330, w: 26, h: 22 },
+    { x: -150, y: 344, w: 26, h: 22 },
+    { x: -165, y: 366, w: 30, h: 24 },
+    { x: -135, y: 370, w: 26, h: 22 },
+  ];
+  for (const c of crates) {
+    ctx.fillStyle = '#8d5626';
+    ctx.fillRect(c.x - c.w / 2, c.y - c.h / 2, c.w, c.h);
+    ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.lineWidth = 1.5;
+    ctx.strokeRect(c.x - c.w / 2 + 0.5, c.y - c.h / 2 + 0.5, c.w - 1, c.h - 1);
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.moveTo(c.x - c.w / 2, c.y - c.h / 2); ctx.lineTo(c.x + c.w / 2, c.y + c.h / 2);
+    ctx.moveTo(c.x + c.w / 2, c.y - c.h / 2); ctx.lineTo(c.x - c.w / 2, c.y + c.h / 2);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillRect(c.x - c.w / 2 + 1, c.y - c.h / 2 + 1, c.w - 2, 2);
+  }
+  // jaring nelayan tergulung
+  ctx.fillStyle = '#5c6a5a';
+  ctx.beginPath(); ctx.ellipse(190, 360, 30, 18, -0.2, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1.2;
+  for (let i = 0; i < 5; i++) {
+    ctx.beginPath();
+    ctx.ellipse(190, 360, 30 - i * 5, 18 - i * 3, -0.2, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  // bollard tambatan
+  ctx.fillStyle = '#4a2f17';
+  ctx.fillRect(96, 300, 12, 26);
+  ctx.fillStyle = '#3d2712';
+  ctx.beginPath(); ctx.arc(102, 298, 9, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#5b3a1d';
+  ctx.beginPath(); ctx.arc(102, 298, 5, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawLanternPost(ctx, x, t) {
+  const flick = 0.85 + Math.sin(t * 6.2 + x) * 0.12;
+  ctx.fillStyle = '#3d2712';
+  ctx.fillRect(x - 2, -4, 4, 34);
+  const g = ctx.createRadialGradient(x, -8, 2, x, -8, 46 * flick);
+  g.addColorStop(0, 'rgba(255,200,120,0.45)');
+  g.addColorStop(1, 'rgba(255,170,80,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x, -8, 46 * flick, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ffd79a';
+  ctx.beginPath(); ctx.arc(x, -8, 2.8, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawChartTable(ctx, H) {
+  const s = H.spots.find((x) => x.key === 'chart');
   const near = dist(H.player.x, H.player.y, s.x, s.y) < s.r;
-  ctx.save();
-  upright(ctx, s.x, s.y);       // di dalam save/restore fungsi ini
-  ctx.translate(-s.x, -s.y);
-  if (key === 'chart') {
-    // meja peta: papan dengan peta tergelar
-    ctx.fillStyle = '#3f2a15';
-    ctx.fillRect(s.x - 24, s.y - 14, 48, 6);
+  atUpright(ctx, s.x, s.y, () => {
+    ctx.translate(-s.x, -s.y);
+    ctx.fillStyle = '#3a2513';
+    ctx.fillRect(s.x - 28, s.y - 2, 5, 24);
+    ctx.fillRect(s.x + 23, s.y - 2, 5, 24);
     ctx.fillStyle = '#4d3319';
-    ctx.fillRect(s.x - 20, s.y - 8, 5, 22);
-    ctx.fillRect(s.x + 15, s.y - 8, 5, 22);
+    ctx.fillRect(s.x - 32, s.y - 16, 64, 10);
+    // peta tergelar + garis pulau
     ctx.fillStyle = '#d8c79a';
-    ctx.fillRect(s.x - 22, s.y - 20, 44, 8);
-    ctx.fillStyle = 'rgba(120,90,40,0.6)';
-    ctx.fillRect(s.x - 16, s.y - 18, 10, 4);
-    ctx.fillRect(s.x + 2, s.y - 17, 12, 3);
-    ctx.fillStyle = near ? '#ffd782' : '#8a6a3a';
-    ctx.beginPath(); ctx.arc(s.x, s.y - 16, 2.4, 0, Math.PI * 2); ctx.fill();
-  } else if (key === 'bench') {
-    // meja kerja: bangku, alat, kayu
-    ctx.fillStyle = '#3f2a15';
-    ctx.fillRect(s.x - 26, s.y - 12, 52, 8);
-    ctx.fillRect(s.x - 22, s.y - 4, 5, 18);
-    ctx.fillRect(s.x + 17, s.y - 4, 5, 18);
-    ctx.fillStyle = '#8b8f96';
-    ctx.fillRect(s.x - 18, s.y - 18, 14, 6);
+    ctx.fillRect(s.x - 26, s.y - 22, 52, 8);
+    ctx.strokeStyle = 'rgba(90,70,40,0.85)'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(s.x - 13, s.y - 18, 6, 3.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(s.x + 5, s.y - 18, 3.5, 2.2, 0, 0, Math.PI * 2);
+    ctx.moveTo(s.x - 13, s.y - 18); ctx.lineTo(s.x + 5, s.y - 18);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(120,90,40,0.7)';
+    ctx.beginPath(); ctx.arc(s.x + 14, s.y - 18, 4, 0, Math.PI * 2); ctx.stroke();
+    // lilin + nyala
+    ctx.fillStyle = '#e8e2d0';
+    ctx.fillRect(s.x + 20, s.y - 27, 3, 7);
+    const flick = 0.7 + Math.sin(H.t * 10) * 0.3;
+    ctx.fillStyle = '#ffce7a';
+    ctx.beginPath(); ctx.arc(s.x + 21.5, s.y - 28, 2.4 * flick, 0, Math.PI * 2); ctx.fill();
+    if (near) {
+      const g = ctx.createRadialGradient(s.x, s.y - 16, 2, s.x, s.y - 16, 36);
+      g.addColorStop(0, 'rgba(255,214,130,0.4)');
+      g.addColorStop(1, 'rgba(255,214,130,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(s.x, s.y - 16, 36, 0, Math.PI * 2); ctx.fill();
+    }
+  });
+}
+
+function drawWorkbench(ctx, H) {
+  const s = H.spots.find((x) => x.key === 'bench');
+  const near = dist(H.player.x, H.player.y, s.x, s.y) < s.r;
+  atUpright(ctx, s.x, s.y, () => {
+    ctx.translate(-s.x, -s.y);
+    ctx.fillStyle = '#3a2513';
+    ctx.fillRect(s.x - 28, s.y - 2, 5, 24);
+    ctx.fillRect(s.x + 23, s.y - 2, 5, 24);
+    ctx.fillStyle = '#4d3319';
+    ctx.fillRect(s.x - 32, s.y - 16, 64, 11);
+    // kayu & alat
     ctx.fillStyle = '#a2662e';
-    ctx.fillRect(s.x + 2, s.y - 17, 16, 5);
+    ctx.fillRect(s.x - 24, s.y - 22, 18, 7);
+    ctx.fillRect(s.x - 4, s.y - 21, 14, 6);
+    ctx.fillStyle = '#8b8f96';
+    ctx.fillRect(s.x + 12, s.y - 21, 12, 5);
     // percikan tungku
     const flick = 0.7 + Math.sin(H.t * 9) * 0.3;
-    const rg = ctx.createRadialGradient(s.x, s.y - 6, 1, s.x, s.y - 6, 34 * flick);
+    const rg = ctx.createRadialGradient(s.x, s.y - 10, 1, s.x, s.y - 10, 34 * flick);
     rg.addColorStop(0, 'rgba(255,170,70,0.55)');
     rg.addColorStop(1, 'rgba(255,140,50,0)');
     ctx.fillStyle = rg;
-    ctx.beginPath(); ctx.arc(s.x, s.y - 6, 34 * flick, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(s.x, s.y - 10, 34 * flick, 0, Math.PI * 2); ctx.fill();
+    if (near) {
+      const g = ctx.createRadialGradient(s.x, s.y - 12, 2, s.x, s.y - 12, 36);
+      g.addColorStop(0, 'rgba(255,180,100,0.4)');
+      g.addColorStop(1, 'rgba(255,180,100,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(s.x, s.y - 12, 36, 0, Math.PI * 2); ctx.fill();
+    }
+  });
+}
+
+function drawBarrels(ctx, t) {
+  const rows = [{ x: -80, y: 130 }, { x: -60, y: 138 }, { x: 100, y: 160 }];
+  for (const b of rows) {
+    const s = 11;
+    ctx.fillStyle = '#5b3a1d';
+    ctx.beginPath(); ctx.ellipse(b.x, b.y, s, s * 0.82, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.ellipse(b.x, b.y, s, s * 0.82, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath(); ctx.ellipse(b.x, b.y - 4, s * 0.92, s * 0.5, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = '#4a2f17';
+    ctx.beginPath(); ctx.ellipse(b.x, b.y - 4, s * 0.92, s * 0.45, 0, 0, Math.PI * 2); ctx.fill();
   }
-  ctx.restore();
 }
 
 // Gudang sebagai tumpukan peti di dek — inventory yang benar-benar terlihat.

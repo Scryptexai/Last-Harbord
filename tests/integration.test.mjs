@@ -118,7 +118,10 @@ for (let i = 0; i < 60 && rafQueue.length === 0; i++) await new Promise((r) => s
 ok(rafQueue.length > 0, 'game boot dan mendaftarkan frame pertama ke requestAnimationFrame');
 
 // ---------- pengemudi ----------
-let t = 1000;
+// `t` harus selaras dengan performance.now() yang dipakai main.js untuk menghitung
+// dt frame pertama. Kalau mulai dari angka kecil (mis. 1000), frame pertama mendapat
+// dt negatif raksasa yang merusak fx.hitstop dan membuat semua gerakan melambat.
+let t = performance.now();
 function step(n = 1) {
   for (let i = 0; i < n; i++) {
     const fn = rafQueue.shift();

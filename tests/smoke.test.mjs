@@ -408,7 +408,7 @@ ok(harborContext().kind === 'sail', 'di haluan -> BERLAYAR');
 // pemain tidak bisa berjalan ke laut
 G.harbor.player.x = 999; G.harbor.player.y = 999;
 updateHarbor(1 / 60, { x: 1, y: 1 }, false);
-ok(G.harbor.player.x < 60 && G.harbor.player.y < 260, 'gerak di dermaga dibatasi area yang bisa dijalani');
+ok(G.harbor.player.x <= 500 && G.harbor.player.y <= 470, 'gerak di dermaga dibatasi area yang bisa dijalani');
 
 // ============================================================
 console.log('\n== 11. Save / load ==');
