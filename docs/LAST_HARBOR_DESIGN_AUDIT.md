@@ -853,3 +853,92 @@ yang sama, bukan antar-sesi di dalam satu jalan.
   didahulukan.
 - **P3** tetap tidak dibangun (PvP, multiplayer, memasak, crafting, pohon meta-progresi).
   Memancing masih belum dikurangi sesuai cut list (masih faucet tanpa umpan).
+
+---
+
+# APPENDIX F — REVISI KARAKTER, VISUAL HOOK KAMERA, & KAPAL (revisi 2026-09-12)
+
+Permintaan setelah revisi sebelumnya: (1) karakter masih "foto berjalan" — harus jadi
+karakter game sejati; (2) kamera yang secara matematis miring tapi render-nya terlihat
+top-down dianggap **tidak memenuhi** — harus ada perubahan nyata; (3) kapal & elemen lain
+dikerjakan sesuai *Kitab Desain Aset Visual* (karakter/musuh dipertahankan sebagai
+referensi, tidak diulang). Urutan kerja: visual hook → kapal & elemen → spec doc.
+
+## F.1 Karakter: semi-realistis 8 arah (revisi tahap 2)
+
+Gaya awal (chibi 3/4) dibatalkan. Gaya final: **semi-realistis, proporsi manusia normal,
+desaturasi horror** (ashen skin, pakaian pudar senada HUD & langit pasang), pakaian lusuh
+asimetris (robekan, lapisan tak rata, jahitan kasar). Netral dan biasa justru lebih
+menakutkan daripada didramatisir.
+
+| Aspek | Implementasi | Bukti |
+|---|---|---|
+| 8 arah tampilan dari 5 arah unik | `front`(S), `back`(N), `side`(E), `ne`, `se` digambar; NW ← mirror `ne`, SW ← mirror `se`, W ← mirror `side` | `js/sheets.js directionOf()` + tabel 8 arah |
+| Pembulatan 45° | input joystick kontinu dibulatkan ke kelipatan 45° terdekat **hanya** untuk memilih animasi; gerak tetap bebas | `directionOf(dx,dy)` = `round(atan2/45°)` |
+| Siklus langkah | 3 frame per arah: frame 0 = diam, frame 1..2 = langkah | `sheetFrame()` memilih frame dari `ASSETS.sheets` |
+| Cakupan | player + 3 zombie (slow/fast/tank) sekaligus | 4 × 5 arah × 3 frame = **60 frame**, 128px, `assets/characters/manifest.json` |
+| Test arah | tabel 8 arah + pembulatan + siklus jalan + mirror dikunci | `tests/smoke.test.mjs` §15 (155 pass) |
+
+**Bug ditemukan & diperbaiki saat produksi**: frame diam (frame 0) awalnya **kosong** —
+strip AI mengandung garis kisi vertikal tipis yang lolos filter komponen slicer, sehingga
+slicer memotong `[garis, figur, garis]` alih-alih 3 figur. Perbaikan: slicer mengambil
+**3 komponen terbesar** (figur ~100k+ px vs garis kisi/noise ~3k), lalu diurutkan kiri→kanan.
+Seluruh 60 frame diverifikasi punya konten nyata (bukan transparan).
+
+## F.2 Visual hook kamera (darat)
+
+Masalah: proyeksi miring secara matematis benar, tapi render terlihat top-down karena (a)
+TILT/PERSP terlalu halus, (b) tampilan darat **tidak punya cakrawala** (warna laut datar),
+(c) pulau tidak punya ketebalan.
+
+| Perubahan | Nilai | Efek |
+|---|---|---|
+| `CFG.CAM.TILT` | 0.50 → **0.40** | foreshortening tanah jelas (~66° dari datar), bukan tampak atas |
+| `CFG.CAM.PERSP` | 0.00050 → **0.00090** | paralaks kedalaman: benda di depan jelas lebih besar |
+| `CFG.CAM.LIFT` | 0.08 → **0.10** | pemain duduk lebih rendah, lebih banyak dunia di depan |
+| Latar laut + cakrawala di darat | `drawOceanBackground()` + `drawHorizon()` dipanggil di `drawLand()` | laut meresap ke garis cakrawala + badai di utara terlihat dari darat |
+| Dinding pantai | `blobPath(…, L.r*0.07, …, 1.02)` di `drawLand()` | sisi selatan pulau punya ketebalan — daratan "menekan ke atas", bukan noda pipih |
+
+Kontrak kamera (`tests/camera.test.mjs`) tetap hijau: posisi sprite, urutan kedalaman, dan
+framing tidak berubah — yang berubah hanya seberapa *terbaca* kemiringannya.
+
+## F.3 Kapal (§3 Kitab Aset) — kerusakan bertingkat & riwayat tambalan
+
+| Prinsip §3 | Implementasi |
+|---|---|
+| Kerusakan terlihat fisik & bertingkat | 4 kondisi dari `hull/maxHP`: retakan (ringan) → rembesan air jatuh dari lambung (berat) → garis air naik/tenggelam (kritis). Tambahan: kapal miring saat kritis, getar halus, lentera meredup & berkedip tak menentu |
+| Riwayat tambalan tetap terlihat | `G.deepHull` = hull terdalam yang pernah dicapai (persisten, ikut disimpan). Tambalan = papan kayu lebih terang + paku, jumlahnya ikut `1 - deepHull/maxHP`, **tidak hilang** saat sembuh; direset hanya saat lambung refit / game baru |
+| Siluet arah hadap | haluan runcing (bowsprit) + buritan tumpul berkemudi digambar terpisah — arah hadap terbaca dari sudut kamera manapun |
+| Juice minimum | idle bob halus saat diam, reaksi getar saat kritis, bayangan/lentera tetap diegetic |
+
+`deepHull` diperbarui di dua titik kerusakan (`land.js hurtPlayer`, `main.js` sea-drain),
+direset di `refit.js buyNext()` (lambung baru) dan `newGame()`, disimpan/dimuat di
+`save.js` (backward-compatible: default = hull saat ini).
+
+## F.4 Elemen lain (§4 Kitab Aset)
+
+| Prinsip §4 | Implementasi |
+|---|---|
+| Resource node punya volume | node jadi **krat 3D** (sisi atas terang = jajar genjang + sisi depan gelap = persegi) + emblem per tipe (serat kayu / jeriken / palang medis / takik kaleng). Satu warna dominan per kategori dipertahankan |
+| Prop dermaga hidup | sudah punya badan fisik (meja peta, meja kerja, gentong, peti, jaring, bollard) sejak revisi dermaga; ditambah **kertas meja peta bergoyang** pelan (idle motion) |
+| Ruang negatif terisi | **rumput laut bergoyang + puing kayu terapung** di air dermaga — bahasa visual yang sama dengan musuh (rumput laut/karang), jadi lingkungan & ancaman satu dunia |
+
+## F.5 Verifikasi (hasil perintah, setelah semua revisi)
+
+```
+node tests/smoke.test.mjs        -> 155 pass, 0 fail   (§15 arah 8 + siklus jalan)
+node tests/integration.test.mjs  -> pass
+node tests/render.test.mjs       -> pass
+node tests/camera.test.mjs       -> pass
+node tests/tension.test.mjs      -> pass
+node tests/pacing.test.mjs       -> pass
+```
+
+Tangkapan layar render mandiri (`.shots/render-scene.mjs` di atas `@napi-rs/canvas`):
+`shot-land.png` (kamera darat + cakrawala + dinding pantai), `shot-sea.png`, `shot-harbor.png`
+(rumput laut + puing), `boat-states.png` (5 kondisi kapal: utuh/ringan/berat/kritis/ditambal).
+
+**Checklist validasi §6 Kitab Aset** — terpenuhi: arah hadap kapal terbaca (bowsprit/kemudi) ✓,
+kerusakan fisik di badan kapal (retakan/rembesan/garis air) ✓, tambalan beda dari badan asli
+(kayu terang + paku, persisten) ✓, prop dermaga berbadan fisik ✓, warna senada palet musuh
+(kayu using, desaturasi) ✓, resource node bervolume ✓.

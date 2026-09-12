@@ -18,6 +18,7 @@ export function saveGame() {
       worldSeed: G.worldSeed >>> 0,
       refit: Math.min(CFG.REFIT.length, int(G.refit)),
       hull: Math.max(0, Math.round(G.hull)),
+      deepHull: Math.max(0, Math.round(G.deepHull)),
       banked: {
         fuel: int(G.banked.fuel), wood: int(G.banked.wood),
         food: int(G.banked.food), medicine: int(G.banked.medicine),
@@ -51,6 +52,7 @@ export function loadGame() {
     G.worldSeed = (d.worldSeed >>> 0) || 1;
     G.refit = Math.min(CFG.REFIT.length, int(d.refit));
     G.hull = Math.max(1, Math.round(+d.hull || 100));
+    G.deepHull = Math.max(0, Math.round(+d.deepHull || G.hull));
     const b = d.banked || {};
     G.banked = { fuel: int(b.fuel), wood: int(b.wood), food: int(b.food), medicine: int(b.medicine) };
     G.carried = emptyBag(); // selalu mulai dengan tangan kosong

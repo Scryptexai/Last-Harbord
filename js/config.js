@@ -11,11 +11,11 @@ export const CFG = {
   // Semua sprite memakai atUpright(), jadi benda berdiri tetap tegak; yang berubah saat
   // TILT diturunkan adalah seberapa gepeng TANAH dan seberapa terasa "melihat ke depan".
   CAM: {
-    TILT: 0.50,        // ~60 derajat dari datar: pandangan 3/4 sejati, bukan dari atas
-    LIFT: 0.08,        // kamera mengangkat fokus: pemain duduk di bawah-tengah
-    PERSP: 0.00050,    // perubahan ukuran per px kedalaman (paralaks kuat: depan besar, belakang kecil)
-    PERSP_MIN: 0.84,
-    PERSP_MAX: 1.22,
+    TILT: 0.40,        // ~66 derajat dari datar: foreshortening jelas terlihat, bukan tampak atas
+    LIFT: 0.10,        // kamera mengangkat fokus: pemain duduk di bawah-tengah (lebih banyak dunia di depan)
+    PERSP: 0.00090,    // perubahan ukuran per px kedalaman (paralaks kuat: depan besar, belakang kecil)
+    PERSP_MIN: 0.78,
+    PERSP_MAX: 1.32,
   },
 
   BOAT: {

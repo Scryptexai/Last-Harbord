@@ -22,6 +22,9 @@ export const G = {
   // ---- dipersist ke localStorage ----
   refit: 0,             // jumlah tingkat refit yang selesai (0..6) = progresi tunggal
   hull: 100,            // hull = nyawa. Dipakai bersama perahu & karakter darat.
+  deepHull: 100,        // hull TERDALAM yang pernah dicapai (riwayat kerusakan). Dipakai
+                        // untuk menggambar tambalan: bekas kerusakan tetap terlihat
+                        // walau sudah diperbaiki (kapal "punya sejarah").
   carried: emptyBag(),  // hasil run yang belum dibongkar (BISA HILANG)
   banked: emptyBag(),   // gudang di dermaga (AMAN)
   totalRuns: 0,

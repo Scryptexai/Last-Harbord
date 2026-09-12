@@ -223,6 +223,7 @@ function newGame() {
   clearSave();
   G.refit = 0;
   G.hull = maxHP();
+  G.deepHull = maxHP();          // kapal baru: tanpa riwayat kerusakan
   G.banked = emptyBag();
   G.carried = emptyBag();
   G.totalRuns = 0;
@@ -382,6 +383,7 @@ function updateSea(dt) {
   const drain = seaDrainRate(Math.min(ni.dist, harborDist() - HARBOR.r));
   if (drain > 0) {
     G.hull -= drain * dt;
+    if (G.hull < G.deepHull) G.deepHull = G.hull;   // riwayat kerusakan (tambalan tetap terlihat)
     if (Math.random() < dt * 1.4) { sfx('crack'); addShake(0.12); }
     if (G.hull <= 0) {
       G.hull = 0;

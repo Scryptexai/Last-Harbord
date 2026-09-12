@@ -11,9 +11,9 @@ import { addCarried, carriedFull } from './inventory.js';
 import { makeZombie } from './zombie.js';
 import { sfx, haptic } from './audio.js';
 import { fx, burst, splash, flyItem, ring, addShake, addHitstop, addHurtDir, drawFxWorld } from './fx.js';
-import { blobPath, markTaken, survey, islandRemaining, drawStormPulse } from './world.js';
+import { blobPath, markTaken, survey, islandRemaining, drawOceanBackground, drawHorizon } from './world.js';
 import { ASSETS } from './assets.js';
-import { sheetFrame } from './sheets.js';
+import { sheetFrame, drawCharSprite } from './sheets.js';
 import { consumeReinforce, tideTint, tideDanger, tidePhase } from './tide.js';
 import { beginWorld, endWorld, upright, atUpright, byDepth } from './camera.js';
 import { drawBoat, drawLanternPool } from './boat.js';
@@ -140,6 +140,7 @@ function buildLand(island) {
       atk: { phase: 'idle', t: 0, hitDone: false }, gather: null, invuln: 0,
       stepT: 0, gatherFade: 0,
       walkT: 0, walkAmp: 0, hurtT: 0,  // animasi (bob, condong, squash)
+      moveIntent: false, faceIdx: 0,   // intent gerak (animasi) + sektor arah terakhir
     },
   };
 }
@@ -260,6 +261,7 @@ export function updateLand(dt, move, opts = {}) {
   // Panen kini OTOMATIS: `opts.gatherHeld` (tombol aksi ditahan) tidak lagi dipakai,
   // tapi tetap diterima supaya pemanggil (main.js, test) tidak berubah tanda tangan.
   const moving = Math.hypot(move.x, move.y) > 0.01;
+  p.moveIntent = moving;   // intent input dipakai animasi: berbalik arah tidak "berkedip"
 
   p.invuln = Math.max(0, p.invuln - dt);
   p.gatherFade = Math.max(0, p.gatherFade - dt * 2);
@@ -520,6 +522,7 @@ function callPack(L, caller) {
 
 function hurtPlayer(dmg, angle, type) {
   G.hull -= dmg;
+  if (G.hull < G.deepHull) G.deepHull = G.hull;   // riwayat kerusakan (tambalan tetap terlihat)
   G.hurtFlash = 0.4;
   const p = G.land.player;
   p.invuln = P.INVULN;
@@ -699,13 +702,64 @@ function drawNodeIcon(ctx, nd, x, y, size) {
     ctx.beginPath(); ctx.moveTo(x, y - size * 1.1); ctx.lineTo(x + size * 0.7, y - size * 0.85); ctx.lineTo(x, y - size * 0.6); ctx.closePath(); ctx.fill();
     return;
   }
+  // Resource = KRAT 3D (ada "atas" terang + "depan" gelap), bukan ikon datar dari atas.
+  // Satu warna dominan per kategori dipertahankan supaya tetap terbaca dari jauh.
   const def = CFG.RESOURCES[nd.type];
-  const img = ASSETS[nd.type];
-  if (img && img.complete && img.naturalWidth > 0) {
-    ctx.drawImage(img, x - size / 2, y - size / 2, size, size);
-  } else {
-    ctx.fillStyle = def.color;
-    ctx.fillRect(x - size / 2, y - size / 2, size, size);
+  const s = size;
+  const topY = y - s * 0.42, frontY = y - s * 0.18;
+  // sisi atas (jajar genjang, lebih terang — menghadap kamera/langit)
+  ctx.fillStyle = def.color;
+  ctx.beginPath();
+  ctx.moveTo(x - s * 0.5, frontY);
+  ctx.lineTo(x - s * 0.16, topY);
+  ctx.lineTo(x + s * 0.34, topY);
+  ctx.lineTo(x + s * 0.5, frontY);
+  ctx.closePath();
+  ctx.fill();
+  // sisi depan (persegi, lebih gelap — kedalaman)
+  ctx.fillStyle = def.deep;
+  ctx.fillRect(x - s * 0.5, frontY, s, s * 0.56);
+  ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1;
+  ctx.strokeRect(x - s * 0.5, frontY, s, s * 0.56);
+  ctx.beginPath();
+  ctx.moveTo(x - s * 0.5, frontY); ctx.lineTo(x - s * 0.16, topY);
+  ctx.lineTo(x + s * 0.34, topY); ctx.lineTo(x + s * 0.5, frontY);
+  ctx.stroke();
+  // emblem kecil per tipe (pengenal cepat di dekat-dekat)
+  ctx.save();
+  ctx.translate(x, frontY + s * 0.28);
+  drawResourceEmblem(ctx, nd.type, s);
+  ctx.restore();
+}
+
+// Tanda kecil di muka krat: pengenal jenis, bukan sekadar kotak berwarna.
+function drawResourceEmblem(ctx, type, s) {
+  ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 1.4;
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  if (type === 'wood') {
+    // serat kayu: dua garis sejajar
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.16, 0); ctx.lineTo(s * 0.16, 0);
+    ctx.moveTo(-s * 0.1, -s * 0.09); ctx.lineTo(s * 0.1, -s * 0.09);
+    ctx.stroke();
+  } else if (type === 'fuel') {
+    // jeriken: bentuk tetes
+    ctx.beginPath();
+    ctx.ellipse(0, 0, s * 0.13, s * 0.1, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(s * 0.05, -s * 0.08); ctx.lineTo(s * 0.1, -s * 0.14); ctx.stroke();
+  } else if (type === 'medicine') {
+    // palang medis
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.14, 0); ctx.lineTo(s * 0.14, 0);
+    ctx.moveTo(0, -s * 0.14); ctx.lineTo(0, s * 0.14);
+    ctx.stroke();
+  } else { // food
+    // dua takik kaleng
+    ctx.beginPath();
+    ctx.arc(0, 0, s * 0.11, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillRect(-s * 0.05, -s * 0.02, s * 0.1, s * 0.04);
   }
 }
 
@@ -716,21 +770,27 @@ export function drawLand(ctx, vw, vh) {
   const danger = tideDanger();
   const zoom = G.cam.zoom || 1;
 
-  ctx.fillStyle = '#05121d';
-  ctx.fillRect(0, 0, vw, vh);
+  // LATAR LAUT + CAKRAWALA (ruang layar): laut meresap ke belakang menuju garis
+  // cakrawala, bukan sekadar warna datar — inilah yang membuat kamera terbaca
+  // sebagai "melihat ke depan", bukan dari atas.
+  drawOceanBackground(ctx, vw, vh, G.cam.x * 0.3, G.cam.y * 0.3);
+  drawHorizon(ctx, vw, vh);
 
   // Kamera miring: tanah diperas vertikal, benda berdiri tetap tegak (lihat camera.js).
   beginWorld(ctx, vw, vh);
 
   const fl = CFG.FLAVORS[L.island.flavor];
 
-  // laut
-  ctx.fillStyle = '#0a2233';
-  ctx.fillRect(G.cam.x - vw, G.cam.y - vh, vw * 2, vh * 2);
-
-  // air dangkal di sekitar pulau
+  // air dangkal di sekitar pulau (di atas latar laut)
   blobPath(ctx, 0, 0, L.shape, 1.2);
   ctx.fillStyle = `rgba(26,84,112,${0.5 + tint * 0.2})`;
+  ctx.fill();
+
+  // DINDING PANTAI: sisi selatan (menghadap kamera) sedikit lebih tinggi, jadi pulau
+  // terbaca sebagai daratan yang MENEKAN ke atas — bukan noda pipih di air. Bahasa
+  // yang sama dengan pulau di tampilan laut.
+  blobPath(ctx, 0, L.r * 0.07, L.shape, 1.02);
+  ctx.fillStyle = tint > 0.6 ? shadeHex(fl.sand, -0.40) : shadeHex(fl.sand, -0.34);
   ctx.fill();
 
   // pasir
@@ -835,9 +895,6 @@ export function drawLand(ctx, vw, vh) {
   }
 
   endWorld(ctx);
-
-  // kilat jauh juga terlihat dari darat: dunia ini punya langit yang sama
-  drawStormPulse(ctx, vw, vh, 0.55);
 
   // pasang: gelap + tepi merah
   if (tint > 0.3) {
@@ -1031,7 +1088,8 @@ function drawZombie(ctx, L, z) {
   if (!revealed) ctx.globalAlpha = 0.34;
   // Arah hadap & siklus langkah dari sheet; 'side' di-cermin untuk kiri/kanan.
   const dx = Math.cos(z.face || 0), dy = Math.sin(z.face || 0);
-  const fr = sheetFrame('zombie_' + z.type, dx, dy, z.walkT, true);
+  const fr = sheetFrame('zombie_' + z.type, dx, dy, z.walkT, true, z.faceIdx);
+  if (fr) z.faceIdx = fr.idx;
   const flip = fr ? fr.flip : (Math.cos(z.face || 0) < 0 ? -1 : 1);
 
   // ---- animasi: gontai yang berbeda per tipe ----
@@ -1051,11 +1109,11 @@ function drawZombie(ctx, L, z) {
   ctx.scale(sqX, sqY);
 
   if (fr && fr.img && fr.img.complete && fr.img.naturalWidth > 0) {
-    const sz = z.radius * 2.9;
-    ctx.drawImage(fr.img, -sz / 2, -sz * 0.92, sz, sz);
+    const sz = Math.max(40, z.radius * 3.8);
+    drawCharSprite(ctx, fr.img, sz);
   } else if (img && img.complete && img.naturalWidth > 0) {
-    const sz = z.radius * 2.9;
-    ctx.drawImage(img, -sz / 2, -sz * 0.92, sz, sz);
+    const sz = Math.max(40, z.radius * 3.8);
+    drawCharSprite(ctx, img, sz);
   } else {
     ctx.fillStyle = def.color;
     ctx.beginPath(); ctx.ellipse(0, -z.radius * 0.85, z.radius, z.radius * 1.1, 0, 0, Math.PI * 2); ctx.fill();
@@ -1148,14 +1206,15 @@ function drawPlayer(ctx, L) {
 
   atUpright(ctx, p.x, p.y, () => {
     if (p.invuln > 0 && Math.floor(G.time * 20) % 2 === 0) ctx.globalAlpha = 0.5;
-    const sz = 48;
+    const sz = 72;
 
     // ---- animasi: badan hidup + arah hadap + siklus langkah ----
     const an = playerAnim(p);
-    const moving = p.walkAmp > 0.15;
+    const moving = p.moveIntent;   // intent input: berbalik arah tidak melompat ke pose diam
     const fdx = moving ? p.vx : (p.faceDirX || 0);
     const fdy = moving ? p.vy : (p.faceDirY || -1);
-    const fr = sheetFrame('player', fdx, fdy, p.walkT, moving);
+    const fr = sheetFrame('player', fdx, fdy, p.walkT, moving, p.faceIdx);
+    if (fr) p.faceIdx = fr.idx;
     const flip = fr ? fr.flip : (Math.cos(p.face) < 0 ? -1 : 1);
 
     ctx.scale(flip, 1);
@@ -1164,9 +1223,9 @@ function drawPlayer(ctx, L) {
     ctx.scale(an.sqX, an.sqY);
 
     if (fr && fr.img && fr.img.complete && fr.img.naturalWidth > 0) {
-      ctx.drawImage(fr.img, -sz / 2, -sz * 0.92, sz, sz);
+      drawCharSprite(ctx, fr.img, sz);
     } else if (img && img.complete && img.naturalWidth > 0) {
-      ctx.drawImage(img, -sz / 2, -sz * 0.92, sz, sz);
+      drawCharSprite(ctx, img, sz);
     } else {
       ctx.fillStyle = '#e67e22';
       ctx.beginPath(); ctx.ellipse(0, -15, 12, 16, 0, 0, Math.PI * 2); ctx.fill();

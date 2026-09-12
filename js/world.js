@@ -552,7 +552,7 @@ export function drawSea(ctx, vw, vh) {
   // kapal: benda berdiri terakhir sebelum kita keluar dari ruang dunia
   atUpright(ctx, boat.x, boat.y, () => {
     ctx.translate(-boat.x, -boat.y);   // batalkan translate drawBoat: asal = posisi kapal
-    drawBoat(ctx, boat, 1);
+    drawBoat(ctx, boat, 1.5);
   });
   drawFxWorld(ctx, null);              // partikel hidup di ruang dunia biasa
   endWorld(ctx);

@@ -143,7 +143,7 @@ console.log('\n== 1. Tanah: benda berdiri mendarat di posisi yang benar ==');
   if (process.env.DEBUG_CAM) {
     console.log(`    [debug] harap pemain di (${want.x.toFixed(1)}, ${want.y.toFixed(1)}) zoom=${zoom} cam=(${G.cam.x.toFixed(0)},${G.cam.y.toFixed(0)})`);
   }
-  standsOn(near(want.x, want.y - 15), want, 48, zoom, 'pemain');
+  standsOn(near(want.x, want.y - 15), want, 72, zoom, 'pemain');
 
   // kapal di pulau: digambar di atas air, pusat sprite = posisi kapal
   const wantBoat = toScreen(L.boatPos.x, L.boatPos.y, VW, VH);
@@ -152,7 +152,7 @@ console.log('\n== 1. Tanah: benda berdiri mendarat di posisi yang benar ==');
 
   // zombie: juga berdiri
   const wantZ = toScreen(z.x, z.y, VW, VH);
-  standsOn(near(wantZ.x, wantZ.y - 16), wantZ, z.radius * 2.9, zoom, 'zombie');
+  standsOn(near(wantZ.x, wantZ.y - 16), wantZ, z.radius * 3.8, zoom, 'zombie');
 
   // urutan kedalaman: zombie yang lebih ke selatan harus digambar setelah yang lebih utara
   L.zombies.length = 0;

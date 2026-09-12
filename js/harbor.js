@@ -7,7 +7,7 @@ import { G } from './state.js';
 import { clamp, dist, makeRng } from './util.js';
 import { capacity, nextRung, goalLabel, isMaxed } from './refit.js';
 import { ASSETS } from './assets.js';
-import { sheetFrame } from './sheets.js';
+import { sheetFrame, drawCharSprite } from './sheets.js';
 import { sfx } from './audio.js';
 import { drawBoat, drawLanternPool } from './boat.js';
 import { HARBOR } from './world.js';
@@ -31,7 +31,7 @@ export function enterHarbor() {
   G.state = 'harbor';
   G.cam.x = CAM.x; G.cam.y = CAM.y; G.cam.zoom = CAM.zoom;
   G.harbor = {
-    player: { x: 0, y: 18, vx: 0, vy: 0, face: -Math.PI / 2, faceDirX: 0, faceDirY: -1, stepT: 0, walkT: 0, walkAmp: 0 },
+    player: { x: 0, y: 18, vx: 0, vy: 0, face: -Math.PI / 2, faceDirX: 0, faceDirY: -1, stepT: 0, walkT: 0, walkAmp: 0, moveIntent: false, faceIdx: 0 },
     spots: SPOTS.map((s) => ({ ...s })),
     t: 0,
   };
@@ -58,6 +58,7 @@ export function updateHarbor(dt, move, ctxBusy) {
   if (!H) return;
   const p = H.player;
   H.t += dt;
+  p.moveIntent = Math.hypot(move.x, move.y) > 0.01;
 
   if (!ctxBusy) {
     const ml = Math.hypot(move.x, move.y);
@@ -202,6 +203,50 @@ function drawOpenWater(ctx, t) {
   g.addColorStop(1, 'rgba(255,160,70,0)');
   ctx.fillStyle = g;
   ctx.fillRect(-520, -260, 1040, 256);
+
+  // RUMPUT LAUT & PUING: bahasa visual yang sama dengan musuh (§2) — lingkungan dan
+  // ancaman berasal dari dunia yang sama, sekaligus mengisi ruang kosong di air.
+  drawSeaweedBed(ctx, t);
+}
+
+// Rumpun rumput laut bergoyang + puing terapung di air dermaga.
+function drawSeaweedBed(ctx, t) {
+  const clusters = [
+    { x: -430, y: -90, n: 4, h: 30 },
+    { x: -320, y: -40, n: 3, h: 22 },
+    { x: 300, y: -70, n: 4, h: 28 },
+    { x: 420, y: -30, n: 3, h: 20 },
+    { x: 140, y: -150, n: 3, h: 24 },
+  ];
+  for (const c of clusters) {
+    for (let i = 0; i < c.n; i++) {
+      const sway = Math.sin(t * 1.3 + c.x * 0.01 + i * 1.2) * (4 + i * 1.5);
+      const baseX = c.x + i * 9 - c.n * 4;
+      ctx.strokeStyle = `rgba(40,96,74,${0.5 + i * 0.08})`;
+      ctx.lineWidth = 2.4 - i * 0.3;
+      ctx.beginPath();
+      ctx.moveTo(baseX, c.y);
+      ctx.quadraticCurveTo(baseX + sway * 0.5, c.y - c.h * 0.6, baseX + sway, c.y - c.h);
+      ctx.stroke();
+    }
+  }
+  // puing kayu terapung (bobbing)
+  const debris = [
+    { x: -180, y: -55, w: 16, ph: 0.4 },
+    { x: 210, y: -110, w: 12, ph: 2.1 },
+    { x: -60, y: -170, w: 10, ph: 4.0 },
+  ];
+  for (const d of debris) {
+    const bob = Math.sin(t * 1.1 + d.ph) * 2;
+    ctx.save();
+    ctx.translate(d.x, d.y + bob);
+    ctx.rotate(Math.sin(t * 0.7 + d.ph) * 0.12);
+    ctx.fillStyle = 'rgba(74,52,30,0.85)';
+    ctx.fillRect(-d.w / 2, -2, d.w, 4);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fillRect(-d.w / 2, 0, d.w, 1.5);
+    ctx.restore();
+  }
 }
 
 function drawBoardwalk(ctx) {
@@ -330,14 +375,15 @@ function drawChartTable(ctx, H) {
     ctx.fillRect(s.x + 23, s.y - 2, 5, 24);
     ctx.fillStyle = '#4d3319';
     ctx.fillRect(s.x - 32, s.y - 16, 64, 10);
-    // peta tergelar + garis pulau
+    // peta tergelar + garis pulau — kertas bergoyang pelan (idle motion, bukan diorama beku)
+    const sway = Math.sin(H.t * 1.5) * 0.6;
     ctx.fillStyle = '#d8c79a';
-    ctx.fillRect(s.x - 26, s.y - 22, 52, 8);
+    ctx.fillRect(s.x - 26, s.y - 22 + sway, 52, 8);
     ctx.strokeStyle = 'rgba(90,70,40,0.85)'; ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.ellipse(s.x - 13, s.y - 18, 6, 3.5, 0, 0, Math.PI * 2);
-    ctx.ellipse(s.x + 5, s.y - 18, 3.5, 2.2, 0, 0, Math.PI * 2);
-    ctx.moveTo(s.x - 13, s.y - 18); ctx.lineTo(s.x + 5, s.y - 18);
+    ctx.ellipse(s.x - 13, s.y - 18 + sway, 6, 3.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(s.x + 5, s.y - 18 + sway, 3.5, 2.2, 0, 0, Math.PI * 2);
+    ctx.moveTo(s.x - 13, s.y - 18 + sway); ctx.lineTo(s.x + 5, s.y - 18 + sway);
     ctx.stroke();
     ctx.strokeStyle = 'rgba(120,90,40,0.7)';
     ctx.beginPath(); ctx.arc(s.x + 14, s.y - 18, 4, 0, Math.PI * 2); ctx.stroke();
@@ -446,20 +492,19 @@ function drawPlayer(ctx, p) {
   ctx.beginPath(); ctx.ellipse(p.x, p.y + 3, 11, 4.5, 0, 0, Math.PI * 2); ctx.fill();
   atUpright(ctx, p.x, p.y, () => {
     // arah hadap + siklus langkah dari sheet; napas halus saat diam
-    const mv = Math.hypot(p.vx, p.vy) > 0.01;
+    const mv = p.moveIntent;
     const fdx = mv ? p.vx : (p.faceDirX || 0);
     const fdy = mv ? p.vy : (p.faceDirY || -1);
-    const fr = sheetFrame('player', fdx, fdy, p.walkT, mv);
+    const fr = sheetFrame('player', fdx, fdy, p.walkT, mv, p.faceIdx);
+    if (fr) p.faceIdx = fr.idx;
     const flip = fr ? fr.flip : (Math.cos(p.face) < 0 ? -1 : 1);
     const bob = Math.sin(G.time * 2.4) * (mv ? 0 : 1.4);
     ctx.scale(flip, 1);
     ctx.translate(0, bob);
     if (fr && fr.img && fr.img.complete && fr.img.naturalWidth > 0) {
-      const sz = 44;
-      ctx.drawImage(fr.img, -sz / 2, -sz * 0.92, sz, sz);
+      drawCharSprite(ctx, fr.img, 64);
     } else if (img && img.complete && img.naturalWidth > 0) {
-      const sz = 44;
-      ctx.drawImage(img, -sz / 2, -sz * 0.92, sz, sz);
+      drawCharSprite(ctx, img, 64);
     } else {
       ctx.fillStyle = '#e67e22';
       ctx.beginPath(); ctx.ellipse(0, -14, 11, 15, 0, 0, Math.PI * 2); ctx.fill();
