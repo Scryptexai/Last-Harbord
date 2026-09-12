@@ -626,11 +626,18 @@ apa yang diukur, dan apa yang sengaja belum dikerjakan.
 | Threat readability | **Selesai** | siluet, gaya jalan, suara, pitch per tipe; HP bar hanya untuk Raksasa |
 | Zombie variety + wolf-pack ambush | **Selesai** | `CFG.PACK`: satu penemu berteriak (radius 55% playR, min 180), aggro ×2.3 selama 6s; satu lompatan saja |
 
-## P2 — belum dikerjakan (sengaja)
+## P2 — SELESAI (polish)
 
-Island art pass (terrain, ketinggian, jalur), cuaca sebagai varian pasang, chart/journal
-lengkap, mix audio penuh (ducking, atenuasi), tuning kamera lanjutan, ergonomi mobile
-(safe-area, haptik). Semuanya polish — tidak ada satupun yang mengubah keputusan pemain.
+| Item | Status | Bukti |
+|---|---|---|
+| Island art pass (terrain, ketinggian, jalur, landmark) | **Selesai** | undakan ketinggian 2 tier + jalur tanah menyempit ke pedalaman (`land.js drawIslandPath`); landmark = tell-tales (asap/menara/bangkai/camar) di `world.js drawTell` |
+| Cuaca sebagai varian pasang | **Selesai** | `drawRain()` — hujan di-seed deterministik, deras naik mengikuti `stormLevel()`; 0px saat tenang → 485px saat pasang (terukur) |
+| Chart/journal lengkap | **Selesai** (sejak P0/P1) | peta 2D: pulau tersurvei, sisa muatan, pelampung salvage |
+| Mix audio penuh (atenuasi jarak, ducking, music bed) | **Selesai** | `sfx(name,arg,gainMul)` atenuasi jarak geraman zombie; throttle ducking; `updateMusic()` drone pasang (interval perfect fifth → tritone) |
+| Tuning kamera lanjutan (discovery wide, death framing) | **Selesai** | `G.camReveal` shot pembuka pendaratan (zoom 0.70→1.0 ease-out); `G.dying` slow-mo 0.8s sebelum debrief |
+| Ergonomi mobile (safe-area, haptik) | **Selesai** | `haptic()` di hit/kill/hurt/gather/board/bank/death; `env(safe-area-inset-bottom)` + joystick kiri/aksi kanan |
+
+Semua P2 adalah polish — tidak ada satupun yang mengubah keputusan pemain, dan itu memang tujuannya.
 
 ## P3 — tidak dibangun (sesuai cut list)
 
