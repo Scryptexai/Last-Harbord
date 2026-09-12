@@ -4,16 +4,100 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Last Harbor — Bertahan di Laut yang Naik</title>
+<meta name="description" content="Last Harbor — game survival di laut yang naik. Seberapa jauh aku mau pergi sebelum aku berbalik?">
+<meta name="theme-color" content="#04090f">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Last Harbor">
+<meta property="og:title" content="Last Harbor — Bertahan di Laut yang Naik">
+<meta property="og:description" content="Seberapa jauh aku mau pergi sebelum aku berbalik?">
+<meta property="og:image" content="https://lastharbor.fun/assets/branding/logo.png">
+<meta property="og:url" content="https://lastharbor.fun/">
 <link rel="icon" type="image/png" href="assets/branding/appicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
+<style>
+/* ================= LAYAR PEMBUKA (boot) =================
+   Lapisan BARU di depan sistem yang ada: hanya struktur + gaya,
+   tidak menyentuh HUD atau gameplay. */
+#screen-boot {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  background:
+    radial-gradient(120% 90% at 50% 18%, rgba(16, 36, 52, 0.96), rgba(4, 9, 15, 0.99));
+}
+.boot-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 520px;
+  width: 100%;
+}
+.boot-logo {
+  width: 232px;
+  height: auto;
+  filter: drop-shadow(0 8px 26px rgba(0, 0, 0, 0.6));
+}
+.boot-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 6px;
+  color: var(--ink);
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.8);
+}
+.boot-tagline {
+  font-size: 14px;
+  font-style: italic;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.boot-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-top: 10px;
+}
+.boot-actions .btn { font-size: 14px; padding: 14px 18px; letter-spacing: 2px; }
+.boot-warning {
+  font-size: 12px;
+  color: #e0b979;
+  line-height: 1.5;
+  max-width: 380px;
+}
+</style>
 </head>
 <body>
 <canvas id="game"></canvas>
 
 <div id="ui">
+
+  <!-- ================= LAYAR PEMBUKA ================= -->
+  <section id="screen-boot">
+    <div class="boot-inner">
+      <img class="boot-logo" src="assets/branding/logo.png" alt="Last Harbor">
+      <h1 class="boot-title">LAST HARBOR</h1>
+      <p class="boot-tagline">Seberapa jauh aku mau pergi sebelum aku berbalik?</p>
+
+      <div class="boot-actions">
+        <button id="btn-boot-start" class="btn btn-primary wide">MULAI</button>
+        <button id="btn-boot-continue" class="btn btn-primary wide hidden">LANJUTKAN</button>
+        <button id="btn-boot-new" class="btn wide hidden">MALAM BARU</button>
+      </div>
+
+      <p id="boot-warning" class="boot-warning hidden">Gudang &amp; progres refit tetap tersimpan di dermaga. Malam akan dimulai lagi dari awal.</p>
+    </div>
+  </section>
 
   <!-- ================= HUD ================= -->
   <section id="hud">
@@ -100,6 +184,6 @@
 </div>
 
 <noscript><div style="color:#fff;padding:20px">Game ini membutuhkan JavaScript.</div></noscript>
-<script type="module" src="js/main.js"></script>
+<script type="module" src="js/boot.js"></script>
 </body>
 </html>

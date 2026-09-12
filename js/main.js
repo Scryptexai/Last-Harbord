@@ -570,4 +570,18 @@ async function boot() {
   requestAnimationFrame(frame);
 }
 
-boot();
+// ---------- Titik masuk eksplisit ----------
+// boot() tidak lagi dijalankan otomatis saat modul dimuat di browser. Ia diekspor
+// sebagai startGame() dan dipanggil oleh js/boot.js setelah tombol mulai ditekan.
+// Seluruh isi boot() TIDAK berubah — hanya titik pemicunya yang pindah dari
+// "otomatis saat load" menjadi "dipanggil setelah tombol mulai ditekan".
+export async function startGame() {
+  await boot();
+}
+
+// Test headless (mis. tests/integration.test.mjs) mengimpor main.js secara langsung
+// tanpa boot.js, sehingga flag ini tidak tersetel dan game tetap boot otomatis —
+// alur lama tetap utuh di sana.
+if (!(typeof window !== 'undefined' && window.__LAST_HARBOR_BOOT__)) {
+  startGame();
+}
