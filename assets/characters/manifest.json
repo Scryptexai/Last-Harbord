@@ -68,6 +68,16 @@
       "assets/characters/zombie_fast_side_0.png",
       "assets/characters/zombie_fast_side_1.png",
       "assets/characters/zombie_fast_side_2.png"
+    ],
+    "ne": [
+      "assets/characters/zombie_fast_ne_0.png",
+      "assets/characters/zombie_fast_ne_1.png",
+      "assets/characters/zombie_fast_ne_2.png"
+    ],
+    "se": [
+      "assets/characters/zombie_fast_se_0.png",
+      "assets/characters/zombie_fast_se_1.png",
+      "assets/characters/zombie_fast_se_2.png"
     ]
   },
   "zombie_tank": {
@@ -83,7 +93,18 @@
     ],
     "side": [
       "assets/characters/zombie_tank_side_0.png",
-      "assets/characters/zombie_tank_side_1.png"
+      "assets/characters/zombie_tank_side_1.png",
+      "assets/characters/zombie_tank_side_2.png"
+    ],
+    "ne": [
+      "assets/characters/zombie_tank_ne_0.png",
+      "assets/characters/zombie_tank_ne_1.png",
+      "assets/characters/zombie_tank_ne_2.png"
+    ],
+    "se": [
+      "assets/characters/zombie_tank_se_0.png",
+      "assets/characters/zombie_tank_se_1.png",
+      "assets/characters/zombie_tank_se_2.png"
     ]
   }
 }
