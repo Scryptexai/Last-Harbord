@@ -314,12 +314,13 @@ export function drawOceanBackground(ctx, vw, vh, parX = 0, parY = 0) {
 
   // gelombang: makin tinggi pasang, makin cepat & besar
   const chop = 1 + p.k * 2;
-  ctx.strokeStyle = `rgba(180,225,255,${0.05 + p.k * 0.07})`;
-  ctx.lineWidth = 2;
   const rows = 9;
   const rh = vh / rows;
   for (let i = 0; i < rows; i++) {
     const yb = i * rh + ((G.time * 16 * chop) % rh);
+    // puncak gelombang utama (gelap, dalam)
+    ctx.strokeStyle = `rgba(120,190,235,${0.05 + p.k * 0.07})`;
+    ctx.lineWidth = 2;
     ctx.beginPath();
     for (let x = -24; x <= vw + 24; x += 26) {
       const y = yb
@@ -328,6 +329,26 @@ export function drawOceanBackground(ctx, vw, vh, parX = 0, parY = 0) {
       if (x === -24) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
     ctx.stroke();
+    // buih di puncak: garis tipis terang sesaat setelah gelombang lewat
+    ctx.strokeStyle = `rgba(210,240,255,${0.03 + p.k * 0.05})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = -24; x <= vw + 24; x += 52) {
+      const y = yb + 8
+        + Math.sin((x - parX) * 0.02 + G.time * 1.8 * chop + i * 1.7 + 1.3) * (3 + p.k * 3);
+      if (x === -24) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  // kilau air: bintik cahaya yang berkedip mengikuti ombak (makin redup saat pasang)
+  const glints = 14;
+  for (let i = 0; i < glints; i++) {
+    const gx = ((i * 373 + 211) % vw) - parX * 0.4;
+    const gy = ((i * 137 + 89) % vh);
+    const tw = 0.5 + 0.5 * Math.sin(G.time * 2.3 + i * 2.1);
+    ctx.fillStyle = `rgba(220,240,255,${(0.10 + p.k * 0.06) * tw})`;
+    ctx.fillRect(gx, gy, 2 + tw * 3, 1);
   }
 }
 
@@ -422,23 +443,48 @@ function drawIslandSea(ctx, isl, detail) {
   ctx.fill();
 
   if (detail) {
-    // pepohonan: BERDIRI di atas pulau, diurutkan menurut kedalaman
+    // elemen yang BERDIRI di atas pulau (pohon + semak + batu), diurutkan menurut
+    // kedalaman — pulau tidak cuma bertabur pohon, tapi punya vegetasi berlapis.
     const rng = makeRng(isl.seed);
-    const trees = [];
+    const props = [];
     for (let i = 0; i < 12; i++) {
       const a = rng() * Math.PI * 2, d = Math.sqrt(rng()) * r * 0.55;
-      trees.push({ x: x + Math.cos(a) * d, y: y + Math.sin(a) * d, s: r * 0.10 * (0.8 + rng() * 0.5) });
+      props.push({ kind: 'tree', x: x + Math.cos(a) * d, y: y + Math.sin(a) * d, s: r * 0.10 * (0.8 + rng() * 0.5) });
     }
-    trees.sort(byDepth);
-    for (const t of trees) {
+    for (let i = 0; i < 8; i++) {
+      const a = rng() * Math.PI * 2, d = Math.sqrt(rng()) * r * 0.62;
+      props.push({ kind: 'bush', x: x + Math.cos(a) * d, y: y + Math.sin(a) * d, s: r * 0.05 * (0.8 + rng() * 0.6) });
+    }
+    for (let i = 0; i < 6; i++) {
+      const a = rng() * Math.PI * 2, d = Math.sqrt(rng()) * r * 0.5;
+      props.push({ kind: 'rock', x: x + Math.cos(a) * d, y: y + Math.sin(a) * d, s: r * 0.045 * (0.8 + rng() * 0.6) });
+    }
+    props.sort(byDepth);
+    for (const t of props) {
       atUpright(ctx, t.x, t.y, (p) => {
-        const sz = t.s * 2.6 * p;
-        const img = ASSETS.tree;
-        if (img && img.complete && img.naturalWidth > 0) {
-          ctx.drawImage(img, -sz / 2, -sz * 0.86, sz, sz);
+        if (t.kind === 'tree') {
+          const sz = t.s * 2.6 * p;
+          const img = ASSETS.tree;
+          if (img && img.complete && img.naturalWidth > 0) {
+            ctx.drawImage(img, -sz / 2, -sz * 0.86, sz, sz);
+          } else {
+            ctx.fillStyle = 'rgba(16,42,26,0.9)';
+            ctx.beginPath(); ctx.arc(0, -t.s * 0.9 * p, t.s * 0.9 * p, 0, Math.PI * 2); ctx.fill();
+          }
+        } else if (t.kind === 'bush') {
+          const sz = t.s * 2.4 * p;
+          ctx.fillStyle = shade(fl.grass, -0.10);
+          ctx.beginPath();
+          ctx.ellipse(-sz * 0.3, -sz * 0.5, sz * 0.5, sz * 0.45, 0, 0, Math.PI * 2);
+          ctx.ellipse(sz * 0.3, -sz * 0.45, sz * 0.45, sz * 0.4, 0, 0, Math.PI * 2);
+          ctx.ellipse(0, -sz * 0.7, sz * 0.45, sz * 0.45, 0, 0, Math.PI * 2);
+          ctx.fill();
         } else {
-          ctx.fillStyle = 'rgba(16,42,26,0.9)';
-          ctx.beginPath(); ctx.arc(0, -t.s * 0.9 * p, t.s * 0.9 * p, 0, Math.PI * 2); ctx.fill();
+          const sz = t.s * 2.2 * p;
+          ctx.fillStyle = '#52606d';
+          ctx.beginPath(); ctx.ellipse(0, -sz * 0.4, sz, sz * 0.8, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#3a4450';
+          ctx.beginPath(); ctx.ellipse(-sz * 0.25, -sz * 0.55, sz * 0.5, sz * 0.35, -0.3, 0, Math.PI * 2); ctx.fill();
         }
       });
     }

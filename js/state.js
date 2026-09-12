@@ -16,7 +16,7 @@ export const G = {
   nearIsland: null,     // { island, dist }
   fishing: null,        // { t, dur }
   anchored: false,
-  cam: { x: 0, y: 0, zoom: 1 },
+  cam: { x: 0, y: 0, zoom: 1, rot: 0 },
   target: null,         // pulau yang dipilih di peta -> jadi penunjuk arah
 
   // ---- dipersist ke localStorage ----

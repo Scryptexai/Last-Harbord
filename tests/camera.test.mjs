@@ -118,6 +118,10 @@ console.log('\n== 1. Tanah: benda berdiri mendarat di posisi yang benar ==');
   G.state = 'land';
   const isl = G.islands[0];
   enterIsland(isl);
+  // Kontrak ini menguji kamera STEADY-STATE (setelah animasi pendaratan selesai),
+  // bukan sweep rotasi pembuka. Bersihkan transient reveal/rotasi dulu.
+  G.camReveal = 0;
+  G.cam.rot = 0;
   const L = G.land;
   // taruh pemain di tempat yang mudah diperiksa
   L.player.x = isl.r * 0.3; L.player.y = -isl.r * 0.2;

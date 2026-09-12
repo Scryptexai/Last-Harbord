@@ -232,6 +232,42 @@ html, body {
 }
 #goal-chip.ready { color: var(--brass); }
 
+/* Keterangan memanen: jenis resource + progres + sisa muatan palka */
+#gather-chip {
+  position: absolute;
+  top: 78px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 14px;
+  background: rgba(10, 20, 30, 0.82);
+  border: 1px solid rgba(217, 165, 74, 0.35);
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--brass);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+  white-space: nowrap;
+}
+#gather-chip .gather-bar {
+  width: 120px;
+  height: 5px;
+  background: rgba(140, 170, 200, 0.2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+#gather-chip .gather-bar i {
+  display: block;
+  height: 100%;
+  background: var(--brass);
+}
+#gather-chip .mono { font-weight: 700; color: #dbe6f0; }
+#gather-chip .gather-full { color: #e0705a; }
+
 #hint-line {
   position: absolute;
   bottom: 178px;
@@ -545,6 +581,31 @@ button.heal {
 .cost.bad { color: #d8766a; }
 .bench-done { display: flex; flex-direction: column; gap: 4px; font-size: 13px; padding: 10px; }
 .bench-future { padding-top: 4px; }
+
+/* ---------- Gudang & kapal (list resource + list boat) ---------- */
+.inv-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  background: rgba(11, 20, 30, 0.8);
+  border: 1px solid rgba(120, 150, 180, 0.13);
+  border-left: 2px solid rgba(120, 150, 180, 0.2);
+  font-size: 13px;
+}
+.inv-row .dot { width: 10px; height: 10px; flex: 0 0 auto; }
+.inv-row .iv-name { flex: 1; font-weight: 700; color: #e6eef6; }
+.inv-row .iv-num { font-size: 13px; font-weight: 800; color: var(--brass); }
+.inv-row .iv-bar {
+  flex: 0 0 120px;
+  height: 5px;
+  background: rgba(140, 170, 200, 0.18);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.inv-row .iv-bar i { display: block; height: 100%; background: var(--brass); }
+.inv-row.inv-boat-now { background: rgba(30, 24, 8, 0.6); border-left-color: var(--brass); }
+.inv-row.muted { opacity: 0.6; }
 
 /* ---------- Debrief ---------- */
 .debrief { border-color: rgba(200, 90, 70, 0.35); }

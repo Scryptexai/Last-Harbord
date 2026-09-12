@@ -345,6 +345,7 @@ function doContext() {
     case 'board': backToBoat(); break;
     case 'chart': openModal('chart'); break;
     case 'bench': openModal('bench'); break;
+    case 'store': openModal('inventory'); break;
     case 'sail': {
       if (!G.target) { openModal('chart'); toast('Pilih tujuan dulu di meja peta.'); }
       else { sfx('board'); beginRun(); }
@@ -423,12 +424,15 @@ function updateLandState(dt) {
     G.cam.x += (p.x - G.cam.x) * Math.min(1, dt * 6);
     G.cam.y += (p.y - G.cam.y) * Math.min(1, dt * 6);
   }
-  // reveal pendaratan: zoom lebar menyusut mulus ke zoom main selama ~1.2s
+  // reveal pendaratan: kamera MENDekat (zoom lebar -> main) sambil BERPUTAR lurus
+  // (sweep rot -> 0) selama ~1.5s. Ease-out: cepat di awal, halus saat tiba.
   if (G.camReveal > 0) {
     G.camReveal = Math.max(0, G.camReveal - dt);
-    const k = 1 - G.camReveal / 1.2;
-    const ease = 1 - Math.pow(1 - Math.min(1, k), 3);   // ease-out: cepat di awal, halus di akhir
-    G.cam.zoom = lerp(CFG.LAND.ZOOM * 0.70, CFG.LAND.ZOOM, ease);
+    const k = 1 - G.camReveal / 1.5;
+    const ease = 1 - Math.pow(1 - Math.min(1, k), 3);
+    G.cam.zoom = lerp(CFG.LAND.ZOOM * 0.58, CFG.LAND.ZOOM, ease);
+    G.cam.rot = 0.20 * (1 - ease);
+    if (G.camReveal <= 0) G.cam.rot = 0;
   }
   flushSave();
 

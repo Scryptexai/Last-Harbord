@@ -8,7 +8,7 @@ import { capacity, maxHP, nextRung, goalLabel, isMaxed, REFIT, storageLv, speedL
 import { carriedLoad, bankLoad, RES_TYPES } from './inventory.js';
 import { tidePhase, timeToNextPhase, tideTint, nightProgress } from './tide.js';
 import { islandTotalRemaining, isDepleted, HARBOR } from './world.js';
-import { atExtract } from './land.js';
+import { atExtract, gatherStatus } from './land.js';
 
 const els = {};
 let H = null;
@@ -22,10 +22,11 @@ const cache = { hull: -1, hold: -1, cap: -1, tide: '', goal: '', ctx: '', pips: 
 
 const IDS = [
   'hud', 'hud-top', 'hull-fill', 'hull-text', 'hold-pips', 'hold-text',
-  'tide-name', 'tide-fill', 'tide-block', 'goal-chip', 'toasts',
+  'tide-name', 'tide-fill', 'tide-block', 'goal-chip', 'gather-chip', 'toasts',
   'btn-context', 'btn-attack', 'btn-heal', 'btn-mute', 'joystick', 'joy-knob',
   'modal-chart', 'chart-map', 'chart-hint', 'chart-bank', 'chart-close', 'chart-sail',
   'modal-bench', 'bench-rows', 'bench-bank', 'bench-close', 'bench-title', 'bench-sub',
+  'modal-inventory', 'inv-resources', 'inv-boat', 'inv-close',
   'modal-debrief', 'db-title', 'db-cause', 'db-lost', 'db-kept', 'db-salvage', 'db-night', 'db-goal', 'db-close',
   'hint-line',
 ];
@@ -39,6 +40,7 @@ export function initUI(handlers) {
   bind('chart-close', () => closeModal());
   bind('chart-sail', () => { closeModal(); if (H.onSailNoTarget) H.onSailNoTarget(); });
   bind('bench-close', () => closeModal());
+  bind('inv-close', () => closeModal());
   bind('db-close', () => closeModal());
   bind('btn-mute', () => { if (H.onMute) H.onMute(); });
 
@@ -69,6 +71,7 @@ export function openModal(name) {
   if (el) el.classList.remove('hidden');
   if (name === 'chart') renderChart();
   if (name === 'bench') renderBench();
+  if (name === 'inventory') renderInventory();
 }
 
 export function closeModal() {
@@ -187,6 +190,24 @@ export function updateHUD(ctx) {
     const hb = els['btn-heal'];
     hb.classList.toggle('hidden', !canHeal);
     hb.textContent = healLabel;
+  }
+
+  // ---- keterangan memanen: jenis resource + sisa muatan (sudah full / masih ada slot) ----
+  const gs = gatherStatus();
+  const chip = els['gather-chip'];
+  if (!gs) {
+    if (!chip.classList.contains('hidden')) chip.classList.add('hidden');
+  } else {
+    const full = gs.carried >= gs.capacity;
+    const label = gs.kind === 'salvage'
+      ? 'MENGAMBIL MUATAN TENGGELAM'
+      : `MEMANEN ${CFG.RESOURCES[gs.type].label.toUpperCase()}`;
+    const pct = Math.round(gs.progress * 100);
+    chip.innerHTML =
+      `<b>${label}</b>` +
+      `<span class="gather-bar"><i style="width:${pct}%"></i></span>` +
+      `<span class="mono ${full ? 'gather-full' : ''}">palka ${gs.carried}/${gs.capacity}${full ? ' · PENUH' : ''}</span>`;
+    chip.classList.remove('hidden');
   }
 }
 
@@ -436,6 +457,54 @@ export function renderBench() {
   }
 }
 
+// ---------- Gudang & kapal: list resource + list boat (dengan kapasitas) ----------
+export function renderInventory() {
+  // LIST RESOURCE — tiap jenis dengan jumlah di gudang (banked) dan yang masih dibawa
+  // (carried), plus warna penanda yang sama dengan dunia (krat/node di pulau).
+  const rows = RES_TYPES.map((t) => {
+    const def = CFG.RESOURCES[t];
+    const banked = G.banked[t] || 0;
+    const carried = G.carried[t] || 0;
+    return `<div class="inv-row">
+      <i class="dot" style="background:${def.color}"></i>
+      <span class="iv-name">${def.label}</span>
+      <span class="iv-bar"><i style="width:${Math.min(100, (banked / Math.max(1, capacity())) * 100)}%"></i></span>
+      <span class="mono iv-num">${banked}</span>
+      ${carried > 0 ? `<span class="muted small">(+${carried} dibawa)</span>` : ''}
+    </div>`;
+  }).join('');
+
+  els['inv-resources'].innerHTML =
+    `<div class="chart-band">GUDANG DERMAGA <span class="muted">aman, tidak bisa hilang</span></div>${rows}`;
+
+  // LIST BOAT — kapasitas palka dan tangga refit palka (semakin besar = semakin banyak
+  // yang bisa dibawa). Tiap tingkat menambah +6 slot.
+  const cap = capacity();
+  const tiers = ['Perahu kecil', 'Perahu sedang', 'Perahu penuh'];
+  const tier = G.refit >= 5 ? 2 : G.refit >= 2 ? 1 : 0;
+  const storageRungs = REFIT.filter((r) => r.track === 'storage');
+  const doneStorage = storageLv();
+
+  const boatRows = storageRungs.map((r, i) => {
+    const have = i < doneStorage;
+    const capAt = CFG.BOAT.BASE_STORAGE + 6 * (i + 1);
+    return `<div class="inv-row ${have ? '' : 'muted'}">
+      <i class="dot" style="background:${have ? '#d9a54a' : '#6b7c8d'}"></i>
+      <span class="iv-name">${r.label}</span>
+      <span class="muted small">${have ? 'terpasang' : 'belum'}</span>
+      <span class="mono iv-num">${capAt} unit</span>
+    </div>`;
+  }).join('');
+
+  els['inv-boat'].innerHTML =
+    `<div class="chart-band">KAPAL <span class="muted">${tiers[tier]}</span></div>
+     <div class="inv-row inv-boat-now">
+       <i class="dot" style="background:var(--brass)"></i>
+       <span class="iv-name">Kapasitas palka</span>
+       <span class="mono iv-num">${cap} unit</span>
+     </div>${boatRows}`;
+}
+
 // ---------- Debrief (kematian) ----------
 export function renderDebrief(info) {
   els['db-title'].textContent = 'KAPAL TENGGELAM';
@@ -466,4 +535,5 @@ export function renderDebrief(info) {
 export function refreshIfOpen() {
   if (modal === 'chart') renderChart();
   if (modal === 'bench') renderBench();
+  if (modal === 'inventory') renderInventory();
 }

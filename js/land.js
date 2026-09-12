@@ -7,7 +7,8 @@
 import { CFG } from './config.js';
 import { G } from './state.js';
 import { makeRng, clamp, dist, lerp } from './util.js';
-import { addCarried, carriedFull } from './inventory.js';
+import { addCarried, carriedFull, carriedLoad } from './inventory.js';
+import { capacity } from './refit.js';
 import { makeZombie } from './zombie.js';
 import { sfx, haptic } from './audio.js';
 import { fx, burst, splash, flyItem, ring, addShake, addHitstop, addHurtDir, drawFxWorld } from './fx.js';
@@ -27,10 +28,12 @@ export function enterIsland(island) {
   G.land = L;
   G.cam.x = L.player.x;
   G.cam.y = L.player.y;
-  // shot pembuka: mulai LEBAR (pulau terbaca utuh) lalu menyusut ke zoom main — ini
-  // "reveal" pendaratan. Kamera membawa pemain masuk, bukan hard-cut.
-  G.cam.zoom = CFG.LAND.ZOOM * 0.70;
-  G.camReveal = 1.2;
+  // Shot pembuka pendaratan: kamera mulai LEBAR + sedikit BERPUTAR (sweep), lalu
+  // mendekat & lurus ke zoom main. Ini "reveal" yang membawa pemain masuk ke pulau,
+  // bukan hard-cut. Rotasi dibersihkan oleh main.js sepanjang camReveal.
+  G.cam.zoom = CFG.LAND.ZOOM * 0.58;
+  G.cam.rot = 0.20;
+  G.camReveal = 1.5;
   const first = survey(island);
   sfx('anchor');
   splash(L.extract.x, L.extract.y, 14);
@@ -74,6 +77,30 @@ function buildLand(island) {
     const p = place(r * 0.12, r * 0.64, r * 0.26);
     if (Math.hypot(p.x, p.y) < 20) continue;
     rocks.push({ x: p.x, y: p.y, s: 7 + rng() * 6 });
+  }
+
+  // ---- semak: tumbuhan rendah yang ikut menghalangi gerak (bukan cuma pohon) ----
+  const bushes = [];
+  for (let i = 0; i < Math.round(11 * nMul); i++) {
+    const p = place(r * 0.10, r * 0.68, r * 0.20);
+    if (Math.hypot(p.x, p.y) < 20) continue;
+    bushes.push({ x: p.x, y: p.y, s: 6 + rng() * 5, seed: rng() });
+  }
+
+  // ---- rumput & bunga: isian kecil non-penghalang yang membuat tanah hidup ----
+  const grass = [];
+  for (let i = 0; i < Math.round(26 * nMul); i++) {
+    const p = place(r * 0.05, r * 0.76, 0);
+    grass.push({ x: p.x, y: p.y, s: 3 + rng() * 3.5, kind: rng() < 0.62 ? 'tuft' : 'flower', seed: rng() });
+  }
+
+  // ---- elemen KHAS tiap pulau (keunikan): benda yang hanya ada di varian tertentu ----
+  const flavorProps = [];
+  const fpCount = 6 + Math.round(rng() * 4);
+  for (let i = 0; i < fpCount; i++) {
+    const p = place(r * 0.08, r * 0.60, r * 0.22);
+    if (Math.hypot(p.x, p.y) < 20) continue;
+    flavorProps.push({ x: p.x, y: p.y, s: 8 + rng() * 6, seed: rng() });
   }
 
   // ---- resource: tersebar ke arah dalam, makin dalam makin padat ----
@@ -129,7 +156,7 @@ function buildLand(island) {
   const ch = cw;
 
   return {
-    island, r, playR, shape, trees, rocks, nodes, zombies,
+    island, r, playR, shape, trees, rocks, bushes, grass, flavorProps, nodes, zombies,
     extract, waveCount: 0, firstVisit: false, moveAcc: { x: 0, y: 0 },
     // titik jangkar laut (dipakai kapal), sudut sama dengan dermaga
     boatPos: { x: 0, y: r * 0.95 + CFG.BOAT.PARK_OFFSET },
@@ -168,6 +195,38 @@ export function atExtract() {
   const L = G.land;
   if (!L || !L.player) return false;
   return dist(L.player.x, L.player.y, L.extract.x, L.extract.y) < L.extract.r;
+}
+
+// Status panen untuk HUD: jenis resource yang sedang dipanen, progres, dan sisa
+// muatan palka — supaya pemain tahu "masih ada slot" atau "sudah penuh".
+export function gatherStatus() {
+  const L = G.land;
+  const p = L && L.player;
+  if (!p || !p.gather) return null;
+  const g = p.gather;
+  const type = g.node.type || (g.node.cargo ? Object.keys(g.node.cargo)[0] : null);
+  if (!type && g.node.kind !== 'salvage') return null;
+  return {
+    kind: g.node.kind || 'res',
+    type,
+    rich: g.node.rich,
+    progress: clamp(g.t / Math.max(0.001, g.need), 0, 1),
+    carried: carriedLoad(),
+    capacity: capacity(),
+  };
+}
+
+// Radius zona aman dermaga: zombie TIDAK BISA memasukinya. Ini pembatas (barrier)
+// yang membuat titik pendaratan selalu jadi tempat bernapas — kapal menunggu aman,
+// tapi keamanan itu hanya selebar dermaga.
+export function dockSafeR(L) { return L.extract.r; }
+
+// Jauhkan sebuah entitas dari zona aman dermaga (zombie tidak boleh masuk).
+function pushOutOfDock(L, e) {
+  const R = dockSafeR(L);
+  const dx = e.x - L.extract.x, dy = e.y - L.extract.y;
+  const d = Math.hypot(dx, dy) || 0.001;
+  if (d < R) { e.x = L.extract.x + dx / d * R; e.y = L.extract.y + dy / d * R; }
 }
 
 function nearestNode(p) {
@@ -483,6 +542,7 @@ function updateZombies(dt, L) {
     z.lunge = clamp(z.lunge + (z.chasing ? dt * 5 : -dt * 5), 0, 1);
     collideObstacles(L, z);
     clampToIsland(z, L);
+    pushOutOfDock(L, z);   // PEMBATAS: dermaga adalah zona aman, zombie berhenti di tepinya
 
     // serangan kontak
     if (d < z.radius + P.RADIUS + 4 && z.attackCd <= 0 && p.invuln <= 0) {
@@ -552,6 +612,7 @@ function spawnWave(L) {
       const d = L.r * (0.72 + rng() * 0.1);
       x = Math.cos(a) * d; y = Math.sin(a) * d;
       if (dist(x, y, p.x, p.y) > 240) break;
+      if (dist(x, y, L.extract.x, L.extract.y) > dockSafeR(L) * 1.5) break;   // jangan di zona aman
     }
     const z = makeZombie(pickZombieType(rng, L.island), x, y);
     z.wave = true;
@@ -563,11 +624,17 @@ function spawnWave(L) {
 
 function collideObstacles(L, e) {
   const R = e.radius || CFG.PLAYER.RADIUS;
-  for (const list of [L.rocks, L.trees]) {
+  const lists = [
+    { list: L.rocks,  k: 0.8 },
+    { list: L.trees,  k: 0.55 },
+    { list: L.bushes, k: 0.6 },
+  ];
+  for (const { list, k } of lists) {
+    if (!list) continue;
     for (const o of list) {
       const dx = e.x - o.x, dy = e.y - o.y;
       const d = Math.hypot(dx, dy);
-      const min = o.s * (list === L.trees ? 0.55 : 0.8) + R;
+      const min = o.s * k + R;
       if (d < min && d > 0.001) {
         e.x = o.x + dx / d * min;
         e.y = o.y + dy / d * min;
@@ -829,6 +896,8 @@ export function drawLand(ctx, vw, vh) {
 
   // dermaga
   drawPier(ctx, L);
+  // PEMBATAS zona aman: pagar/tali yang menandai batas dermaga — zombie berhenti di sini
+  drawDockBarrier(ctx, L);
 
   // ---- BAYANGAN DI TANAH (datar, ikut miring) ----
   // Semua bayangan digambar lebih dulu: benda berdiri tanpa bayangan tampak melayang.
@@ -840,13 +909,19 @@ export function drawLand(ctx, vw, vh) {
   for (const rk of L.rocks) {
     ctx.beginPath(); ctx.ellipse(rk.x, rk.y + rk.s * 0.2, rk.s * 1.1, rk.s * 0.45, 0, 0, Math.PI * 2); ctx.fill();
   }
+  for (const b of L.bushes) {
+    ctx.beginPath(); ctx.ellipse(b.x, b.y + b.s * 0.25, b.s * 1.1, b.s * 0.45, 0, 0, Math.PI * 2); ctx.fill();
+  }
 
   // ---- LAPISAN BERDIRI, DIURUTKAN MENURUT KEDALAMAN ----
   // Aturan kamera miring: yang lebih dekat kamera (y lebih besar) digambar terakhir,
   // sehingga pohon di depan benar-benar menutupi zombie di belakangnya.
   const nearExtract = dist(L.player.x, L.player.y, L.extract.x, L.extract.y) < L.extract.r * 1.4;
   const layer = [];
+  for (const g of L.grass) layer.push({ y: g.y, draw: () => drawGrass(ctx, g) });
+  for (const fp of L.flavorProps) layer.push({ y: fp.y, draw: () => drawFlavorProp(ctx, L, fp) });
   for (const rk of L.rocks) layer.push({ y: rk.y, draw: () => drawRock(ctx, rk) });
+  for (const b of L.bushes) layer.push({ y: b.y, draw: () => drawBush(ctx, b) });
   for (const t of L.trees) layer.push({ y: t.y, draw: () => drawTree(ctx, t) });
   for (const nd of L.nodes) {
     if (nd.taken) continue;
@@ -965,6 +1040,50 @@ function drawPier(ctx, L) {
   ctx.beginPath(); ctx.arc(lx, ly, 3.4, 0, Math.PI * 2); ctx.fill();
 }
 
+// Pagar/tali pembatas zona aman dermaga. Busur tiang + tali pada tepi zona aman
+// (sisi yang menghadap pedalaman) — bahasa visual yang sama dengan kapal & dermaga,
+// supaya jelas bahwa dermaga adalah tempat berteduh, bukan cuma area kosong.
+function drawDockBarrier(ctx, L) {
+  const R = dockSafeR(L);
+  const ex = L.extract.x, ey = L.extract.y;
+  // busur dari barat-laut ke timur-laut (menghadap pedalaman/utara)
+  const a0 = -Math.PI * 0.72, a1 = -Math.PI * 0.28;
+  // tiang pancang kecil di sepanjang busur
+  const n = 9;
+  ctx.fillStyle = '#3d2712';
+  for (let i = 0; i <= n; i++) {
+    const a = a0 + (a1 - a0) * (i / n);
+    const px = ex + Math.cos(a) * R, py = ey + Math.sin(a) * R;
+    ctx.fillRect(px - 2.5, py - 7, 5, 12);
+    ctx.fillStyle = '#4a2f17';
+    ctx.fillRect(px - 3.2, py - 9, 6.4, 3);
+    ctx.fillStyle = '#3d2712';
+  }
+  // tali membentang antar tiang (sedikit melorot)
+  ctx.strokeStyle = 'rgba(160,140,110,0.75)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i <= n; i++) {
+    const a = a0 + (a1 - a0) * (i / n);
+    const px = ex + Math.cos(a) * R, py = ey + Math.sin(a) * R;
+    const sag = 4 + Math.sin(i * 1.7) * 1.5;
+    if (i === 0) ctx.moveTo(px, py - 6 + sag); else ctx.lineTo(px, py - 6 + sag);
+  }
+  ctx.stroke();
+  // lembar kain kecil penanda (kibaran) pada beberapa tiang
+  for (let i = 1; i <= n; i += 3) {
+    const a = a0 + (a1 - a0) * (i / n);
+    const px = ex + Math.cos(a) * R, py = ey + Math.sin(a) * R;
+    ctx.fillStyle = `rgba(${150 + (i % 2) * 40},${70 + (i % 2) * 20},${50},0.85)`;
+    ctx.beginPath();
+    ctx.moveTo(px, py - 9);
+    ctx.lineTo(px + 7 + Math.sin(G.time * 2 + i) * 1.5, py - 8);
+    ctx.lineTo(px, py - 4);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
 function drawBoatAtLand(ctx, L) {
   const bp = L.boatPos;
   // Saat air naik, cahaya kapal tumbuh dan berdenyut lebih cepat: satu-satunya benda
@@ -1025,6 +1144,115 @@ function drawRock(ctx, rk) {
     } else {
       ctx.fillStyle = '#52606d';
       ctx.beginPath(); ctx.ellipse(0, -rk.s * 0.4 * p, rk.s * p, rk.s * 0.8 * p, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#3a4450';
+      ctx.beginPath(); ctx.ellipse(-rk.s * 0.25 * p, -rk.s * 0.55 * p, rk.s * 0.5 * p, rk.s * 0.35 * p, -0.3, 0, Math.PI * 2); ctx.fill();
+    }
+  });
+}
+
+// Semak: rumpun dedaunan rendah, warna menyesuaikan rumput varian pulau.
+function drawBush(ctx, b) {
+  atUpright(ctx, b.x, b.y, (p) => {
+    const s = b.s * p;
+    const fl = CFG.FLAVORS[G.land.island.flavor];
+    const base = shadeHex(fl.grass, -0.08);
+    ctx.fillStyle = base;
+    ctx.beginPath();
+    ctx.ellipse(-s * 0.4, -s * 0.55, s * 0.55, s * 0.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(s * 0.35, -s * 0.5, s * 0.5, s * 0.45, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, -s * 0.75, s * 0.5, s * 0.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // kilap tipis di atas
+    ctx.fillStyle = shadeHex(fl.grass, 0.10);
+    ctx.beginPath(); ctx.ellipse(-s * 0.2, -s * 0.85, s * 0.26, s * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+  });
+}
+
+// Rumput & bunga kecil: isian tanah yang membuat pantai terasa hidup, bukan polos.
+function drawGrass(ctx, g) {
+  const fl = CFG.FLAVORS[G.land.island.flavor];
+  atUpright(ctx, g.x, g.y, (p) => {
+    const s = g.s * p;
+    const rng = makeRng(Math.round(g.seed * 1000) || 1);
+    if (g.kind === 'flower') {
+      // batang + kuntum (warna pudar, senada palet desaturasi)
+      ctx.strokeStyle = shadeHex(fl.grass, 0.05);
+      ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -s * 1.6); ctx.stroke();
+      const petal = rng() < 0.5 ? '#c9b8a0' : (rng() < 0.5 ? '#b7a98f' : '#d8cfc0');
+      ctx.fillStyle = petal;
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2 + g.seed;
+        ctx.beginPath();
+        ctx.ellipse(Math.cos(a) * s * 0.55, -s * 1.6 + Math.sin(a) * s * 0.55, s * 0.34, s * 0.24, a, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = '#8a7040';
+      ctx.beginPath(); ctx.arc(0, -s * 1.6, s * 0.18, 0, Math.PI * 2); ctx.fill();
+    } else {
+      // rumpun rumput: 3-4 helai melengkung
+      ctx.strokeStyle = shadeHex(fl.grass, -0.02);
+      ctx.lineWidth = 1.4;
+      for (let i = 0; i < 4; i++) {
+        const lean = (i - 1.5) * 0.35 + (rng() - 0.5) * 0.3;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(lean * s * 0.8, -s * 1.1, lean * s * 1.6, -s * (1.9 + rng() * 0.8));
+        ctx.stroke();
+      }
+    }
+  });
+}
+
+// Elemen KHAS per varian pulau — keunikan yang terbaca sekilas.
+function drawFlavorProp(ctx, L, fp) {
+  const flavor = L.island.flavor;
+  const s = fp.s;
+  atUpright(ctx, fp.x, fp.y, (p) => {
+    const k = p;
+    switch (flavor) {
+      case 'wreck': { // papan kapal karam tertancap
+        ctx.fillStyle = '#4a3826';
+        ctx.save(); ctx.rotate((fp.seed % 1) * 0.6 - 0.3); ctx.translate(0, -s * 0.8 * k);
+        ctx.fillRect(-s * 0.18 * k, -s * 0.9 * k, s * 0.36 * k, s * 1.8 * k);
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.fillRect(-s * 0.18 * k, -s * 0.9 * k, s * 0.36 * k, s * 0.2 * k);
+        ctx.restore();
+        break;
+      }
+      case 'ash': { // tunggul hangus + bara
+        ctx.fillStyle = '#241d18';
+        ctx.fillRect(-s * 0.22 * k, -s * 0.6 * k, s * 0.44 * k, s * 0.7 * k);
+        ctx.fillStyle = `rgba(255,110,50,${0.5 + Math.sin(G.time * 3 + fp.seed) * 0.3})`;
+        ctx.beginPath(); ctx.arc(0, -s * 0.55 * k, s * 0.12 * k, 0, Math.PI * 2); ctx.fill();
+        break;
+      }
+      case 'ruins': { // tiang batu roboh
+        ctx.fillStyle = '#6a645a';
+        ctx.save(); ctx.rotate(0.5); ctx.translate(0, -s * 0.4 * k);
+        ctx.fillRect(-s * 0.2 * k, -s * 1.1 * k, s * 0.4 * k, s * 1.2 * k);
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.fillRect(-s * 0.2 * k, -s * 1.1 * k, s * 0.4 * k, s * 0.25 * k);
+        ctx.restore();
+        break;
+      }
+      case 'reef': { // kerang & bintang laut pudar
+        ctx.fillStyle = '#d8cfc0';
+        ctx.beginPath(); ctx.ellipse(0, -s * 0.3 * k, s * 0.3 * k, s * 0.18 * k, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#b7a98f'; ctx.lineWidth = 1;
+        for (let i = 0; i < 3; i++) ctx.beginPath(), ctx.arc(0, -s * 0.3 * k, s * 0.1 * (i + 1) * k, -0.5, 1.2), ctx.stroke();
+        break;
+      }
+      default: { // quiet: bunga lebih banyak + kerikil
+        if (fp.seed % 1 < 0.5) {
+          ctx.fillStyle = '#c9b8a0';
+          ctx.beginPath(); ctx.arc(0, -s * 0.3 * k, s * 0.24 * k, 0, Math.PI * 2); ctx.fill();
+        } else {
+          ctx.fillStyle = '#8a8074';
+          ctx.beginPath(); ctx.ellipse(0, -s * 0.2 * k, s * 0.3 * k, s * 0.2 * k, 0, 0, Math.PI * 2); ctx.fill();
+        }
+        break;
+      }
     }
   });
 }

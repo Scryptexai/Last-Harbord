@@ -24,11 +24,13 @@ export function anchorY(vh) {
 
 // Masuk ke ruang dunia yang sudah dimiringkan.
 // (wx, wy) -> (vw/2 + (wx-cam.x)*z , anchorY + (wy-cam.y)*z*TILT)
+// rot = sudut sweep kamera (dipakai saat mendarat: kamera berputar lalu lurus).
 export function beginWorld(ctx, vw, vh) {
   const z = camZoom();
   ctx.save();
   ctx.translate(vw / 2, anchorY(vh));
   ctx.scale(z, z * CFG.CAM.TILT);
+  if (G.cam.rot) ctx.rotate(G.cam.rot);
   ctx.translate(-G.cam.x, -G.cam.y);
   return ctx;
 }

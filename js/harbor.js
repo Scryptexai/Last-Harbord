@@ -24,6 +24,7 @@ const CAM = { x: 0, y: 110, zoom: 1.35 };
 export const SPOTS = [
   { key: 'chart', x: -30, y: 158, r: 52, label: 'MEJA PETA' },
   { key: 'bench', x: 30, y: 206, r: 52, label: 'MEJA KERJA' },
+  { key: 'store', x: -120, y: 250, r: 56, label: 'GUDANG' },
   { key: 'sail',  x: 0,  y: -30, r: 42, label: 'BERLAYAR' },
 ];
 
@@ -47,6 +48,7 @@ export function harborContext() {
     if (dist(p.x, p.y, s.x, s.y) < s.r) {
       if (s.key === 'chart') return { kind: 'chart', label: 'BUKA PETA', spot: s };
       if (s.key === 'bench') return { kind: 'bench', label: 'PERBAIKI KAPAL', spot: s };
+      if (s.key === 'store') return { kind: 'store', label: 'BUKA GUDANG', spot: s };
       return { kind: 'sail', label: 'BERLAYAR', spot: s };
     }
   }
@@ -304,6 +306,7 @@ function drawDockProps(ctx, H) {
     { y: H.spots.find((x) => x.key === 'chart').y, draw: () => drawChartTable(ctx, H) },
     { y: H.spots.find((x) => x.key === 'bench').y, draw: () => drawWorkbench(ctx, H) },
     { y: 120, draw: () => drawBarrels(ctx, H.t) },
+    { y: H.spots.find((x) => x.key === 'store').y, draw: () => drawStore(ctx, H) },
     { y: 320, draw: () => drawLowerDeck(ctx) },
     { y: H.player.y, draw: () => drawPlayer(ctx, H.player) },
   ];
@@ -432,6 +435,62 @@ function drawWorkbench(ctx, H) {
       g.addColorStop(1, 'rgba(255,180,100,0)');
       ctx.fillStyle = g;
       ctx.beginPath(); ctx.arc(s.x, s.y - 12, 36, 0, Math.PI * 2); ctx.fill();
+    }
+  });
+}
+
+// Gudang: rak penyimpanan terbuka + tumpukan peti berwarna sesuai isi banked.
+// Ini "tempat menaruh resource" yang terlihat — bukan cuma angka di panel.
+function drawStore(ctx, H) {
+  const s = H.spots.find((x) => x.key === 'store');
+  const near = dist(H.player.x, H.player.y, s.x, s.y) < s.r;
+  atUpright(ctx, s.x, s.y, () => {
+    ctx.translate(-s.x, -s.y);
+    // tiang + atap kanopi
+    ctx.fillStyle = '#3d2712';
+    ctx.fillRect(s.x - 34, s.y - 20, 5, 40);
+    ctx.fillRect(s.x + 29, s.y - 20, 5, 40);
+    ctx.fillStyle = '#4d3319';
+    ctx.fillRect(s.x - 40, s.y - 30, 80, 10);
+    ctx.fillStyle = '#5b3a1d';
+    ctx.fillRect(s.x - 40, s.y - 30, 80, 3);
+    // rak bertingkat dengan peti
+    ctx.fillStyle = '#3a2513';
+    ctx.fillRect(s.x - 30, s.y + 8, 60, 5);
+    ctx.fillRect(s.x - 30, s.y - 2, 60, 5);
+    // peti di rak (warna sesuai resource yang tersimpan)
+    const types = RES_TYPES.filter((t) => (G.banked[t] || 0) > 0);
+    if (types.length === 0) {
+      ctx.fillStyle = 'rgba(120,110,90,0.5)';
+      ctx.fillRect(s.x - 24, s.y - 12, 10, 8);
+      ctx.fillRect(s.x - 6, s.y - 12, 10, 8);
+      ctx.fillRect(s.x + 12, s.y - 12, 10, 8);
+    } else {
+      for (let i = 0; i < 3; i++) {
+        const t = types[i % types.length];
+        ctx.fillStyle = CFG.RESOURCES[t].color;
+        ctx.globalAlpha = 0.9;
+        ctx.fillRect(s.x - 24 + i * 18, s.y - 12, 12, 9);
+        ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(s.x - 24 + i * 18, s.y - 12, 12, 9);
+        ctx.globalAlpha = 1;
+      }
+    }
+    // peti dasar di lantai
+    ctx.fillStyle = '#8d5626';
+    ctx.fillRect(s.x - 20, s.y + 16, 18, 14);
+    ctx.strokeStyle = 'rgba(0,0,0,0.45)'; ctx.lineWidth = 1;
+    ctx.strokeRect(s.x - 20, s.y + 16, 18, 14);
+    ctx.fillStyle = '#a2662e';
+    ctx.fillRect(s.x + 4, s.y + 18, 16, 12);
+    ctx.strokeRect(s.x + 4, s.y + 18, 16, 12);
+    if (near) {
+      const g = ctx.createRadialGradient(s.x, s.y, 2, s.x, s.y, 40);
+      g.addColorStop(0, 'rgba(255,214,130,0.4)');
+      g.addColorStop(1, 'rgba(255,214,130,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(s.x, s.y, 40, 0, Math.PI * 2); ctx.fill();
     }
   });
 }
