@@ -67,16 +67,17 @@ export function sheetFrame(name, dx, dy, walkT, moving, lastIdx) {
   return { img: frames[idx], flip: d.flip, idx: d.idx };
 }
 
-// Gambar sprite karakter dengan rim-light tipis. Frame karakter adalah line-art
-// desaturasi (gelap, garis tipis); di atas latar gelap ia bisa "hilang". Cahaya tepi
-// yang lembut membuat siluetnya tetap terbaca tanpa mengubah gaya seninya.
+// Gambar sprite karakter dengan rim-light TIPIS. Frame karakter adalah pixel-art
+// penuh warna (lihat scripts/generate_character_sheets.py); di atas tanah/air gelap
+// siluetnya bisa menempel ke latar. Cahaya tepi yang lembut — sengaja dijaga
+// low-alpha & blur kecil supaya karakter tidak tampak "bersinar" — membuat tepinya
+// tetap terbaca tanpa menutupi gambarnya.
 export function drawCharSprite(ctx, img, sz, rim = true) {
   if (rim) {
     ctx.save();
-    ctx.shadowColor = 'rgba(236,230,216,0.42)';
-    ctx.shadowBlur = 4;
-    // dua kali untuk menebalkan halo tipis
-    ctx.drawImage(img, -sz / 2, -sz * 0.92, sz, sz);
+    ctx.shadowColor = 'rgba(236,230,216,0.30)';
+    ctx.shadowBlur = 3;
+    // satu frame khusus untuk membangun tepi cahaya, lalu gambar aslinya di atas
     ctx.drawImage(img, -sz / 2, -sz * 0.92, sz, sz);
     ctx.restore();
   }
