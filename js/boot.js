@@ -18,8 +18,6 @@ window.__LAST_HARBOR_BOOT__ = true;
 
 const loaderEl = () => $('boot-loader');
 const { startGame } = await import('./main.js');
-// semua modul inti selesai diparse: tutup overlay loading pertama
-loaderEl() && loaderEl().classList.add('ready');
 
 // ---------- slideshow bab perjalanan: nama-nama pulau bergantian ----------
 let chapterTimer = null;
@@ -48,7 +46,6 @@ function initChapters() {
     }, 460);
   }, 2600);
 }
-initChapters();
 
 const $ = (id) => document.getElementById(id);
 const bootEl = () => $('screen-boot');
@@ -189,5 +186,10 @@ function setup() {
     else onStart();
   });
 }
+
+
+// semua modul inti selesai diparse: tutup overlay loading pertama
+loaderEl() && loaderEl().classList.add('ready');
+initChapters();
 
 setup();
