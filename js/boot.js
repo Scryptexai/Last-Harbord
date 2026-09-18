@@ -104,6 +104,7 @@ function begin(restartNight) {
   const loader = loaderEl();
   if (loader) {
     loader.classList.remove('ready');
+    bootEl() && bootEl().classList.remove('boot-shown');
     const txt = loader.querySelector('.loader-text');
     if (txt) txt.innerHTML = 'MEMBUKA LAUT<span>.</span><span>.</span><span>.</span>';
   }
@@ -188,8 +189,9 @@ function setup() {
 }
 
 
-// semua modul inti selesai diparse: tutup overlay loading pertama
+// semua modul inti selesai diparse: tutup overlay loading pertama LALU buka bg
 loaderEl() && loaderEl().classList.add('ready');
+bootEl() && bootEl().classList.add('boot-shown');
 initChapters();
 
 setup();

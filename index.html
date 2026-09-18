@@ -41,7 +41,13 @@
   background: url("assets/branding/dashboard_bg.png") center/cover no-repeat;
   filter: saturate(1.05) brightness(0.82);
   animation: bgDrift 26s ease-in-out infinite alternate;
+  opacity: 0;
+  /* mulai fade-in pas saat overlay loading (0.55s) sudah lenyap total */
+  transition: opacity 0.9s ease 0.55s;
 }
+/* Latar dashboard hanya tersingkap SETELAH overlay loading memudar — tidak ada
+   momen dua foto terlihat bertumpuk pada awal muat. */
+#screen-boot.boot-shown .boot-bg { opacity: 1; }
 .boot-vignette {
   position: absolute;
   inset: 0;
@@ -183,7 +189,13 @@
   align-items: center;
   justify-content: center;
   gap: 22px;
-  background: url("assets/branding/loading_hero.png") center/cover no-repeat;
+  /* dasar gelap penuh MENDAHULUI foto hero — sementara foto termuat tidak ada
+     celah transparan tempat latar dashboard ikut terlihat bertumpuk */
+  background: var(--deep);
+  background-image: url("assets/branding/loading_hero.png");
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
   transition: opacity 0.55s ease, visibility 0.55s;
 }
 #boot-loader::after {
