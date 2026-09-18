@@ -33,13 +33,17 @@ export function addBanked(type, qty = 1) {
   G.banked[type] = (G.banked[type] || 0) + qty;
 }
 
-// Bongkar muatan: carried -> banked. Ini momen "selamat" tiap run.
+// Bongkar muatan: carried -> banked. Ini momen "selamat" tiap run — dan tiap unit
+// yang selamat sampai dermaga ditekek jadi satu koin drif.
 export function bankCarried() {
   const moved = { ...G.carried };
+  let total = 0;
   for (const t of RES_TYPES) {
+    total += G.carried[t] || 0;
     G.banked[t] = (G.banked[t] || 0) + (G.carried[t] || 0);
     G.carried[t] = 0;
   }
+  G.drif = (G.drif || 0) + total;
   return moved;
 }
 

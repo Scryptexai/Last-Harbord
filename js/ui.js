@@ -22,6 +22,7 @@ const cache = { hull: -1, hold: -1, cap: -1, tide: '', goal: '', ctx: '', pips: 
 
 const IDS = [
   'hud', 'hud-top', 'hull-fill', 'hull-text', 'hold-pips', 'hold-text',
+  'res-fuel', 'res-wood', 'res-food', 'res-medicine', 'drif-count',
   'tide-name', 'tide-fill', 'tide-block', 'goal-chip', 'gather-chip', 'toasts',
   'btn-context', 'btn-attack', 'btn-heal', 'btn-mute', 'joystick', 'joy-knob',
   'modal-chart', 'chart-map', 'chart-hint', 'chart-bank', 'chart-close', 'chart-sail',
@@ -113,6 +114,21 @@ export function updateHUD(ctx) {
     els['hull-fill'].classList.toggle('critical', hull / mx <= 0.3);
     els['hull-fill'].classList.toggle('mid', hull / mx > 0.3 && hull / mx <= 0.6);
     els['hull-text'].textContent = `${hull}/${mx}`;
+  }
+
+  // ikon-ikon resource: bawaan saat bermain, gudang saat di dermaga
+  const bag = inPlay ? G.carried : G.banked;
+  for (const t of RES_TYPES) {
+    const elr = els['res-' + t];
+    if (elr) {
+      const v = bag[t] || 0;
+      if (cache['res-' + t] !== v) { cache['res-' + t] = v; elr.textContent = v; }
+    }
+  }
+  const drif = Math.floor(G.drif || 0);
+  if (els['drif-count'] && cache.drif !== drif) {
+    cache.drif = drif;
+    els['drif-count'].textContent = drif;
   }
 
   const load = inPlay ? carriedLoad() : bankLoad();

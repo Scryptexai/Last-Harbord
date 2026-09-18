@@ -27,6 +27,7 @@ export const G = {
                         // walau sudah diperbaiki (kapal "punya sejarah").
   carried: emptyBag(),  // hasil run yang belum dibongkar (BISA HILANG)
   banked: emptyBag(),   // gudang di dermaga (AMAN)
+  drif: 0,              // koin drif: didapat tiap muatan dibongkar ke dermaga
   totalRuns: 0,
   salvages: [],         // [{ islandId, x, y, cargo }] pelampung bekas kematian
   surveyed: {},         // islandId -> true (sudah pernah dipijak / terlihat dekat)

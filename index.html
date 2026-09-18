@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Last Harbor — Bertahan di Laut yang Naik</title>
-<meta name="description" content="Last Harbor — game survival di laut yang naik. Seberapa jauh aku mau pergi sebelum aku berbalik?">
+<title>Driftholm — Bertahan di Laut yang Naik</title>
+<meta name="description" content="Driftholm — game survival di laut yang naik. Seberapa jauh aku mau pergi sebelum aku berbalik?">
 <meta name="theme-color" content="#04090f">
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Last Harbor">
-<meta property="og:title" content="Last Harbor — Bertahan di Laut yang Naik">
+<meta property="og:site_name" content="Driftholm">
+<meta property="og:title" content="Driftholm — Bertahan di Laut yang Naik">
 <meta property="og:description" content="Seberapa jauh aku mau pergi sebelum aku berbalik?">
-<meta property="og:image" content="https://lastharbor.fun/assets/branding/logo.png">
+<meta property="og:image" content="assets/branding/loading_hero.png">
 <meta property="og:url" content="https://lastharbor.fun/">
 <link rel="icon" type="image/png" href="assets/branding/appicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,63 +18,218 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 <style>
-/* ================= LAYAR PEMBUKA (boot) =================
-   Lapisan BARU di depan sistem yang ada: hanya struktur + gaya,
-   tidak menyentuh HUD atau gameplay. */
+/* ================= LAYAR PEMBUKA (boot) + LOADING =================
+   Dashboard minimalis: latar foto dermaga, slideshow bab pulau di atas,
+   logo + tagline di tengah, satu tombol PLAY besar di bawah.
+   Overlay loading bergaya "boot icon": ikon maskot berayun di dalam cincin
+   progres yang menyapu, hilang begitu asset inti siap. */
 #screen-boot {
   position: absolute;
   inset: 0;
   z-index: 40;
   pointer-events: auto;
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  overflow: hidden;
+  background: var(--deep);
+}
+.boot-bg {
+  position: absolute;
+  inset: -4%;
+  background: url("assets/branding/dashboard_bg.png") center/cover no-repeat;
+  filter: saturate(1.05) brightness(0.82);
+  animation: bgDrift 26s ease-in-out infinite alternate;
+}
+.boot-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(4,9,15,0.55) 0%, rgba(4,9,15,0.18) 30%,
+                    rgba(4,9,15,0.12) 55%, rgba(4,9,15,0.82) 100%),
+    radial-gradient(120% 90% at 50% 30%, rgba(4,9,15,0) 40%, rgba(4,9,15,0.55) 100%);
+}
+@keyframes bgDrift {
+  from { transform: translate3d(-1.2%, -1%, 0) scale(1.02); }
+  to   { transform: translate3d(1.2%, 1%, 0) scale(1.06); }
+}
+
+/* ---- slideshow bab perjalanan ---- */
+.boot-chapters {
+  position: relative;
+  z-index: 2;
+  margin-top: calc(26px + env(safe-area-inset-top));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+.chapters-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 5px;
+  color: rgba(216,170,90,0.85);
+  text-transform: uppercase;
+}
+#chapter-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: var(--ink);
+  min-height: 26px;
+  transition: opacity 0.45s ease, transform 0.45s ease, filter 0.45s ease;
+  text-shadow: 0 2px 14px rgba(0,0,0,0.85);
+}
+#chapter-title.swap {
+  opacity: 0;
+  transform: translateY(8px);
+  filter: blur(3px);
+}
+.chapters-dots { display: flex; gap: 6px; }
+.chapters-dots i {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(237,242,247,0.28);
+  transition: background 0.3s, transform 0.3s;
+}
+.chapters-dots i.on { background: var(--brass); transform: scale(1.3); }
+
+/* ---- logo + tagline ---- */
+.boot-inner {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px;
-  text-align: center;
-  background:
-    radial-gradient(120% 90% at 50% 18%, rgba(16, 36, 52, 0.96), rgba(4, 9, 15, 0.99));
+  gap: 6px;
+  width: 100%;
+  padding: 0 24px;
 }
-.boot-inner {
+.boot-logo {
+  width: min(74vw, 340px);
+  height: auto;
+  filter: drop-shadow(0 14px 34px rgba(0,0,0,0.75));
+  animation: logoFloat 5.2s ease-in-out infinite;
+}
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0) rotate(-0.4deg); }
+  50%      { transform: translateY(-8px) rotate(0.5deg); }
+}
+.boot-tagline {
+  font-size: 13px;
+  font-style: italic;
+  color: rgba(237,242,247,0.78);
+  line-height: 1.6;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.9);
+}
+
+/* ---- dok tombol ---- */
+.boot-dock {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 420px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
-  max-width: 520px;
-  width: 100%;
-}
-.boot-logo {
-  width: 232px;
-  height: auto;
-  filter: drop-shadow(0 8px 26px rgba(0, 0, 0, 0.6));
-}
-.boot-title {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 32px;
-  font-weight: 900;
-  letter-spacing: 6px;
-  color: var(--ink);
-  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.8);
-}
-.boot-tagline {
-  font-size: 14px;
-  font-style: italic;
-  color: var(--muted);
-  line-height: 1.6;
-}
-.boot-actions {
-  display: flex;
-  flex-direction: column;
   gap: 10px;
-  width: 100%;
-  margin-top: 10px;
+  padding: 18px 24px calc(26px + env(safe-area-inset-bottom));
 }
-.boot-actions .btn { font-size: 14px; padding: 14px 18px; letter-spacing: 2px; }
+.btn-play {
+  width: 100%;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: 4px;
+  color: #201305;
+  padding: 18px 22px;
+  border: none;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, #ffd98a 0%, #e6a94f 55%, #c8863a 100%);
+  box-shadow:
+    0 12px 30px rgba(0,0,0,0.55),
+    0 0 0 1px rgba(255,222,150,0.55) inset,
+    0 2px 0 rgba(255,240,200,0.65) inset;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s;
+  animation: playPulse 2.4s ease-in-out infinite;
+}
+.btn-play:active { transform: translateY(2px) scale(0.99); filter: brightness(0.94); }
+@keyframes playPulse {
+  0%, 100% { box-shadow: 0 12px 30px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,222,150,0.55) inset, 0 0 0 0 rgba(240,190,100,0.35); }
+  50%      { box-shadow: 0 12px 34px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,222,150,0.6) inset, 0 0 26px 4px rgba(240,190,100,0.4); }
+}
+.boot-sub-actions { display: flex; gap: 10px; width: 100%; }
+.boot-sub-actions .btn { flex: 1; font-size: 12px; padding: 11px 12px; letter-spacing: 2px; }
 .boot-warning {
-  font-size: 12px;
+  font-size: 11px;
   color: #e0b979;
   line-height: 1.5;
   max-width: 380px;
 }
+
+/* ---- overlay loading (boot icon) ---- */
+#boot-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  background: url("assets/branding/loading_hero.png") center/cover no-repeat;
+  transition: opacity 0.55s ease, visibility 0.55s;
+}
+#boot-loader::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(90% 70% at 50% 45%, rgba(4,9,15,0.05), rgba(4,9,15,0.68));
+  pointer-events: none;
+}
+#boot-loader.ready { opacity: 0; visibility: hidden; pointer-events: none; }
+#boot-loader > * { position: relative; z-index: 2; }
+.loader-stack { position: relative; width: 148px; height: 148px; }
+.loader-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #ffd98a, #e6a94f 180deg, rgba(240,196,120,0.06) 78%, transparent 80%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #000 calc(100% - 6px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #000 calc(100% - 6px));
+  animation: ringSpin 1.5s linear infinite;
+  box-shadow: 0 0 24px rgba(240,196,120,0.28);
+}
+@keyframes ringSpin { to { transform: rotate(360deg); } }
+.loader-icon {
+  position: absolute;
+  inset: 21px;
+  animation: iconBoot 1.5s ease-in-out infinite;
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,0.65));
+}
+.loader-icon img { width: 100%; height: 100%; object-fit: contain; }
+@keyframes iconBoot {
+  0%, 100% { transform: translateY(3px) scale(0.96); }
+  50%      { transform: translateY(-4px) scale(1.03); }
+}
+.loader-text {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 7px;
+  color: rgba(240,214,160,0.92);
+  text-shadow: 0 2px 12px rgba(0,0,0,0.9);
+}
+.loader-text span { animation: dotPulse 1.4s ease-in-out infinite; display: inline-block; }
+.loader-text span:nth-child(2) { animation-delay: 0.2s; }
+.loader-text span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotPulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
 </style>
 </head>
 <body>
@@ -82,40 +237,70 @@
 
 <div id="ui">
 
-  <!-- ================= LAYAR PEMBUKA ================= -->
+  <!-- ================= LAYAR PEMBUKA / DASHBOARD ================= -->
   <section id="screen-boot">
+    <div class="boot-bg"></div>
+    <div class="boot-vignette"></div>
+
+    <div class="boot-chapters">
+      <span class="chapters-label">Bab Perjalanan</span>
+      <h2 id="chapter-title">Pulau Sepuh</h2>
+      <div class="chapters-dots" id="chapter-dots"></div>
+    </div>
+
     <div class="boot-inner">
-      <img class="boot-logo" src="assets/branding/logo.png" alt="Last Harbor">
-      <h1 class="boot-title">LAST HARBOR</h1>
+      <img class="boot-logo" src="assets/branding/logo.png" alt="Driftholm">
       <p class="boot-tagline">Seberapa jauh aku mau pergi sebelum aku berbalik?</p>
+    </div>
 
-      <div class="boot-actions">
-        <button id="btn-boot-start" class="btn btn-primary wide">MULAI</button>
-        <button id="btn-boot-continue" class="btn btn-primary wide hidden">LANJUTKAN</button>
-        <button id="btn-boot-new" class="btn wide hidden">MALAM BARU</button>
+    <div class="boot-dock">
+      <button id="btn-boot-start" class="btn-play">▶&nbsp; MAIN</button>
+      <div class="boot-sub-actions">
+        <button id="btn-boot-continue" class="btn btn-primary hidden">LANJUTKAN</button>
+        <button id="btn-boot-new" class="btn hidden">MALAM BARU</button>
       </div>
-
       <p id="boot-warning" class="boot-warning hidden">Gudang &amp; progres refit tetap tersimpan di dermaga. Malam akan dimulai lagi dari awal.</p>
+    </div>
+
+    <div id="boot-loader">
+      <div class="loader-stack">
+        <div class="loader-ring"></div>
+        <div class="loader-icon"><img src="assets/branding/mascot.png" alt=""></div>
+      </div>
+      <div class="loader-text">MEMUAT<span>.</span><span>.</span><span>.</span></div>
     </div>
   </section>
 
   <!-- ================= HUD ================= -->
   <section id="hud">
     <div id="hud-top">
-      <div class="survival">
-        <div class="hull-row">
-          <img src="assets/ui/icon_hp.png" alt="hull" class="hud-ic">
+      <!-- kartu profil: avatar + nama + nyawa kapal -->
+      <div class="hud-card card-profile">
+        <div class="profile-avatar"><img src="assets/characters/player_front_0.png" alt=""></div>
+        <div class="profile-meta">
+          <span class="profile-title">PELAMPUNG</span>
           <div class="hull-bar"><div id="hull-fill"></div></div>
           <span id="hull-text" class="mono">100/100</span>
         </div>
-        <div class="hold-row">
-          <span class="hold-label">PALKA</span>
-          <div id="hold-pips"></div>
-          <span id="hold-text" class="mono">0/10</span>
-        </div>
       </div>
 
-      <div id="tide-block" class="tide-calm hidden">
+      <!-- kartu resource: 4 ikon + muatan, semua ikon tanpa teks label -->
+      <div class="hud-card card-res">
+        <span class="res-chip" title="Solar"><img src="assets/ui/icon_fuel.png"><b id="res-fuel">0</b></span>
+        <span class="res-chip" title="Kayu"><img src="assets/ui/icon_wood.png"><b id="res-wood">0</b></span>
+        <span class="res-chip" title="Makanan"><img src="assets/ui/icon_food.png"><b id="res-food">0</b></span>
+        <span class="res-chip" title="Obat"><img src="assets/ui/icon_medicine.png"><b id="res-medicine">0</b></span>
+        <span class="res-chip carry" title="Muatan palka"><img src="assets/ui/icon_inventory.png"><b id="hold-text" class="mono">0/10</b></span>
+        <div id="hold-pips" class="hold-pips"></div>
+      </div>
+
+      <!-- kartu koin drif -->
+      <div class="hud-card card-drif" title="Koin drif">
+        <img src="assets/branding/coin_drif.png">
+        <b id="drif-count">0</b>
+      </div>
+
+      <div id="tide-block" class="hud-card card-tide tide-calm hidden">
         <div id="tide-name">TENANG</div>
         <div class="tide-bar"><div id="tide-fill"></div></div>
       </div>

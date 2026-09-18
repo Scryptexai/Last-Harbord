@@ -1,4 +1,4 @@
-// ============ Last Harbor — boot sequence (pre-game shell) ============
+// ============ Driftholm — boot sequence (pre-game shell) ============
 // Tanggung jawab modul ini SANGAT sempit:
 //   1. Tampilkan layar pembuka (#screen-boot) dan deteksi apakah ada save lama.
 //   2. Tangkap gesture mulai (click / touchend / keydown Enter-Space) secara
@@ -16,7 +16,39 @@ import { CFG } from './config.js';
 //  perilaku lama "boot otomatis saat dimuat" tetap utuh di sana.)
 window.__LAST_HARBOR_BOOT__ = true;
 
+const loaderEl = () => $('boot-loader');
 const { startGame } = await import('./main.js');
+// semua modul inti selesai diparse: tutup overlay loading pertama
+loaderEl() && loaderEl().classList.add('ready');
+
+// ---------- slideshow bab perjalanan: nama-nama pulau bergantian ----------
+let chapterTimer = null;
+function initChapters() {
+  const el = $('chapter-title');
+  const dots = $('chapter-dots');
+  if (!el) return;
+  const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
+  const picks = (CFG.ISLAND_NAMES || []).slice(0, 8);
+  if (!picks.length) return;
+  if (dots) {
+    for (let i = 0; i < picks.length; i++) dots.appendChild(document.createElement('i'));
+  }
+  let idx = 0;
+  const paint = () => {
+    el.textContent = `${ROMAN[idx % ROMAN.length]}  ·  ${picks[idx]}`;
+    if (dots) [...dots.children].forEach((d, i) => d.classList.toggle('on', i === idx));
+  };
+  paint();
+  chapterTimer = setInterval(() => {
+    el.classList.add('swap');
+    setTimeout(() => {
+      idx = (idx + 1) % picks.length;
+      paint();
+      el.classList.remove('swap');
+    }, 460);
+  }, 2600);
+}
+initChapters();
 
 const $ = (id) => document.getElementById(id);
 const bootEl = () => $('screen-boot');
@@ -69,10 +101,24 @@ function hideBoot() {
 function begin(restartNight) {
   if (started) return;
   started = true;
+  if (chapterTimer) { clearInterval(chapterTimer); chapterTimer = null; }
   unlockAudio();               // Langkah 3: buka audio di gesture pertama
-  hideBoot();
+  // tampilkan lagi overlay loading sementara asset & dunia benar-benar disiapkan
+  const loader = loaderEl();
+  if (loader) {
+    loader.classList.remove('ready');
+    const txt = loader.querySelector('.loader-text');
+    if (txt) txt.innerHTML = 'MEMBUKA LAUT<span>.</span><span>.</span><span>.</span>';
+  }
   if (restartNight) resetNightInSave();
-  startGame();                 // Langkah 4: boot game sesungguhnya (main.js)
+  const t0 = performance.now();
+  Promise.resolve(startGame())  // Langkah 4: boot game sesungguhnya (main.js)
+    .then(() => {
+      const min = 900;          // biar transisi boot-icon tidak kedip
+      const wait = Math.max(0, min - (performance.now() - t0));
+      setTimeout(hideBoot, wait);
+    })
+    .catch((e) => { console.error('[boot] gagal mulai:', e); started = false; });
 }
 
 function onStart() {

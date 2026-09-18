@@ -226,6 +226,7 @@ function newGame() {
   G.deepHull = maxHP();          // kapal baru: tanpa riwayat kerusakan
   G.banked = emptyBag();
   G.carried = emptyBag();
+  G.drif = 0;
   G.totalRuns = 0;
   G.salvages = [];
   G.surveyed = {};

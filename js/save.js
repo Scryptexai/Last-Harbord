@@ -24,6 +24,7 @@ export function saveGame() {
         food: int(G.banked.food), medicine: int(G.banked.medicine),
       },
       totalRuns: int(G.totalRuns),
+      drif: int(G.drif),
       salvages: (G.salvages || []).slice(0, 12).map((s) => ({
         islandId: int(s.islandId), x: +s.x || 0, y: +s.y || 0,
         cargo: {
@@ -57,6 +58,7 @@ export function loadGame() {
     G.banked = { fuel: int(b.fuel), wood: int(b.wood), food: int(b.food), medicine: int(b.medicine) };
     G.carried = emptyBag(); // selalu mulai dengan tangan kosong
     G.totalRuns = int(d.totalRuns);
+    G.drif = int(d.drif);
     // Malam lanjut dari tempat ia berhenti, bukan dari nol: dermaga membekukan jam,
     // dan menutup game bukan cara memutar waktu ke belakang.
     resetTide();
