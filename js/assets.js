@@ -20,7 +20,11 @@ const ASSET_PATHS = {
   // Environment
   island: 'assets/environment/island.png',
   tree: 'assets/environment/tree.png',
+  tree2: 'assets/environment/tree2.png',
+  tree3: 'assets/environment/tree3.png',
   rock: 'assets/environment/rock.png',
+  bush: 'assets/environment/bush.png',
+  salvage_buoy: 'assets/environment/salvage_buoy.png',
   ocean_bg: 'assets/environment/ocean_bg.png',
   wave_pattern: 'assets/environment/wave_pattern.png',
   land_bg: 'assets/environment/land_bg.png',

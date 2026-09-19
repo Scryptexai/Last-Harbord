@@ -758,7 +758,12 @@ function drawItemIcon(ctx, type, x, y, size) {
 
 function drawNodeIcon(ctx, nd, x, y, size) {
   if (nd.kind === 'salvage') {
-    // pelampung: tong + bendera
+    // pelampung: sprite buoy; tong+bendera jadi cadangan
+    const img = ASSETS.salvage_buoy;
+    if (img && img.complete && img.naturalWidth > 0) {
+      ctx.drawImage(img, x - size * 0.8, y - size * 1.5, size * 1.6, size * 1.6);
+      return;
+    }
     ctx.fillStyle = '#d8d2c4';
     ctx.beginPath(); ctx.ellipse(x, y + size * 0.3, size * 0.62, size * 0.42, 0, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#b23b1f';
@@ -769,10 +774,15 @@ function drawNodeIcon(ctx, nd, x, y, size) {
     ctx.beginPath(); ctx.moveTo(x, y - size * 1.1); ctx.lineTo(x + size * 0.7, y - size * 0.85); ctx.lineTo(x, y - size * 0.6); ctx.closePath(); ctx.fill();
     return;
   }
-  // Resource = KRAT 3D (ada "atas" terang + "depan" gelap), bukan ikon datar dari atas.
-  // Satu warna dominan per kategori dipertahankan supaya tetap terbaca dari jauh.
+  // Resource di pulau = SPRITE unik per jenis (drum solar, kayu apung, keranjang
+  // apel, bundel obat) — bukan lagi empat krat yang hanya beda warna.
   const def = CFG.RESOURCES[nd.type];
   const s = size;
+  const img = ASSETS[nd.type] || ASSETS['res_' + nd.type];
+  if (img && img.complete && img.naturalWidth > 0) {
+    ctx.drawImage(img, x - s * 0.78, y - s * 1.4, s * 1.56, s * 1.56);
+    return;
+  }
   const topY = y - s * 0.42, frontY = y - s * 0.18;
   // sisi atas (jajar genjang, lebih terang — menghadap kamera/langit)
   ctx.fillStyle = def.color;
@@ -1154,6 +1164,11 @@ function drawRock(ctx, rk) {
 function drawBush(ctx, b) {
   atUpright(ctx, b.x, b.y, (p) => {
     const s = b.s * p;
+    const img = ASSETS.bush;
+    if (img && img.complete && img.naturalWidth > 0) {
+      ctx.drawImage(img, -s * 1.3, -s * 1.75, s * 2.6, s * 2.6);
+      return;
+    }
     const fl = CFG.FLAVORS[G.land.island.flavor];
     const base = shadeHex(fl.grass, -0.08);
     ctx.fillStyle = base;
@@ -1260,7 +1275,13 @@ function drawFlavorProp(ctx, L, fp) {
 function drawTree(ctx, t) {
   atUpright(ctx, t.x, t.y, (p) => {
     const sz = t.s * 3.1 * p;
-    const img = ASSETS.tree;
+    // variasi spesies per rasa pulau: karang->palem, abu/karam->pinus, sisanya
+    // gubug; sebagian kecil campuran supaya rimba tidak seragam monoton.
+    const fl = (G.land && G.land.island && G.land.island.flavor) || 'quiet';
+    const MAIN = { reef: 'tree3', ash: 'tree2', wreck: 'tree2', quiet: 'tree', ruins: 'tree' }[fl] || 'tree';
+    const h = (t.seed || 0) % 1;
+    const key = h < 0.72 ? MAIN : (h < 0.88 ? 'tree' : (MAIN === 'tree2' ? 'tree3' : 'tree2'));
+    const img = ASSETS[key] || ASSETS.tree;
     if (img && img.complete && img.naturalWidth > 0) {
       ctx.drawImage(img, -sz / 2, -sz * 0.88, sz, sz);
     } else {
