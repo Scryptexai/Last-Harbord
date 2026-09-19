@@ -233,7 +233,7 @@ function nearestNode(p) {
   const L = G.land;
   let best = null, bd = P.GATHER_NEAR + 14;
   for (const nd of L.nodes) {
-    if (nd.taken) continue;
+    if (nd.taken || (nd.cool | 0) > 0) continue;
     const d = dist(nd.x, nd.y, p.x, p.y);
     if (d < bd) { bd = d; best = nd; }
   }
@@ -249,10 +249,16 @@ export function contextAction() {
 }
 
 // Mulai memanen sebuah node. Dipanggil otomatis saat pemain berhenti di dekat node.
+// PANEN LANGSUNG: tanpa bar progres — resource langsung masuk palka begitu pemain
+// berhenti di sebelah node. Semua efek (suara, flyItem, sisa muatan yang tumpah ke
+// tanah) tetap melalui completeGather. Kalau palka penuh dan tak ada yang masuk,
+// node diberi jeda singkat supaya bunyi "penuh" tidak berulang tiap frame.
 function startGather(node) {
   const p = G.land.player;
-  const need = node.kind === 'salvage' ? P.GATHER_SALVAGE : (node.rich ? P.GATHER_RICH : P.GATHER_SMALL);
-  p.gather = { node, t: 0, need };
+  if (!p || p.gather || (node.cool | 0) > 0) return;
+  const before = carriedLoad();
+  completeGather(node);
+  if (carriedLoad() <= before) node.cool = 2.4;
 }
 
 function cancelGather() {
@@ -325,6 +331,16 @@ export function updateLand(dt, move, opts = {}) {
   p.invuln = Math.max(0, p.invuln - dt);
   p.gatherFade = Math.max(0, p.gatherFade - dt * 2);
   updateAttack(dt, move);
+
+  // jeda node yang gagal dipanen (palka penuh)
+  for (const nd of L.nodes) if ((nd.cool | 0) > 0) nd.cool -= dt;
+
+  // SERANG OTOMATIS: berdiri diam dengan zombie dalam jangkauan -> ayunkan sendiri.
+  // Berjalan tetap tidak memicu ayunan, supaya kabur tidak tertahan kunci serangan.
+  if (!moving && !p.gather && p.atk.phase === 'idle' && !G.pendingDeath) {
+    const z = nearestZombie(L, p, P.ATTACK_RANGE - 6);
+    if (z) tryAttack();
+  }
 
   // ---- gerak: terkunci saat memanen / ancang-ancang ----
   const locked = !!p.gather || p.atk.phase === 'windup' || p.atk.phase === 'active';
@@ -875,6 +891,23 @@ export function drawLand(ctx, vw, vh) {
   ctx.fillStyle = tint > 0.6 ? shadeHex(fl.sand, -0.18) : fl.sand;
   ctx.fill();
 
+  // TEKSTUR PULAU (art pass): ilustrasi per flavor di-clip ke bentuk blob dan diputar
+  // per benih — tiap pulau terasa digambar tangan tapi tetap unik & acak. Siluet,
+  // dinding pantai, air pasang, dan jalan tetap prosedural agar sistem tetap konsisten.
+  const isleTex = ASSETS['isle_' + L.island.flavor] || null;
+  const isleTexOk = isleTex && isleTex.complete && isleTex.naturalWidth > 0;
+  L._texOk = isleTexOk;   // inspeksi/debug: apakah lapis tekstur dipakai frame ini
+  if (isleTexOk) {
+    const D = L.r * 2.35;
+    ctx.save();
+    blobPath(ctx, 0, 0, L.shape, 1);
+    ctx.clip();
+    ctx.rotate(((L.island.seed % 628) / 100));
+    ctx.globalAlpha = 0.78;
+    ctx.drawImage(isleTex, -D / 2, -D / 2, D, D);
+    ctx.restore();
+  }
+
   // PASANG NAIK KE PANTAI — kanal informasi utama, bukan UI.
   // Satu rumus dengan gerak: floodRadius(). Kalau digambar sendiri di sini, gambar dan
   // tabrakan bisa berbeda, dan pemain berjalan di air (atau sebaliknya) tanpa alasan.
@@ -886,20 +919,23 @@ export function drawLand(ctx, vw, vh) {
   ctx.lineWidth = 2.5;
   ctx.stroke();
 
-  // rumput
-  blobPath(ctx, 0, 0, L.shape, CFG.LAND.SAND_RATIO);
-  ctx.fillStyle = tint > 0.6 ? shadeHex(fl.grass, -0.2) : fl.grass;
-  ctx.fill();
+  // rumput — bila tekstur ilustrasi sudah menutup daratan, blok warna datar ini hanya
+  // fallback (mis. aset belum selesai termuat di beberapa frame pertama).
+  if (!isleTexOk) {
+    blobPath(ctx, 0, 0, L.shape, CFG.LAND.SAND_RATIO);
+    ctx.fillStyle = tint > 0.6 ? shadeHex(fl.grass, -0.2) : fl.grass;
+    ctx.fill();
 
-  // ---- ART PASS: ketinggian & jalur (tanah terbaca sebagai tempat, bukan lingkaran) ----
-  // Dua undakan ke pedalaman yang makin gelap: tutupan lebih rapat = lebih dalam = lebih
-  // berbahaya. Isyarat visual, bukan angka — sejalan dengan "pedalaman = ongkos".
-  blobPath(ctx, 0, 0, L.shape, 0.48);
-  ctx.fillStyle = shadeHex(fl.grass, tint > 0.6 ? -0.30 : -0.12);
-  ctx.fill();
-  blobPath(ctx, 0, 0, L.shape, 0.28);
-  ctx.fillStyle = shadeHex(fl.grass, tint > 0.6 ? -0.40 : -0.22);
-  ctx.fill();
+    // ---- ART PASS: ketinggian & jalur (tanah terbaca sebagai tempat, bukan lingkaran) ----
+    // Dua undakan ke pedalaman yang makin gelap: tutupan lebih rapat = lebih dalam = lebih
+    // berbahaya. Isyarat visual, bukan angka — sejalan dengan "pedalaman = ongkos".
+    blobPath(ctx, 0, 0, L.shape, 0.48);
+    ctx.fillStyle = shadeHex(fl.grass, tint > 0.6 ? -0.30 : -0.12);
+    ctx.fill();
+    blobPath(ctx, 0, 0, L.shape, 0.28);
+    ctx.fillStyle = shadeHex(fl.grass, tint > 0.6 ? -0.40 : -0.22);
+    ctx.fill();
+  }
 
   // jalur tanah dari dermaga ke pedalaman: menyempit ke atas (resesi perspektif kamera)
   drawIslandPath(ctx, L, tint);

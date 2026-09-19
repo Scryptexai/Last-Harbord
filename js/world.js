@@ -437,10 +437,28 @@ function drawIslandSea(ctx, isl, detail) {
   ctx.ellipse(x, y + r * 0.72, r * 0.86, r * 0.16, 0, 0, Math.PI * 2);
   ctx.stroke();
 
+  // TEKSTUR PULAU: ilustrasi per flavor menutup pasir+rumput datar (fallback ke blok
+  // warna kalau aset belum termuat).
+  const isleTex = ASSETS['isle_' + isl.flavor];
+  const isleTexOk = isleTex && isleTex.complete && isleTex.naturalWidth > 0;
+  if (isleTexOk) {
+    const D = r * 2.35;
+    ctx.save();
+    blobPath(ctx, x, y, isl.shape, 1);
+    ctx.clip();
+    ctx.translate(x, y);
+    ctx.rotate((isl.seed % 628) / 100);
+    ctx.globalAlpha = 0.8;
+    ctx.drawImage(isleTex, -D / 2, -D / 2, D, D);
+    ctx.restore();
+  }
+
   // rumput
-  blobPath(ctx, x, y, isl.shape, 0.72);
-  ctx.fillStyle = isl.surveyed ? shade(fl.grass, -0.12) : fl.grass;
-  ctx.fill();
+  if (!isleTexOk) {
+    blobPath(ctx, x, y, isl.shape, 0.72);
+    ctx.fillStyle = isl.surveyed ? shade(fl.grass, -0.12) : fl.grass;
+    ctx.fill();
+  }
 
   if (detail) {
     // elemen yang BERDIRI di atas pulau (pohon + semak + batu), diurutkan menurut

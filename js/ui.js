@@ -25,7 +25,7 @@ const IDS = [
   'res-fuel', 'res-wood', 'res-food', 'res-medicine', 'drif-count',
   'tide-name', 'tide-fill', 'tide-block', 'goal-chip', 'gather-chip', 'toasts',
   'btn-context', 'btn-attack', 'btn-heal', 'btn-mute', 'joystick', 'joy-knob',
-  'modal-chart', 'chart-map', 'chart-hint', 'chart-bank', 'chart-close', 'chart-sail',
+  'modal-chart', 'chart-map', 'chart-hint', 'chart-bank', 'chart-close', 'chart-sail', 'chart-list',
   'modal-bench', 'bench-rows', 'bench-bank', 'bench-close', 'bench-title', 'bench-sub',
   'modal-inventory', 'inv-resources', 'inv-boat', 'inv-close',
   'modal-debrief', 'db-title', 'db-cause', 'db-lost', 'db-kept', 'db-salvage', 'db-night', 'db-goal', 'db-close',
@@ -253,8 +253,57 @@ export function renderChart() {
   const selName = sel ? (G.surveyed[sel.id] ? sel.name : 'perairan belum bernama') : null;
   els['chart-hint'].textContent = sel
     ? `Tujuan: ${selName} · ${Math.round(distToHarbor(sel) / 10)} m dari dermaga`
-    : 'Tap satu titik di peta untuk memilih tujuan, lalu berlayar.';
+    : 'Tap satu titik di peta, atau pilih dari daftar di bawah, lalu berlayar.';
   els['chart-sail'].textContent = sel ? 'BERLAYAR SEKARANG' : 'BERLAYAR TANPA TUJUAN';
+  renderChartList();
+}
+
+// Daftar pulau yang sudah disurvei — pilihan tujuan yang bisa diketuk LANGSUNG,
+// bukan cuma titik di kanvas. Tiap baris menampilkan wajah pulau, nama, rasa,
+// dan jarak; yang habis diberi tanda "habis".
+function renderChartList() {
+  const list = els['chart-list'];
+  if (!list) return;
+  const known = G.islands
+    .filter((i) => G.surveyed[i.id])
+    .sort((a, b) => distToHarbor(a) - distToHarbor(b));
+  const unknownCount = G.islands.length - known.length;
+
+  if (!known.length) {
+    list.innerHTML = unknownCount
+      ? `<div class="chart-row spent"><div class="cr-main"><span>Belum ada pulau disurvei.</span>
+         <span class="muted">Berlayar bebas (tanpa tujuan) atau tap titik "?" di peta untuk mensurvei.</span></div></div>`
+      : '';
+    return;
+  }
+
+  list.innerHTML = known.map((isl) => {
+    const chosen = G.target === isl;
+    const depleted = isDepleted(isl);
+    const fl = CFG.FLAVORS[isl.flavor];
+    const sv = G.salvages.find((s) => s.islandId === isl.id);
+    const biasTxt = Object.keys(fl.bias).map((t) => CFG.RESOURCES[t].label).join(' · ');
+    return `<div class="chart-row${chosen ? ' chosen' : ''}${depleted ? ' spent' : ''}" data-isl="${isl.id}" role="button" tabindex="0">
+      <img class="cr-isle" src="assets/environment/isle_${isl.flavor}.png" alt="">
+      <div class="cr-main">
+        <span>${isl.name}${sv ? ' ⛟' : ''}</span>
+        <span class="muted">${fl.label} · ${biasTxt}</span>
+      </div>
+      <div class="cr-side">
+        <span>${Math.round(distToHarbor(isl) / 10)} m</span>
+        <span class="${depleted ? 'bad' : 'ok'}">${depleted ? 'habis' : 'isi'}</span>
+      </div>
+    </div>`;
+  }).join('') + (unknownCount
+    ? `<div class="chart-row spent"><div class="cr-main"><span class="muted">+ ${unknownCount} perairan belum dikenal — tap "?" di peta sebagai tujuan.</span></div></div>`
+    : '');
+
+  for (const row of list.querySelectorAll('[data-isl]')) {
+    row.addEventListener('click', () => {
+      if (H.onPickTarget) H.onPickTarget(+row.dataset.isl);
+      renderChart();
+    });
+  }
 }
 
 function chartProject() {
@@ -271,7 +320,10 @@ function drawChartMap() {
   if (!chartCanvas) {
     chartCanvas = document.createElement('canvas');
     wrap.appendChild(chartCanvas);
-    chartCanvas.addEventListener('click', onChartMapClick);
+    chartCanvas.style.touchAction = 'manipulation';
+    // pointerdown, bukan click: click bisa hilang di sebagian mesin event sentuh
+    // (gesture preventDefault menekan click sintetis), pointerdown selalu tiba.
+    chartCanvas.addEventListener('pointerdown', onChartMapClick);
   }
   const cv = chartCanvas;
   const dpr = Math.min((typeof window !== 'undefined' ? window.devicePixelRatio : 1) || 1, 2);
@@ -396,12 +448,13 @@ function onChartMapClick(e) {
   const rect = cv.getBoundingClientRect();
   const mx = (e.clientX - rect.left) / Math.max(1, rect.width) * CHART_MAP;
   const my = (e.clientY - rect.top) / Math.max(1, rect.height) * CHART_MAP;
-  let best = null, bd = 24;
+  let best = null, bd = 32;
   for (const h of hits) {
     const d = Math.hypot(h.px - mx, h.py - my);
     if (d < bd) { bd = d; best = h; }
   }
   if (best) {
+    if (e.preventDefault) e.preventDefault();
     if (H.onPickTarget) H.onPickTarget(best.id);
     renderChart();
   }

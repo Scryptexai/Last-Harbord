@@ -11,7 +11,7 @@ import { enterHarbor, updateHarbor, drawHarbor, harborContext } from './harbor.j
 import { addCarried, bankCarried, carriedLoad, emptyBag, RES_TYPES, dropCarried } from './inventory.js';
 import { buyNext, nextRung, canBuyNext, goalLabel, isMaxed, capacity } from './refit.js';
 import { resetTide, updateTide, tidePhase, tideTint, seaDrainRate } from './tide.js';
-import { loadAssets } from './assets.js';
+import { loadAssets, ASSETS } from './assets.js';
 import { sfx, haptic, initAudio, setAmbience, tickAmbience, updateMusic, setMuted } from './audio.js';
 import { fx, updateFx, timeScale, shakeOffset, drawFxScreen, resetFx, addFlash, addShake, ring, flushGulls, returnGulls } from './fx.js';
 import { clamp, dist, lerp, fmtTime } from './util.js';
@@ -566,6 +566,18 @@ const H = {
   onHeal: () => useHeal(),
   onModalClosed: () => clearQueued(),
 };
+
+// Hook inspeksi konsol / test E2E (UI tidak memakai ini; aman diabaikan pemain).
+if (typeof window !== 'undefined') {
+  window.__drift = {
+    G,
+    ASSETS,
+    openChart: () => openModal('chart'),
+    pickTarget,
+    beginRun,
+    enterIsland: (idx) => enterIslandFlow(G.islands[idx]),
+  };
+}
 
 // =================== Bootstrap & loop ===================
 

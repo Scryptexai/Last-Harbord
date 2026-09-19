@@ -471,7 +471,9 @@ button.heal {
 }
 
 /* ================= Modal ================= */
-.modal {
+/* Spesifisitas WAJIB mengalahkan `#ui > * { pointer-events: none }` di atas — dulu
+   `.modal` kalah, sehingga klik menembus ke canvas game dan peta tak bisa dipakai. */
+#ui > .modal {
   pointer-events: auto;
   position: fixed;
   inset: 0;
@@ -569,8 +571,19 @@ button.heal {
   border-radius: 6px;
   cursor: pointer;
   image-rendering: auto;
+  pointer-events: auto;   /* kanvas peta HARUS menerima tap/klik (pemilih tujuan) */
+  touch-action: manipulation;
 }
 .chart-rows { display: flex; flex-direction: column; gap: 6px; }
+/* Panel PETA berbeda: modal-panel default flex-kolom dengan flex-shrink yang bisa
+   meremukkan anak sampai tinggi 0 (kanvas besar + daftar > 88vh). Di sini pakai alur
+   blok biasa: semua elemen menjaga tinggi aslinya, panel yang menggulir. */
+#modal-chart .modal-panel { display: block !important; }
+#modal-chart .modal-panel > * + * { margin-top: 12px; }
+.chart-list { max-height: 30vh; overflow-y: auto; }
+.chart-row { cursor: pointer; user-select: none; }
+.chart-row:active { filter: brightness(1.25); }
+.cr-isle { width: 34px; height: 34px; object-fit: contain; flex: none; }
 .chart-band {
   display: flex;
   justify-content: space-between;
