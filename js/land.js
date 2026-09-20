@@ -12,6 +12,7 @@ import { capacity } from './refit.js';
 import { makeZombie } from './zombie.js';
 import { sfx, haptic } from './audio.js';
 import { fx, burst, splash, flyItem, ring, addShake, addHitstop, addHurtDir, drawFxWorld } from './fx.js';
+import { bumpKill } from './stats.js';
 import { blobPath, markTaken, survey, islandRemaining, drawOceanBackground, drawHorizon } from './world.js';
 import { ASSETS } from './assets.js';
 import { sheetFrame, drawCharSprite } from './sheets.js';
@@ -471,6 +472,7 @@ function hitZombie(L, p, z) {
 }
 
 function killZombie(L, z) {
+  try { bumpKill(); } catch (e) { /* jurnal saja — jangan ganggu pertarungan */ }
   const i = L.zombies.indexOf(z);
   if (i >= 0) L.zombies.splice(i, 1);
   sfx('kill', CFG.ZOMBIES[z.type].pitch);

@@ -242,6 +242,129 @@
 .loader-text span:nth-child(2) { animation-delay: 0.2s; }
 .loader-text span:nth-child(3) { animation-delay: 0.4s; }
 @keyframes dotPulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+
+/* ---- dashboard menu (kartu atas / statistik tengah / aksi bawah) ---- */
+.boot-dash {
+  position: relative; z-index: 2;
+  width: 100%; max-width: 560px;
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 6px 18px calc(18px + env(safe-area-inset-bottom));
+  max-height: 64vh; overflow-y: auto;
+  scrollbar-width: none;                      /* pita gulir tidak mengganggu kartu */
+}
+.boot-dash::-webkit-scrollbar { display: none; }
+
+.dash-row { width: 100%; }
+.dash-card {
+  background: rgba(8, 15, 24, 0.82);
+  border: 1px solid rgba(216, 170, 90, 0.22);
+  border-radius: 16px;
+  padding: 12px 14px;
+  text-align: left;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+.dash-card-head { display: flex; align-items: center; gap: 10px; }
+.dash-card-icon img { width: 34px; height: 34px; filter: drop-shadow(0 3px 8px rgba(0,0,0,0.6)); }
+.dash-card-titles { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dash-card-titles b { font-size: 13px; letter-spacing: 1.4px; color: var(--ink); }
+.dash-card-titles .small { color: var(--muted); }
+.dash-run-bar { height: 6px; border-radius: 4px; background: rgba(140, 170, 200, 0.14); margin: 10px 0 6px; overflow: hidden; }
+.dash-run-bar i { display: block; height: 100%; width: 0%; border-radius: 4px; background: linear-gradient(90deg, var(--brass), #ffe3a1); box-shadow: 0 0 8px rgba(216,170,90,0.6); transition: width 0.6s ease; }
+#dash-run-meta { color: var(--muted); }
+.dash-mid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.dash-stat {
+  background: rgba(8, 15, 24, 0.7);
+  border: 1px solid rgba(120, 150, 180, 0.18);
+  border-radius: 12px;
+  padding: 8px 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  backdrop-filter: blur(5px);
+  transition: transform 0.15s ease, border-color 0.2s;
+}
+.dash-stat:hover { transform: translateY(-2px); border-color: rgba(216, 170, 90, 0.45); }
+.dash-stat b { font-family: 'Montserrat', sans-serif; font-size: 20px; font-weight: 800; color: var(--brass); line-height: 1.1; }
+.dash-stat span { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); text-align: center; }
+.dash-actions { display: flex; flex-direction: column; gap: 8px; }
+.dash-menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.dash-menu-btn {
+  min-height: 44px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: rgba(8, 15, 24, 0.78);
+  border: 1px solid rgba(120, 150, 180, 0.26);
+  border-radius: 12px;
+  color: var(--ink);
+  font-size: 12px; font-weight: 700; letter-spacing: 2px;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.2s, background 0.2s;
+  backdrop-filter: blur(5px);
+}
+.dash-menu-btn b { color: var(--brass); font-size: 15px; font-weight: 400; }
+.dash-menu-btn:active { transform: translateY(1px) scale(0.99); }
+.dash-menu-btn:hover { border-color: rgba(216, 170, 90, 0.5); background: rgba(14, 22, 33, 0.9); }
+.dash-version { color: rgba(237, 242, 247, 0.42); letter-spacing: 1px; margin-top: 2px; }
+/* ---- overlay pop kartu (panduan & pengaturan) ---- */
+.menu-pop {
+  position: absolute; inset: 0; z-index: 30;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(4, 9, 15, 0.7);
+  backdrop-filter: blur(3px);
+  pointer-events: auto;
+}
+.menu-card {
+  width: min(92vw, 460px);
+  background: rgba(9, 17, 26, 0.97);
+  border: 1px solid rgba(216, 170, 90, 0.3);
+  border-radius: 16px;
+  padding: 14px 16px 16px;
+  text-align: left;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.65);
+  max-height: 84vh; overflow-y: auto;
+}
+.menu-card.hidden, .menu-pop.hidden { display: none; }
+.menu-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.menu-card-head h3 { font-family: 'Montserrat', sans-serif; font-size: 14px; letter-spacing: 3px; color: var(--brass); text-transform: uppercase; }
+.howto-list { padding-left: 18px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; line-height: 1.55; color: var(--ink); }
+.howto-list b { color: var(--brass); }
+.set-row {
+  width: 100%; min-height: 48px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 14px; margin-bottom: 8px;
+  background: rgba(18, 28, 40, 0.55);
+  border: 1px solid rgba(120, 150, 180, 0.22);
+  border-radius: 12px;
+  color: var(--ink); font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.12s;
+}
+.set-row:hover { border-color: rgba(216, 170, 90, 0.45); background: rgba(22, 33, 46, 0.75); }
+.set-row:active { transform: translateY(1px); }
+.set-row b { font-size: 11px; letter-spacing: 2px; color: var(--brass); }
+.set-row.off b { color: var(--muted); }
+.set-danger:hover { border-color: rgba(216, 80, 63, 0.6); }
+.set-danger b { color: var(--red); }
+.set-note { color: var(--muted); margin-top: 2px; }
+@media (max-width: 480px) {
+  .boot-dash { padding: 4px 12px calc(14px + env(safe-area-inset-bottom)); }
+  .dash-mid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-height: 480px) {
+  .boot-chapters { margin-top: calc(10px + env(safe-area-inset-top)); transform: scale(0.85); }
+  .boot-inner { flex: 0 0 auto; gap: 2px; padding: 0; }
+  .boot-logo { width: min(28vw, 128px); }
+  .boot-tagline { display: none; }
+  .boot-dash { max-height: none; gap: 8px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+  .dash-stat span { font-size: 8px; }
+  /* Layar pendek: tombol menu jadi ikon pojok kanan-atas di luar alur kartu —
+     standar roguelike mobile (⚙ selalu terlihat tanpa menggulir). */
+  .dash-menu-grid {
+    position: fixed; z-index: 26;
+    top: calc(8px + env(safe-area-inset-top));
+    right: calc(10px + env(safe-area-inset-right));
+    width: auto; display: flex; gap: 8px;
+  }
+  .dash-menu-btn { min-height: 40px; height: 40px; padding: 0 12px; font-size: 10px; border-radius: 10px; }
+}
 </style>
 </head>
 <body>
@@ -265,13 +388,68 @@
       <p class="boot-tagline">Seberapa jauh aku mau pergi sebelum aku berbalik?</p>
     </div>
 
-    <div class="boot-dock">
-      <button id="btn-boot-start" class="btn-play">▶&nbsp; MAIN</button>
-      <div class="boot-sub-actions">
-        <button id="btn-boot-continue" class="btn btn-primary hidden">LANJUTKAN</button>
-        <button id="btn-boot-new" class="btn hidden">MALAM BARU</button>
+    <!-- ================= DASHBOARD MENU (roguemenu standar: kartu atas, statistik tengah, aksi bawah) ================= -->
+    <div class="boot-dash" id="boot-dash">
+      <!-- ATAS: kartu kondisi pelayaran berjalan -->
+      <div class="dash-row dash-top">
+        <div class="dash-card" id="dash-run">
+          <div class="dash-card-head">
+            <span class="dash-card-icon"><img src="assets/branding/mascot.png" alt=""></span>
+            <div class="dash-card-titles">
+              <b id="dash-run-title">Pelayaran Pertama</b>
+              <span id="dash-run-sub" class="small">Dermaga masih menunggu.</span>
+            </div>
+          </div>
+          <div class="dash-run-bar"><i id="dash-run-bar-fill"></i></div>
+          <p id="dash-run-meta" class="small">Palka I · 0 kayu · 0 solar tersimpan</p>
+        </div>
+      </div>
+
+      <!-- TENGAH: grid kartu statistik lintas-run -->
+      <div class="dash-row dash-mid">
+        <div class="dash-stat"><b id="st-night">0</b><span>Malam terbaik</span></div>
+        <div class="dash-stat"><b id="st-kills">0</b><span>Zombie terbunuh</span></div>
+        <div class="dash-stat"><b id="st-isles">0</b><span>Pulau disurvei</span></div>
+        <div class="dash-stat"><b id="st-deaths">0</b><span>Kematian</span></div>
+      </div>
+
+      <!-- BAWAH: kartu aksi menu standar roguelike -->
+      <div class="dash-row dash-actions">
+        <button id="btn-boot-start" class="btn-play">▶&nbsp; MAIN</button>
+        <div class="boot-sub-actions">
+          <button id="btn-boot-continue" class="btn btn-primary hidden">LANJUTKAN</button>
+          <button id="btn-boot-new" class="btn hidden">MALAM BARU</button>
+        </div>
+        <div class="dash-menu-grid">
+          <button id="btn-menu-howto" class="dash-menu-btn"><b>⌁</b> CARA MAIN</button>
+          <button id="btn-menu-settings" class="dash-menu-btn"><b>⚙</b> PENGATURAN</button>
+        </div>
+        <p class="dash-version small">Driftholm · kabar dari dermaga terakhir</p>
       </div>
       <p id="boot-warning" class="boot-warning hidden">Gudang &amp; progres refit tetap tersimpan di dermaga. Malam akan dimulai lagi dari awal.</p>
+    </div>
+
+    <!-- Overlay: PANDUAN -->
+    <div id="menu-howto" class="menu-pop hidden">
+      <div class="menu-card">
+        <div class="menu-card-head"><h3>Cara Main</h3><button class="icon-btn" data-pop-close="menu-howto">✕</button></div>
+        <ol class="howto-list">
+          <li>Berjalan dengan <b>WASD / panah / joystick</b> (di ponsel, sentuh kuadran kiri — joystick mengikuti jempol).</li>
+          <li><b>E / tombol AKSI</b> untuk memakai meja, memanen, dan naik kapal. <b>SPASI / tombol SERANG</b> untuk melawan zombie.</li>
+          <li>Berlayar dari peta laut, kuras pulau, dan pulang <b>sebelum air pasang</b> membekap lambungmu.</li>
+          <li>Perbaiki palka di meja refit. Bertahanlah sampai <b>fajar</b> — air turun, kamu dicatat.</li>
+        </ol>
+      </div>
+    </div>
+    <!-- Overlay: PENGATURAN -->
+    <div id="menu-settings" class="menu-pop hidden">
+      <div class="menu-card">
+        <div class="menu-card-head"><h3>Pengaturan</h3><button class="icon-btn" data-pop-close="menu-settings">✕</button></div>
+        <button class="set-row" id="set-music"><span>Musik &amp; ambience</span><b id="set-music-val">NYALA</b></button>
+        <button class="set-row" id="set-motion"><span>Kurangi animasi</span><b id="set-motion-val">MATI</b></button>
+        <button class="set-row set-danger" id="set-wipe"><span>Hapus semua data</span><b id="set-wipe-val">…</b></button>
+        <p class="small set-note">Hapus data menghilangkan save, statistik, dan preferensi — tidak bisa dibatalkan.</p>
+      </div>
     </div>
 
     <div id="boot-loader">

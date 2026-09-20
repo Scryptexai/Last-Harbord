@@ -11,6 +11,7 @@ import { enterHarbor, updateHarbor, drawHarbor, harborContext } from './harbor.j
 import { addCarried, bankCarried, carriedLoad, emptyBag, RES_TYPES, dropCarried } from './inventory.js';
 import { buyNext, nextRung, canBuyNext, goalLabel, isMaxed, capacity } from './refit.js';
 import { resetTide, updateTide, tidePhase, tideTint, seaDrainRate } from './tide.js';
+import { bumpDeath, nightDone } from './stats.js';
 import { loadAssets, ASSETS } from './assets.js';
 import { sfx, haptic, initAudio, setAmbience, tickAmbience, updateMusic, setMuted } from './audio.js';
 import { fx, updateFx, timeScale, shakeOffset, drawFxScreen, resetFx, addFlash, addShake, ring, flushGulls, returnGulls } from './fx.js';
@@ -170,6 +171,7 @@ function showBankBeat(cargo) {
 function beginDeath(cause) {
   if (G.dying) return;
   G.dying = { t: 0.8, cause };
+  try { bumpDeath((G.tide && G.tide.night) || 0); } catch (e) { /* noop */ }
   addShake(0.5);
   sfx('death');
   haptic([60, 60, 120]);
@@ -499,6 +501,7 @@ function update(dt) {
     // FAJAR: malam habis. Air turun, langit sembuh, camar kembali. Tidak ada teks:
     // yang berubah adalah dunia, dan yang dibaca pemain adalah "aku masih hidup".
     if (G.tide && G.tide.justDawned) {
+      try { nightDone(G.tide.night || 0); } catch (e) { /* noop */ }
       sfx('gull');
       addFlash(0.22);
       const w = G.state === 'land' && G.land ? G.land.player : G.boat;

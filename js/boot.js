@@ -10,6 +10,8 @@
 // sama persis dengan save.js (tanpa mengubah logika save.js).
 
 import { CFG } from './config.js';
+import { snapshot, prefs, setPref, wipeStats, wipePrefs, bumpRun } from './stats.js';
+import { setMuted } from './audio.js';
 
 // Tandai SEBELUM main.js dievaluasi: main.js menunda auto-boot bila flag ini ada.
 // (Test headless yang mengimpor main.js langsung tidak menyetel flag ini, jadi
@@ -109,6 +111,8 @@ function begin(restartNight) {
     if (txt) txt.innerHTML = 'MEMBUKA LAUT<span>.</span><span>.</span><span>.</span>';
   }
   if (restartNight) resetNightInSave();
+  try { bumpRun(); } catch (e) { /* noop */ }
+  applyPrefs();
   const t0 = performance.now();
   Promise.resolve(startGame())  // Langkah 4: boot game sesungguhnya (main.js)
     .then(() => {
@@ -146,6 +150,96 @@ function onNewNight() {
   begin(true);
 }
 
+// ---------- DASHBOARD: isi kartu kondisi + statistik lintas-run ----------
+function fillDashboard() {
+  const d = readSave();
+  const st = snapshot();
+  const $t = (id, v) => { const el = $(id); if (el) el.textContent = v; };
+
+  // Kartu atas: kondisi pelayaran berjalan (dari save, non-destruktif)
+  if (d) {
+    const names = (CFG.REFIT || []).map((r) => r.name || r.label || '');
+    const stage = Math.min(d.refit || 0, (CFG.REFIT || []).length - 1);
+    const total = (CFG.REFIT || []).length || 1;
+    const stageName = names[stage] || ('Palka ' + (stage + 1));
+    $t('dash-run-title', 'Pelayaran ke-' + ((d.totalRuns || 0) + 1));
+    $t('dash-run-sub', 'Refit: ' + stageName + ' (' + (d.refit || 0) + '/' + total + ') · Malam ke-' + ((d.nights || 0) + 1));
+    $t('dash-run-meta', (d.banked ? (d.banked.wood || 0) : 0) + ' kayu · ' + (d.banked ? (d.banked.fuel || 0) : 0) + ' solar tersimpan di gudang');
+    const fill = $('dash-run-bar-fill');
+    if (fill) fill.style.width = Math.round(((d.refit || 0) / total) * 100) + '%';
+  } else {
+    $t('dash-run-title', 'Pelayaran Pertama');
+    $t('dash-run-sub', 'Dermaga masih menunggu.');
+    $t('dash-run-meta', 'Ups: semua statistik dimulai dari nol.');
+  }
+
+  // Kartu tengah: statistik lintas-run + pulau disurvei (dari save)
+  $t('st-night', String(st.bestNight || 0));
+  $t('st-kills', String(st.kills || 0));
+  $t('st-deaths', String(st.deaths || 0));
+  $t('st-isles', String(d && d.surveyed ? d.surveyed.length : 0));
+}
+
+// ---------- PREFERENSI: musik + kurangi animasi ----------
+function paintPrefs() {
+  const p = prefs();
+  const mv = $('set-music-val'); const tv = $('set-motion-val');
+  const mr = $('set-music'); const tr = $('set-motion');
+  if (mv) mv.textContent = p.music ? 'NYALA' : 'MATI';
+  if (tv) tv.textContent = p.reduceMotion ? 'NYALA' : 'MATI';
+  if (mr) mr.classList.toggle('off', !p.music);
+  if (tr) tr.classList.toggle('off', !p.reduceMotion);
+}
+function applyPrefs() {
+  const p = prefs();
+  document.body.classList.toggle('rm', !!p.reduceMotion);
+  // Musik: audio mulai disetel begitu gesture utama terjadi; flag ini dipakai ulang
+  // oleh main.js via G.muted (save), jadi di sini cukup setMuted langsung.
+  try { setMuted(!p.music); } catch (e) { /* audio belum siap — gesture pertama yang menangani */ }
+}
+
+// ---------- POP KARTU: buka/tutup panduan & pengaturan ----------
+function wirePopovers() {
+  const open = (id) => { const el = $(id); if (el) el.classList.remove('hidden'); };
+  const close = (id) => { const el = $(id); if (el) el.classList.add('hidden'); };
+  const b1 = $('btn-menu-howto'); const b2 = $('btn-menu-settings');
+  if (b1) b1.addEventListener('click', () => { close('menu-settings'); open('menu-howto'); });
+  if (b2) b2.addEventListener('click', () => { close('menu-howto'); open('menu-settings'); paintPrefs(); });
+  document.querySelectorAll('[data-pop-close]').forEach((b) => {
+    b.addEventListener('click', () => close(b.getAttribute('data-pop-close')));
+  });
+  ['menu-howto', 'menu-settings'].forEach((id) => {
+    const pop = $(id);
+    if (pop) pop.addEventListener('click', (e) => { if (e.target === pop) close(id); });
+  });
+
+  const mr = $('set-music');
+  if (mr) mr.addEventListener('click', () => {
+    setPref('music', !prefs().music);
+    applyPrefs(); paintPrefs();
+  });
+  const tr = $('set-motion');
+  if (tr) tr.addEventListener('click', () => {
+    setPref('reduceMotion', !prefs().reduceMotion);
+    applyPrefs(); paintPrefs();
+  });
+
+  // Hapus data: dua langkah seperti MALAM BARU.
+  let arming = false;
+  const wr = $('set-wipe'); const wv = $('set-wipe-val');
+  if (wr) wr.addEventListener('click', () => {
+    if (!arming) {
+      arming = true;
+      if (wv) wv.textContent = 'YAKIN? KETUK LAGI';
+      setTimeout(() => { arming = false; if (wv) wv.textContent = '…'; }, 2600);
+      return;
+    }
+    try { localStorage.removeItem(CFG.SAVE_KEY); } catch (e) { /* noop */ }
+    wipeStats(); wipePrefs();
+    location.reload();
+  });
+}
+
 function setup() {
   const boot = bootEl();
   if (!boot) {
@@ -171,6 +265,10 @@ function setup() {
     el.addEventListener('click', fn);
     el.addEventListener('touchend', (e) => { e.preventDefault(); fn(); });
   };
+
+  fillDashboard();
+  applyPrefs();
+  wirePopovers();
 
   bind(startBtn, onStart);
   bind(contBtn, onContinue);
