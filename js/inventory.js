@@ -1,6 +1,7 @@
 // ============ Inventory: DIBAGI DUA ============
 // carried = hasil run yang masih di tangan. Hanya jadi milikmu setelah dibongkar di kapal.
 // banked  = gudang di dermaga. Tidak bisa hilang, dipakai untuk refit.
+import { markDrifEarned } from './analytics.js';
 import { G } from './state.js';
 import { capacity } from './refit.js';
 
@@ -44,6 +45,7 @@ export function bankCarried() {
     G.carried[t] = 0;
   }
   G.drif = (G.drif || 0) + total;
+  try { markDrifEarned(total); } catch (e) { /* noop */ }
   return moved;
 }
 

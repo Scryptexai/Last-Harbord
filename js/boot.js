@@ -12,6 +12,8 @@
 import { CFG } from './config.js';
 import { snapshot, prefs, setPref, wipeStats, wipePrefs, bumpRun } from './stats.js';
 import { setMuted, sfx, haptic } from './audio.js';
+import { sessionStart, summary as analyticsSummary } from './analytics.js';
+import { applyCosmetics } from './cosmetics.js';
 
 // Tandai SEBELUM main.js dievaluasi: main.js menunda auto-boot bila flag ini ada.
 // (Test headless yang mengimpor main.js langsung tidak menyetel flag ini, jadi
@@ -184,6 +186,18 @@ function fillDashboard() {
 function paintPrefs() {
   const p = prefs();
   const mv = $('set-music-val'); const tv = $('set-motion-val');
+  // Rekam perjalanan: ringkasan analytics lokal — terbaca pemain & dev.
+  const lo = $('set-logout');
+  if (lo) {
+    try {
+      const a = analyticsSummary();
+      lo.textContent = 'Sesi: ' + a.sessions + ' · Hari aktif: ' + a.daysActive + ' · Pelayaran: ' + a.runs +
+        ' · Fajar selamat: ' + a.dawns + ' · Kematian: ' + a.deaths +
+        ' · Koin didapat: ' + a.drifEarned + ' · Koin dibelanjakan: ' + a.drifSpent +
+        ' · Kios dibuka: ' + a.shopOpens + ' · Kosmetik dibeli: ' + a.purchases + ' · Jam bermain: ' + a.playMin + ' menit';
+    } catch (e) { /* noop */ }
+  }
+
   const mr = $('set-music'); const tr = $('set-motion');
   if (mv) mv.textContent = p.music ? 'NYALA' : 'MATI';
   if (tv) tv.textContent = p.reduceMotion ? 'NYALA' : 'MATI';
@@ -277,6 +291,9 @@ function setup() {
     el.addEventListener('click', fn);
     el.addEventListener('touchend', (e) => { e.preventDefault(); fn(); });
   };
+
+  try { sessionStart(); } catch (e) { /* noop */ }
+  try { applyCosmetics(); } catch (e) { /* noop */ }  // aksen HUD pemain ikut tiap boot
 
   fillDashboard();
   applyPrefs();

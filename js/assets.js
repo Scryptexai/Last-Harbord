@@ -25,6 +25,7 @@ const ASSET_PATHS = {
   rock: 'assets/environment/rock.png',
   bush: 'assets/environment/bush.png',
   salvage_buoy: 'assets/environment/salvage_buoy.png',
+  stall_flair: 'assets/props/stall_flair.png',
   // Bentuk pulau per flavor (tampilan atas) + siluet pulau jauh di laut/horizon.
   isle_quiet: 'assets/environment/isle_quiet.png',
   isle_reef: 'assets/environment/isle_reef.png',

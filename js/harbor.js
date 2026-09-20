@@ -27,6 +27,7 @@ export const SPOTS = [
   { key: 'bench', x: 30, y: 206, r: 52, label: 'MEJA KERJA' },
   { key: 'store', x: -120, y: 250, r: 56, label: 'GUDANG' },
   { key: 'sail',  x: 0,  y: -30, r: 42, label: 'BERLAYAR' },
+  { key: 'shop',  x: 128, y: 250, r: 52, label: 'KIOS' },
 ];
 
 export function enterHarbor() {
@@ -50,6 +51,7 @@ export function harborContext() {
       if (s.key === 'chart') return { kind: 'chart', label: 'BUKA PETA', spot: s };
       if (s.key === 'bench') return { kind: 'bench', label: 'PERBAIKI KAPAL', spot: s };
       if (s.key === 'store') return { kind: 'store', label: 'BUKA GUDANG', spot: s };
+      if (s.key === 'shop') return { kind: 'shop', label: 'KIOS KOIN DRIF', spot: s };
       return { kind: 'sail', label: 'BERLAYAR', spot: s };
     }
   }
@@ -308,6 +310,7 @@ function drawDockProps(ctx, H) {
     { y: H.spots.find((x) => x.key === 'bench').y, draw: () => drawWorkbench(ctx, H) },
     { y: 120, draw: () => drawBarrels(ctx, H.t) },
     { y: H.spots.find((x) => x.key === 'store').y, draw: () => drawStore(ctx, H) },
+    { y: H.spots.find((x) => x.key === 'shop').y, draw: () => drawStall(ctx, H) },
     { y: 320, draw: () => drawLowerDeck(ctx) },
     { y: H.player.y, draw: () => drawPlayer(ctx, H.player) },
   ];
@@ -442,6 +445,39 @@ function drawWorkbench(ctx, H) {
 
 // Gudang: rak penyimpanan terbuka + tumpukan peti berwarna sesuai isi banked.
 // Ini "tempat menaruh resource" yang terlihat — bukan cuma angka di panel.
+
+function drawStall(ctx, H) {
+  const s = H.spots.find((x) => x.key === 'shop');
+  const near = dist(H.player.x, H.player.y, s.x, s.y) < s.r;
+  atUpright(ctx, s.x, s.y, () => {
+    ctx.translate(-s.x, -s.y);
+    const img = ASSETS.stall_flair;
+    if (img && img.complete && img.naturalWidth) {
+      // jejak cahaya kios: pelita toko memantul di papan
+      const flick = 0.8 + Math.sin(H.t * 7.3) * 0.14;
+      const g = ctx.createRadialGradient(s.x, s.y - 12, 4, s.x, s.y - 12, 58 * flick);
+      g.addColorStop(0, 'rgba(255,190,110,0.32)');
+      g.addColorStop(1, 'rgba(255,190,110,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(s.x, s.y - 12, 58 * flick, 0, Math.PI * 2); ctx.fill();
+      const w = 104, h = 104;
+      ctx.drawImage(img, s.x - w / 2, s.y - h + 22, w, h);
+    } else {
+      ctx.fillStyle = '#4d3319';
+      ctx.fillRect(s.x - 26, s.y - 14, 52, 12);
+      ctx.fillStyle = '#d9a54a';
+      ctx.beginPath(); ctx.arc(s.x, s.y - 20, 4, 0, Math.PI * 2); ctx.fill();
+    }
+    if (near) {
+      const g = ctx.createRadialGradient(s.x, s.y - 20, 2, s.x, s.y - 20, 40);
+      g.addColorStop(0, 'rgba(255,214,130,0.45)');
+      g.addColorStop(1, 'rgba(255,214,130,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(s.x, s.y - 20, 40, 0, Math.PI * 2); ctx.fill();
+    }
+  });
+}
+
 function drawStore(ctx, H) {
   const s = H.spots.find((x) => x.key === 'store');
   const near = dist(H.player.x, H.player.y, s.x, s.y) < s.r;

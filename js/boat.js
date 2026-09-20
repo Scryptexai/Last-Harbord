@@ -1,6 +1,7 @@
 // ============ Perahu ============
 // Perahu = rumah, bank, dan nyawa pemain. Setiap tingkat refit menambah bagian
 // yang BENAR-BENAR terlihat di lambung/dek — bukan cuma angka.
+import { lanternTint } from './cosmetics.js';
 import { CFG } from './config.js';
 import { G } from './state.js';
 import { ASSETS } from './assets.js';
@@ -284,10 +285,11 @@ function hullLv2() {
 
 // Kolam cahaya lentera di atas air (dipakai harbor & saat bersandar).
 export function drawLanternPool(ctx, x, y, radius, alpha = 1) {
+  const t = lanternTint();
   const g = ctx.createRadialGradient(x, y, 2, x, y, radius);
-  g.addColorStop(0, `rgba(255,190,110,${0.30 * alpha})`);
-  g.addColorStop(0.5, `rgba(255,160,80,${0.12 * alpha})`);
-  g.addColorStop(1, 'rgba(255,150,60,0)');
+  g.addColorStop(0, t.glow(0.30 * alpha));
+  g.addColorStop(0.5, t.glow(0.12 * alpha));
+  g.addColorStop(1, t.deep(0));
   ctx.fillStyle = g;
   ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2); ctx.fill();
 }

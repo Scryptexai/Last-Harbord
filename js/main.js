@@ -12,6 +12,7 @@ import { addCarried, bankCarried, carriedLoad, emptyBag, RES_TYPES, dropCarried 
 import { buyNext, nextRung, canBuyNext, goalLabel, isMaxed, capacity } from './refit.js';
 import { resetTide, updateTide, tidePhase, tideTint, seaDrainRate } from './tide.js';
 import { bumpDeath, nightDone } from './stats.js';
+import { markRun, markDawn, markDeath, trackPlay, flush, markShopOpen } from './analytics.js';
 import { loadAssets, ASSETS } from './assets.js';
 import { sfx, haptic, initAudio, setAmbience, tickAmbience, updateMusic, setMuted } from './audio.js';
 import { fx, updateFx, timeScale, shakeOffset, drawFxScreen, resetFx, addFlash, addShake, ring, flushGulls, returnGulls } from './fx.js';
@@ -41,7 +42,10 @@ function tip(key, text, ms = 5200) {
 
 // =================== Aksi ===================
 
+let __runCounted = false;
+
 function beginRun() {
+  try { markRun(); } catch (e) { /* noop */ }
   const first = G.totalRuns === 0;
   G.totalRuns++;
   G.runActive = true;
@@ -172,6 +176,7 @@ function beginDeath(cause) {
   if (G.dying) return;
   G.dying = { t: 0.8, cause };
   try { bumpDeath((G.tide && G.tide.night) || 0); } catch (e) { /* noop */ }
+  try { markDeath(); flush(); } catch (e) { /* noop */ }
   addShake(0.5);
   sfx('death');
   haptic([60, 60, 120]);
@@ -351,6 +356,7 @@ function doContext() {
     case 'chart': openModal('chart'); break;
     case 'bench': openModal('bench'); break;
     case 'store': openModal('inventory'); break;
+    case 'shop': openModal('shop'); try { markShopOpen(); } catch (e) { /* noop */ } break;
     case 'sail': {
       if (!G.target) { openModal('chart'); toast('Pilih tujuan dulu di meja peta.'); }
       else { sfx('board'); beginRun(); }
@@ -451,6 +457,8 @@ function update(dt) {
   // JEDA total: tidak ada waktu, tidak ada pasang, tidak ada zombie bergerak.
   // Render tetap dipanggil oleh loop, jadi layar membeku pada frame terakhir.
   if (G.paused) return;
+  __playAcc += dt;                       // jam bermain (analytics Fase 0)
+  if (__playAcc >= 5) { const sec = Math.round(__playAcc); __playAcc = 0; try { trackPlay(sec); } catch (e) { /* noop */ } }
   const icon = getMove();
   G.time += dt;
 
@@ -502,6 +510,7 @@ function update(dt) {
     // yang berubah adalah dunia, dan yang dibaca pemain adalah "aku masih hidup".
     if (G.tide && G.tide.justDawned) {
       try { nightDone(G.tide.night || 0); } catch (e) { /* noop */ }
+      try { markDawn(); } catch (e) { /* noop */ }
       sfx('gull');
       addFlash(0.22);
       const w = G.state === 'land' && G.land ? G.land.player : G.boat;
@@ -555,6 +564,8 @@ function render() {
 }
 
 // =================== Handlers UI ===================
+
+let __playAcc = 0;
 
 const H = {
   onContextDown: () => pressContext(),

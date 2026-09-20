@@ -449,6 +449,10 @@
         <button class="set-row" id="set-motion"><span>Kurangi animasi</span><b id="set-motion-val">MATI</b></button>
         <button class="set-row set-danger" id="set-wipe"><span>Hapus semua data</span><b id="set-wipe-val">…</b></button>
         <p class="small set-note">Hapus data menghilangkan save, statistik, dan preferensi — tidak bisa dibatalkan.</p>
+        <div class="set-log">
+          <b>Rekam Perjalanan</b>
+          <p id="set-logout" class="small">…</p>
+        </div>
       </div>
     </div>
 
@@ -568,6 +572,20 @@
   </section>
 
   <!-- ================= DEBRIEF ================= -->
+  <section id="modal-shop" class="modal hidden">
+    <div class="panel modal-panel">
+      <div class="modal-head">
+        <div>
+          <h2>KIOS LENTERA & CAT</h2>
+          <p class="fineprint">Warna pelita, aksen antarmuka, tinta peta. Koin drif tidak membeli kekuatan — hanya rasa.</p>
+        </div>
+        <button class="icon-btn" id="shop-close">✕</button>
+      </div>
+      <div class="shop-balance">Koin drif: <b id="shop-drif">0</b> <img src="assets/branding/coin_drif.png" alt=""></div>
+      <div id="shop-rows" class="shop-rows"></div>
+    </div>
+  </section>
+
   <section id="modal-debrief" class="modal hidden">
     <div class="panel modal-panel debrief">
       <h2 id="db-title">KAPAL TENGGELAM</h2>

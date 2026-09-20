@@ -1,4 +1,7 @@
 import { snapshot } from './stats.js';
+import { sfx, haptic } from './audio.js';
+import { saveGame } from './save.js';
+import { CATALOG, FAMILIES, owned, equipped, buy, equip, courseColor as styleCourseColor } from './cosmetics.js';
 // ============ UI overlay ============
 // Aturan: dunia dulu, HUD kedua, menu ketiga.
 // HUD hanya punya 4 hal: HULL, PALKA, PASANG, dan SATU aksi konteks.
@@ -30,6 +33,7 @@ const IDS = [
   'modal-chart', 'chart-map', 'chart-hint', 'chart-bank', 'chart-close', 'chart-sail', 'chart-list',
   'modal-bench', 'bench-rows', 'bench-bank', 'bench-close', 'bench-title', 'bench-sub',
   'modal-inventory', 'inv-resources', 'inv-boat', 'inv-close',
+  'modal-shop', 'shop-rows', 'shop-drif', 'shop-close',
   'modal-debrief', 'db-title', 'db-cause', 'db-lost', 'db-kept', 'db-salvage', 'db-night', 'db-goal', 'db-records', 'db-close',
   'hint-line',
 ];
@@ -45,6 +49,7 @@ export function initUI(handlers) {
   bind('bench-close', () => closeModal());
   bind('inv-close', () => closeModal());
   bind('db-close', () => closeModal());
+  bind('shop-close', () => closeModal());
   bind('btn-mute', () => { if (H.onMute) H.onMute(); });
   bind('btn-pause', () => { if (H.onPause) H.onPause(true); });
   bind('btn-resume', () => { if (H.onPause) H.onPause(false); });
@@ -76,6 +81,7 @@ export function openModal(name) {
   if (el) el.classList.remove('hidden');
   if (name === 'chart') renderChart();
   if (name === 'bench') renderBench();
+  if (name === 'shop') renderShop();
   if (name === 'inventory') renderInventory();
 }
 
@@ -392,7 +398,7 @@ function drawChartMap() {
   if (G.target) {
     ctx.save();
     ctx.setLineDash([4, 5]);
-    ctx.strokeStyle = 'rgba(120,30,20,0.75)';
+    ctx.strokeStyle = styleCourseColor();
     ctx.lineWidth = 1.6;
     ctx.beginPath();
     ctx.moveTo(cx, cy);
@@ -635,6 +641,45 @@ export function renderInventory() {
 }
 
 // ---------- Debrief (kematian) ----------
+
+// ---------- KIOS KOIN DRIF: katalog kosmetik (sink drif, nilai = rasa, bukan angka) ----------
+export function renderShop() {
+  try {
+    const st = els['shop-rows']; if (!st) return;
+    const bal = els['shop-drif']; if (bal) bal.textContent = Math.floor(G.drif || 0);
+    st.innerHTML = '';
+    const mk = (it) => {
+      const row = document.createElement('div');
+      row.className = 'shop-row';
+      const isOwned = owned(it.id);
+      const isEq = equipped(it.fam) === it.id;
+      const swCol = it.rgb ? `rgb(${it.rgb.join(',')})` : (it.css ? it.css[0] : '#d9a54a');
+      const sw = document.createElement('i');
+      sw.className = 'shop-swatch'; sw.style.background = swCol;
+      const mid = document.createElement('div');
+      mid.className = 'shop-mid';
+      mid.innerHTML = `<b>${it.name}</b><span class="small">${FAMILIES[it.fam] || it.fam}</span>`;
+      const btn = document.createElement('button');
+      btn.className = 'btn small' + (isEq ? '' : ' btn-primary');
+      if (isEq) { btn.textContent = 'TERPAKAI'; btn.disabled = true; }
+      else if (isOwned) { btn.textContent = 'PAKAI'; btn.onclick = () => { equip(it.id); sfx('click'); renderShop(); }; }
+      else {
+        btn.innerHTML = `${it.price} 🪙`;
+        btn.classList.add('shop-buy');
+        btn.onclick = () => {
+          const r = buy(it.id);
+          if (r.ok) { sfx('pickup'); haptic([10, 26, 10]); toast(it.name + ' — milikmu. Terpasang otomatis.'); equip(it.id); try { saveGame(); } catch (e) { /* noop */ } }
+          else if (r.why === 'kurang') { sfx('blockFull'); toast('Koin drif kurang (' + it.price + ').'); } else { sfx('blockFull'); }
+          renderShop();
+        };
+      }
+      row.appendChild(sw); row.appendChild(mid); row.appendChild(btn);
+      st.appendChild(row);
+    };
+    ['lantern', 'accent', 'chart'].forEach((fam) => CATALOG.filter((i) => i.fam === fam).forEach(mk));
+  } catch (e) { console.warn('renderShop:', e); }
+}
+
 export function renderDebrief(info) {
   els['db-title'].textContent = 'KAPAL TENGGELAM';
   // Rekor lintas-run di lubang kematian: motivasi utama roguelike ("nyaris").
@@ -671,6 +716,7 @@ export function renderDebrief(info) {
 export function refreshIfOpen() {
   if (modal === 'chart') renderChart();
   if (modal === 'bench') renderBench();
+  if (modal === 'shop') renderShop();
   if (modal === 'inventory') renderInventory();
 }
 
