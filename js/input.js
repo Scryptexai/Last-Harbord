@@ -27,6 +27,7 @@ export function initInput(handlers = {}) {
     if (k === ' ') input.attackQueued = true;
     if (k === 'e' || k === 'f') { input.actionQueued = true; input.held.action = true; }
     if (k === 'm' && handlers.mute) handlers.mute();
+    if (k === 'p' && handlers.pause) handlers.pause();
     if (k === 'escape' && handlers.escape) handlers.escape();
   });
   window.addEventListener('keyup', (e) => {

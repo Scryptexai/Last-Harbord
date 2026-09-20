@@ -3,7 +3,7 @@ import { CFG } from './config.js';
 import { G } from './state.js';
 import { loadGame, saveGame, clearSave } from './save.js';
 import { initInput, getMove, input, pressContext, releaseContext, pressAttack, clearQueued } from './input.js';
-import { initUI, showScreen, openModal, closeModal, isModalOpen, toast, updateHUD, renderDebrief, renderChart, renderBench, showHint, refreshIfOpen } from './ui.js';
+import { initUI, showScreen, openModal, closeModal, isModalOpen, toast, updateHUD, renderDebrief, renderChart, renderBench, showHint, refreshIfOpen, setPaused } from './ui.js';
 import { createBoat, updateBoat, drawBoat, drawLanternPool, maxHP, speedMult, boatTier } from './boat.js';
 import { generateWorld, nearestIsland, drawSea, drawOceanBackground, drawRain, HARBOR, harborDist, survey, islandRemaining, islandTotalRemaining, islandById } from './world.js';
 import { enterIsland, updateLand, drawLand, tryAttack, contextAction, landContext, atExtract, playerWorldPos } from './land.js';
@@ -444,6 +444,9 @@ function updateLandState(dt) {
 }
 
 function update(dt) {
+  // JEDA total: tidak ada waktu, tidak ada pasang, tidak ada zombie bergerak.
+  // Render tetap dipanggil oleh loop, jadi layar membeku pada frame terakhir.
+  if (G.paused) return;
   const icon = getMove();
   G.time += dt;
 
@@ -565,6 +568,13 @@ const H = {
   onBuy: () => buyRefit(),
   onHeal: () => useHeal(),
   onModalClosed: () => clearQueued(),
+  // JEDA: waktu game, pasang, zombie — semua membeku sampai LANJUT.
+  onPause: (v) => {
+    if (G.paused === v) return;
+    G.paused = v;
+    setPaused(v);
+    sfx('click');
+  },
 };
 
 // Hook inspeksi konsol / test E2E (UI tidak memakai ini; aman diabaikan pemain).
@@ -592,7 +602,7 @@ async function boot() {
   if (!(G.hull > 0)) G.hull = maxHP();
   G.hull = Math.min(G.hull, maxHP());
 
-  initInput({ mute: () => H.onMute(), escape: () => closeModal() });
+  initInput({ mute: () => H.onMute(), escape: () => closeModal(), pause: () => H.onPause(!G.paused) });
   input.onGesture = () => initAudio();
   initUI(H);
 

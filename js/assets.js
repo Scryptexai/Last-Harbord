@@ -43,6 +43,12 @@ const ASSET_PATHS = {
   food: 'assets/resources/food.png',
   medicine: 'assets/resources/medicine.png',
 
+  // Art peta perkamen + dekor + pose serangan karakter
+  bg_parchment: 'assets/ui/bg_parchment.png',
+  compass: 'assets/ui/compass.png',
+  player_atk_0: 'assets/characters/player_atk_0.png',
+  player_atk_1: 'assets/characters/player_atk_1.png',
+
   // UI Icons
   icon_sail: 'assets/ui/icon_sail.png',
   icon_fish: 'assets/ui/icon_fish.png',

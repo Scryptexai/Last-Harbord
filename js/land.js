@@ -1310,7 +1310,8 @@ function drawFlavorProp(ctx, L, fp) {
 
 function drawTree(ctx, t) {
   atUpright(ctx, t.x, t.y, (p) => {
-    const sz = t.s * 3.1 * p;
+    // Pohon = kanopi hutan, harus JELAS menjulang di atas karakter (~2x tinggi).
+    const sz = t.s * 6.4 * p;
     // variasi spesies per rasa pulau: karang->palem, abu/karam->pinus, sisanya
     // gubug; sebagian kecil campuran supaya rimba tidak seragam monoton.
     const fl = (G.land && G.land.island && G.land.island.flavor) || 'quiet';
@@ -1332,7 +1333,7 @@ function drawTree(ctx, t) {
 // Node resource: BARANG di tanah, bukan ikon datar yang ditempel di lantai.
 function drawNode(ctx, L, nd) {
   const bob = Math.sin(G.time * 2.6 + nd.bob) * 2.4;
-  const size = nd.kind === 'salvage' ? 30 : (nd.rich ? 30 : 22);
+  const size = nd.kind === 'salvage' ? 23 : (nd.rich ? 21 : 15);
   const gl = 0.3 + Math.sin(G.time * 3 + nd.bob) * 0.16;
   ctx.globalAlpha = gl;
   ctx.fillStyle = nd.kind === 'salvage' ? '#ffcf6a' : CFG.RESOURCES[nd.type].color;
@@ -1502,12 +1503,20 @@ function drawPlayer(ctx, L) {
     if (fr) p.faceIdx = fr.idx;
     const flip = fr ? fr.flip : (Math.cos(p.face) < 0 ? -1 : 1);
 
+    // POSE SERANGAN: saat windup/active, karakter berganti ke frame ayunan dayung —
+    // bukan lagi cuma busur garis. Arah kiri dicerminkan dari profil kanan.
+    const atkImg = p.atk.phase === 'windup' ? ASSETS.player_atk_0
+      : p.atk.phase === 'active' || p.atk.phase === 'recover' ? ASSETS.player_atk_1 : null;
+    const atkOk = atkImg && atkImg.complete && atkImg.naturalWidth > 0;
+
     ctx.scale(flip, 1);
     ctx.translate(an.lunge, an.bob);
     ctx.rotate(an.lean);
     ctx.scale(an.sqX, an.sqY);
 
-    if (fr && fr.img && fr.img.complete && fr.img.naturalWidth > 0) {
+    if (atkOk) {
+      drawCharSprite(ctx, atkImg, sz * 1.12);
+    } else if (fr && fr.img && fr.img.complete && fr.img.naturalWidth > 0) {
       drawCharSprite(ctx, fr.img, sz);
     } else if (img && img.complete && img.naturalWidth > 0) {
       drawCharSprite(ctx, img, sz);

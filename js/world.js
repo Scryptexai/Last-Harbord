@@ -481,7 +481,7 @@ function drawIslandSea(ctx, isl, detail) {
     for (const t of props) {
       atUpright(ctx, t.x, t.y, (p) => {
         if (t.kind === 'tree') {
-          const sz = t.s * 2.6 * p;
+          const sz = t.s * 4.1 * p;
           const img = ASSETS.tree;
           if (img && img.complete && img.naturalWidth > 0) {
             ctx.drawImage(img, -sz / 2, -sz * 0.86, sz, sz);

@@ -2,6 +2,7 @@
 // Aturan: dunia dulu, HUD kedua, menu ketiga.
 // HUD hanya punya 4 hal: HULL, PALKA, PASANG, dan SATU aksi konteks.
 import { CFG } from './config.js';
+import { ASSETS } from './assets.js';
 import { G } from './state.js';
 import { fmtTime, clamp } from './util.js';
 import { capacity, maxHP, nextRung, goalLabel, isMaxed, REFIT, storageLv, speedLv, hullLv } from './refit.js';
@@ -24,7 +25,7 @@ const IDS = [
   'hud', 'hud-top', 'hull-fill', 'hull-text', 'hold-pips', 'hold-text',
   'res-fuel', 'res-wood', 'res-food', 'res-medicine', 'drif-count',
   'tide-name', 'tide-fill', 'tide-block', 'goal-chip', 'gather-chip', 'toasts',
-  'btn-context', 'btn-attack', 'btn-heal', 'btn-mute', 'joystick', 'joy-knob',
+  'btn-context', 'btn-attack', 'btn-heal', 'btn-mute', 'btn-pause', 'btn-resume', 'pause-veil', 'joystick', 'joy-knob',
   'modal-chart', 'chart-map', 'chart-hint', 'chart-bank', 'chart-close', 'chart-sail', 'chart-list',
   'modal-bench', 'bench-rows', 'bench-bank', 'bench-close', 'bench-title', 'bench-sub',
   'modal-inventory', 'inv-resources', 'inv-boat', 'inv-close',
@@ -44,6 +45,8 @@ export function initUI(handlers) {
   bind('inv-close', () => closeModal());
   bind('db-close', () => closeModal());
   bind('btn-mute', () => { if (H.onMute) H.onMute(); });
+  bind('btn-pause', () => { if (H.onPause) H.onPause(true); });
+  bind('btn-resume', () => { if (H.onPause) H.onPause(false); });
 
   const ctx = els['btn-context'];
   if (ctx) {
@@ -340,30 +343,62 @@ function drawChartMap() {
   const sx = (wx) => cx + wx * scale;
   const sy = (wy) => cy + wy * scale;
 
-  // latar peta (perairan gelap, lebih terang di tengah)
-  const bg = ctx.createRadialGradient(cx, cy, 16, cx, cy, CHART_MAP / 2);
-  bg.addColorStop(0, 'rgba(22,42,58,0.95)');
-  bg.addColorStop(1, 'rgba(5,11,19,0.98)');
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, CHART_MAP, CHART_MAP);
+  // === LATAR: lembar perkamen peta laut (ASET GAMBAR, bukan gradien) ===
+  const parch = ASSETS.bg_parchment;
+  if (parch && parch.complete && parch.naturalWidth > 0) {
+    ctx.drawImage(parch, 0, 0, CHART_MAP, CHART_MAP);
+  } else {
+    const bg = ctx.createRadialGradient(cx, cy, 16, cx, cy, CHART_MAP / 2);
+    bg.addColorStop(0, '#d9c69a');
+    bg.addColorStop(1, '#b39a6b');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, CHART_MAP, CHART_MAP);
+  }
+  // bingkai tinta ganda — ciri peta laut tua
+  ctx.strokeStyle = 'rgba(64,44,20,0.55)';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(7, 7, CHART_MAP - 14, CHART_MAP - 14);
+  ctx.strokeStyle = 'rgba(64,44,20,0.4)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(12, 12, CHART_MAP - 24, CHART_MAP - 24);
 
-  // cincin jarak — tiga perairan yang terlihat, bukan angka yang dibaca
-  ctx.setLineDash([5, 7]);
+  // kompas hiasan di sudut (ASET GAMBAR)
+  const comp = ASSETS.compass;
+  if (comp && comp.complete && comp.naturalWidth > 0) {
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    ctx.drawImage(comp, CHART_MAP - 58, 24, 36, 36 * (comp.naturalHeight / comp.naturalWidth || 1));
+    ctx.restore();
+  }
+
+  // cincin jarak: busur tinta tipis + label perairan — kosa kata peta laut
+  ctx.strokeStyle = 'rgba(64,44,20,0.30)';
   for (const ring of CFG.SEA.RINGS) {
     const mid = (ring.dist[0] + ring.dist[1]) / 2;
-    ctx.strokeStyle = 'rgba(120,150,180,0.14)';
+    ctx.setLineDash([9, 7]);
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.arc(cx, cy, mid * scale, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.font = '600 9px Inter, system-ui, sans-serif';
+    ctx.font = 'italic 600 9px Georgia, serif';
     ctx.textAlign = 'left';
-    ctx.fillStyle = 'rgba(150,180,205,0.45)';
-    ctx.fillText(ring.name, cx + 8, cy - mid * scale + 6);
-    ctx.setLineDash([5, 7]);
+    ctx.fillStyle = 'rgba(64,44,20,0.55)';
+    ctx.fillText(ring.name, cx + 10, cy - mid * scale + 5);
   }
-  ctx.setLineDash([]);
+
+  // garis kursus putus-putus dari dermaga ke tujuan terpilih (vokabuler peta pelayaran)
+  if (G.target) {
+    ctx.save();
+    ctx.setLineDash([4, 5]);
+    ctx.strokeStyle = 'rgba(120,30,20,0.75)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(sx(G.target.x), sy(G.target.y));
+    ctx.stroke();
+    ctx.restore();
+  }
 
   drawHarborOnChart(ctx, cx, cy);
 
@@ -377,68 +412,92 @@ function drawChartMap() {
     const r = Math.max(7, Math.min(14, 7 + isl.ringIdx * 2.5));
 
     if (chosen) {
-      const g = ctx.createRadialGradient(px, py, 2, px, py, r * 2.7);
-      g.addColorStop(0, 'rgba(255,207,106,0.5)');
-      g.addColorStop(1, 'rgba(255,207,106,0)');
-      ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(px, py, r * 2.7, 0, Math.PI * 2); ctx.fill();
+      // lingkaran tinta ganda tanda tujuan (ala "X mark" di peta bajak laut)
+      ctx.strokeStyle = 'rgba(120,30,20,0.9)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(px, py, r * 1.9, r * 1.6, -0.12, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.ellipse(px, py, r * 2.3, r * 1.95, 0.1, 0, Math.PI * 2); ctx.stroke();
+      // tanda silang kecil
+      ctx.beginPath();
+      ctx.moveTo(px - 5, py - r * 1.9 - 10); ctx.lineTo(px + 5, py - r * 1.9 - 2);
+      ctx.moveTo(px + 5, py - r * 1.9 - 10); ctx.lineTo(px - 5, py - r * 1.9 - 2);
+      ctx.stroke();
     }
 
     if (surveyed) {
-      ctx.fillStyle = depleted ? 'rgba(120,122,126,0.55)' : '#d9c79a';
-      ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = depleted ? 'rgba(120,122,126,0.4)' : 'rgba(120,105,70,0.75)';
-      ctx.lineWidth = 1.5; ctx.stroke();
-      ctx.font = '700 10px Inter, system-ui, sans-serif';
+      // TOKEN PULAU = ASET GAMBAR per flavor (bukan lingkaran canvas)
+      const tex = ASSETS['isle_' + isl.flavor];
+      const ok = tex && tex.complete && tex.naturalWidth > 0;
+      ctx.save();
+      if (depleted) ctx.globalAlpha = 0.45;
+      if (ok) {
+        const S = r * 3.4;
+        ctx.drawImage(tex, px - S / 2, py - S / 2, S, S);
+      } else {
+        ctx.fillStyle = depleted ? 'rgba(120,110,90,0.5)' : '#c8b070';
+        ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = 'rgba(64,44,20,0.6)';
+        ctx.lineWidth = 1.4; ctx.stroke();
+      }
+      ctx.restore();
+      ctx.font = 'italic 700 10px Georgia, serif';
       ctx.textAlign = 'center';
-      ctx.fillStyle = depleted ? 'rgba(165,175,185,0.7)' : '#e7eef6';
+      ctx.fillStyle = depleted ? 'rgba(96,80,58,0.75)' : 'rgba(44,30,14,0.95)';
       ctx.fillText(isl.name, px, py - r - 5);
       if (depleted) {
-        ctx.font = '600 8px Inter, system-ui, sans-serif';
-        ctx.fillStyle = 'rgba(165,175,185,0.5)';
-        ctx.fillText('habis', px, py + r + 11);
+        ctx.font = 'italic 600 8px Georgia, serif';
+        ctx.fillStyle = 'rgba(96,80,58,0.6)';
+        ctx.fillText('habis', px, py + r * 2 + 8);
       }
     } else {
-      // belum disurvei: penanda samar — "ada sesuatu di sini, tapi kau belum tahu"
+      // belum disurvei: lingkaran tinta putus + tanda tanya tulisan tangan
       ctx.setLineDash([3, 3]);
-      ctx.strokeStyle = 'rgba(150,180,205,0.5)';
-      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = 'rgba(64,44,20,0.5)';
+      ctx.lineWidth = 1.4;
       ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.stroke();
       ctx.setLineDash([]);
-      ctx.font = '700 12px Inter, system-ui, sans-serif';
+      ctx.font = 'italic 700 13px Georgia, serif';
       ctx.textAlign = 'center';
-      ctx.fillStyle = 'rgba(150,180,205,0.65)';
+      ctx.fillStyle = 'rgba(64,44,20,0.65)';
       ctx.fillText('?', px, py + 4);
     }
 
-    // pelampung salvage: bintang emas kecil di atas pulau tempat kau mati
+    // pelampung salvage: sprite buoy emas di samping pulau tempat kau mati
     if (sv) {
-      ctx.fillStyle = '#ffcf6a';
-      ctx.beginPath(); ctx.arc(px + r * 0.9, py - r * 0.9, 3.2, 0, Math.PI * 2); ctx.fill();
+      const b = ASSETS.salvage_buoy;
+      if (b && b.complete && b.naturalWidth > 0) {
+        ctx.drawImage(b, px + r * 0.9 - 8, py - r * 1.6 - 6, 16, 16);
+      } else {
+        ctx.fillStyle = '#a06612';
+        ctx.beginPath(); ctx.arc(px + r * 0.9, py - r * 0.9, 3.4, 0, Math.PI * 2); ctx.fill();
+      }
     }
 
-    hits.push({ id: isl.id, px, py, r: Math.max(r, 17) });
+    hits.push({ id: isl.id, px, py, r: Math.max(r, 18) });
   }
   cv._hits = hits;
   cv._proj = { cx, cy, scale };
 }
 
 function drawHarborOnChart(ctx, cx, cy) {
-  const g = ctx.createRadialGradient(cx, cy, 2, cx, cy, 22);
-  g.addColorStop(0, 'rgba(255,200,120,0.5)');
-  g.addColorStop(1, 'rgba(255,170,80,0)');
+  // tanda dermaga = SPRITE PERAHU (aset), bukan blok persegi — plus glow remang
+  const g = ctx.createRadialGradient(cx, cy, 2, cx, cy, 24);
+  g.addColorStop(0, 'rgba(160,90,30,0.4)');
+  g.addColorStop(1, 'rgba(160,90,30,0)');
   ctx.fillStyle = g;
-  ctx.beginPath(); ctx.arc(cx, cy, 22, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#6b4522';
-  ctx.fillRect(cx - 7, cy - 6, 14, 28);
-  ctx.fillStyle = '#8a5c30';
-  for (let i = 0; i < 5; i++) ctx.fillRect(cx - 7, cy - 6 + i * 5, 14, 1.5);
-  ctx.fillStyle = '#ffd79a';
-  ctx.beginPath(); ctx.arc(cx, cy + 19, 2.6, 0, Math.PI * 2); ctx.fill();
-  ctx.font = '700 10px Inter, system-ui, sans-serif';
+  ctx.beginPath(); ctx.arc(cx, cy, 24, 0, Math.PI * 2); ctx.fill();
+  const boat = ASSETS.boat_lv1;
+  if (boat && boat.complete && boat.naturalWidth > 0) {
+    ctx.drawImage(boat, cx - 13, cy - 15, 26, 26);
+  } else {
+    ctx.fillStyle = '#5a3a1a';
+    ctx.fillRect(cx - 7, cy - 6, 14, 26);
+  }
+  ctx.font = 'italic 700 10px Georgia, serif';
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#ffcf6a';
-  ctx.fillText('DERMAGA', cx, cy + 38);
+  ctx.fillStyle = 'rgba(120,30,20,0.95)';
+  ctx.fillText('DERMAGA', cx, cy + 22);
 }
 
 function onChartMapClick(e) {
@@ -605,4 +664,10 @@ export function refreshIfOpen() {
   if (modal === 'chart') renderChart();
   if (modal === 'bench') renderBench();
   if (modal === 'inventory') renderInventory();
+}
+
+// Selubung JEDA dipakai main.js saat pemain menekan tombol pause / P.
+export function setPaused(v) {
+  const veil = els['pause-veil'];
+  if (veil) veil.classList.toggle('hidden', !v);
 }
