@@ -64,6 +64,8 @@ function beginRun() {
 
 function pickTarget(id) {
   G.target = islandById(id);
+  // tandai perairan ini disurvei — pulau yang diketuk di peta jadi "dikenal"
+  if (G.target) G.surveyed[G.target.id] = true;
   if (H.onModalClosed) { /* peta tetap terbuka */ }
 }
 

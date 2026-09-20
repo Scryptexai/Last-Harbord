@@ -562,8 +562,9 @@ button.heal {
 .res-chip i { width: 8px; height: 8px; display: inline-block; }
 
 /* ---------- Jeda (pause) ---------- */
-/* ID selector supaya mengalahkan #ui > * { pointer-events: none } */
-#ui > #pause-veil {
+/* Spesifisitas 2-ID mengalahkan #ui > * { pointer-events: none } (veil berada di
+   dalam section layar, bukan anak langsung #ui). */
+#ui #pause-veil {
   pointer-events: auto;
   position: fixed;
   inset: 0;
