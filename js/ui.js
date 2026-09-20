@@ -1,3 +1,4 @@
+import { snapshot } from './stats.js';
 // ============ UI overlay ============
 // Aturan: dunia dulu, HUD kedua, menu ketiga.
 // HUD hanya punya 4 hal: HULL, PALKA, PASANG, dan SATU aksi konteks.
@@ -29,7 +30,7 @@ const IDS = [
   'modal-chart', 'chart-map', 'chart-hint', 'chart-bank', 'chart-close', 'chart-sail', 'chart-list',
   'modal-bench', 'bench-rows', 'bench-bank', 'bench-close', 'bench-title', 'bench-sub',
   'modal-inventory', 'inv-resources', 'inv-boat', 'inv-close',
-  'modal-debrief', 'db-title', 'db-cause', 'db-lost', 'db-kept', 'db-salvage', 'db-night', 'db-goal', 'db-close',
+  'modal-debrief', 'db-title', 'db-cause', 'db-lost', 'db-kept', 'db-salvage', 'db-night', 'db-goal', 'db-records', 'db-close',
   'hint-line',
 ];
 
@@ -636,6 +637,12 @@ export function renderInventory() {
 // ---------- Debrief (kematian) ----------
 export function renderDebrief(info) {
   els['db-title'].textContent = 'KAPAL TENGGELAM';
+  // Rekor lintas-run di lubang kematian: motivasi utama roguelike ("nyaris").
+  try {
+    const st = snapshot();
+    els['db-records'].textContent =
+      'Rekor — malam terbaik: ' + (st.bestNight || 0) + '\u2002\u00b7\u2002zombie terbunuh: ' + (st.kills || 0) + '\u2002\u00b7\u2002kematian: ' + (st.deaths || 0);
+  } catch (e) { /* noop */ }
   els['db-cause'].textContent = info.cause || '';
   const lost = info.lost || {};
   const lostTxt = RES_TYPES.filter((t) => (lost[t] || 0) > 0)
@@ -644,7 +651,8 @@ export function renderDebrief(info) {
     ? `<div class="muted small">Hilang bersama muatan (bisa diambil kembali):</div><div class="chips">${lostTxt}</div>`
     : '<div class="muted small">Tidak ada muatan yang hilang.</div>';
   els['db-kept'].innerHTML = `<div class="muted small">Tetap milikmu di dermaga:</div><div class="chips">${bankChips()}</div>`;
-  els['db-salvage'].innerHTML = info.salvageText
+  const redundant = info.salvageText === 'Tidak ada muatan yang hilang.';
+  els['db-salvage'].innerHTML = (info.salvageText && !redundant)
     ? `<span class="sv">◉</span> ${info.salvageText}`
     : '';
   // Baris malam: bukan penjelasan, cuma panjang malam yang tersisa. Ini yang membuat

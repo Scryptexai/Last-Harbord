@@ -11,7 +11,7 @@
 
 import { CFG } from './config.js';
 import { snapshot, prefs, setPref, wipeStats, wipePrefs, bumpRun } from './stats.js';
-import { setMuted } from './audio.js';
+import { setMuted, sfx, haptic } from './audio.js';
 
 // Tandai SEBELUM main.js dievaluasi: main.js menunda auto-boot bila flag ini ada.
 // (Test headless yang mengimpor main.js langsung tidak menyetel flag ini, jadi
@@ -241,6 +241,18 @@ function wirePopovers() {
 }
 
 function setup() {
+  // Feedback taktil menu: setiap ketukan tombol di dashboard berderit pelan
+  // ('click' dari bank suara) + haptic kecil — standar game mobile: menu tidak
+  // boleh terasa seperti halaman web bisu.
+  const bootRoot = bootEl();
+  if (bootRoot) {
+    bootRoot.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      try { sfx('click'); haptic(6); } catch (err) { /* audio belum siap */ }
+    });
+  }
+
   const boot = bootEl();
   if (!boot) {
     // Tanpa layar boot (mis. embedding/uji): tidak ada yang ditunda, langsung mulai.

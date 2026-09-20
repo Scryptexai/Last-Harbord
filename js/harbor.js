@@ -9,6 +9,7 @@ import { capacity, nextRung, goalLabel, isMaxed } from './refit.js';
 import { ASSETS } from './assets.js';
 import { sheetFrame, drawCharSprite } from './sheets.js';
 import { sfx } from './audio.js';
+import { burst } from './fx.js';
 import { drawBoat, drawLanternPool } from './boat.js';
 import { HARBOR } from './world.js';
 import { carriedLoad, bankLoad, RES_TYPES } from './inventory.js';
@@ -81,7 +82,7 @@ export function updateHarbor(dt, move, ctxBusy) {
     const sp = Math.hypot(p.vx, p.vy);
     if (sp > 20) {
       p.stepT -= dt;
-      if (p.stepT <= 0) { p.stepT = 0.42; sfx('step'); }
+      if (p.stepT <= 0) { p.stepT = 0.42; sfx('step'); burst(p.x, p.y, 'rgba(196,178,142,0.55)', 3, 58, 'spark', 2.1); }
     }
   }
   // penggerak animasi berjalan (untuk sheet arah + siklus langkah)

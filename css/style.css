@@ -750,3 +750,12 @@ body.rm *, body.rm *::before, body.rm *::after {
     transition-duration: 0.001s !important;
   }
 }
+
+/* Umpan balik tekan: semua tombol menekuk sedikit — klik terasa "kena". */
+.btn { transition: transform 0.1s ease, filter 0.15s ease, border-color 0.2s ease; }
+.btn:active { transform: translateY(1px) scale(0.98); filter: brightness(0.92); }
+.records-line { color: var(--brass); letter-spacing: 0.5px; margin-top: 8px; text-align: center; }
+
+/* Pita gulir tersembunyi di semua panel modal — gulir tetap jalan, visual bersih. */
+.modal-panel { scrollbar-width: none; }
+.modal-panel::-webkit-scrollbar { display: none; }
