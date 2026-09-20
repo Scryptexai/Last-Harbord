@@ -47,6 +47,8 @@ export function initInput(handlers = {}) {
     input.joy.active = false;
     input.joy.dx = 0; input.joy.dy = 0;
     setKnob(0, 0);
+    // pulang ke posisi awal (lihat SNAP-TO-TOUCH di bawah)
+    joy.style.left = ''; joy.style.top = '';
   }
   function handleMove(e) {
     if (!input.joy.active || e.pointerId !== input.joy.id) return;
@@ -75,6 +77,33 @@ export function initInput(handlers = {}) {
   joy.addEventListener('pointerup', (e) => { if (e.pointerId === input.joy.id) resetJoy(); });
   joy.addEventListener('pointercancel', (e) => { if (e.pointerId === input.joy.id) resetJoy(); });
   joy.addEventListener('contextmenu', (e) => e.preventDefault());
+
+  // SNAP-TO-TOUCH (standar roguelike mobile, mis. Vampire Survivors): di layar
+  // sentuh, mengetuk kuadran KIRI-BAWAH memindahkan alas joystick tepat ke titik
+  // jempol — jempol tidak perlu "mencari" joystick statis. Lepas -> kembali pulang.
+  const moveHome = { left: null, top: null };
+  const inJoyZone = (x, y) => x < window.innerWidth * 0.48 && y > window.innerHeight * 0.34;
+  window.addEventListener('pointerdown', (e) => {
+    if (input.joy.active) return;
+    if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return;
+    if (!(e.target instanceof Element)) return;                          // event sintetis/aneh diabaikan
+    if (joy.contains(e.target)) return;                                  // irama lama jalan duluan
+    if (e.target.closest('button, .modal, #pause-veil, a, input')) return; // UI tidak diambil alih
+    if (!inJoyZone(e.clientX, e.clientY)) return;
+    gesture();
+    const r = joy.getBoundingClientRect();
+    moveHome.left = parseFloat(joy.style.left) || 0;
+    moveHome.top = parseFloat(joy.style.top) || 0;
+    // alas dijadikan relatif; geser supaya pusat alas tepat di titik sentuh
+    joy.style.left = (moveHome.left + (e.clientX - (r.left + r.width / 2))) + 'px';
+    joy.style.top = (moveHome.top + (e.clientY - (r.top + r.height / 2))) + 'px';
+    input.joy.active = true;
+    input.joy.id = e.pointerId;
+    input.joy.cx = e.clientX;
+    input.joy.cy = e.clientY;
+    try { joy.setPointerCapture(e.pointerId); } catch (err) { /* noop */ }
+    handleMove(e);
+  }, { passive: true });
 }
 
 // Tombol konteks (HTML) memakai API yang sama dengan tombol E.
