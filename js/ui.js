@@ -10,7 +10,7 @@ import { CFG } from './config.js';
 import { ASSETS } from './assets.js';
 import { G } from './state.js';
 import { fmtTime, clamp } from './util.js';
-import { capacity, maxHP, nextRung, goalLabel, isMaxed, REFIT, storageLv, speedLv, hullLv } from './refit.js';
+import { capacity, maxHP, nextRung, goalLabel, isMaxed, REFIT, storageLv, speedLv, hullLv, canBuyNext } from './refit.js';
 import { carriedLoad, bankLoad, RES_TYPES } from './inventory.js';
 import { tidePhase, timeToNextPhase, tideTint, nightProgress } from './tide.js';
 import { islandTotalRemaining, isDepleted, HARBOR } from './world.js';
@@ -38,6 +38,7 @@ const IDS = [
   'modal-journal', 'journal-rows', 'journal-count', 'journal-close',
   'modal-debrief', 'db-title', 'db-cause', 'db-lost', 'db-kept', 'db-salvage', 'db-night', 'db-goal', 'db-records', 'db-close',
   'hint-line', 'btn-veil-journal',
+  'harbor-dock', 'dock-badge-bench', 'dock-badge-journal', 'hud-actions',
 ];
 
 export function initUI(handlers) {
@@ -52,10 +53,43 @@ export function initUI(handlers) {
   bind('inv-close', () => closeModal());
   bind('db-close', () => closeModal());
   bind('shop-close', () => closeModal());
-  bind('journal-close', () => closeModal());  bind('btn-veil-journal', () => { renderJournal(); els['modal-journal'].classList.remove('hidden'); });
+  bind('journal-close', () => closeModal());
+  bind('btn-veil-journal', () => { renderJournal(); els['modal-journal'].classList.remove('hidden'); });
   bind('btn-mute', () => { if (H.onMute) H.onMute(); });
   bind('btn-pause', () => { if (H.onPause) H.onPause(true); });
   bind('btn-resume', () => { if (H.onPause) H.onPause(false); });
+
+  // Mobile Bottom Sheet backdrop click: tap outside panel to close
+  for (const name of ['chart', 'bench', 'inventory', 'shop', 'journal']) {
+    const m = els['modal-' + name];
+    if (m && typeof m.addEventListener === 'function') {
+      m.addEventListener('click', (e) => {
+        if (e.target === m) {
+          sfx('whiff');
+          closeModal();
+        }
+      });
+    }
+  }
+
+  // Harbor Dock Tabs: navigasi instan mobile
+  const dock = els['harbor-dock'];
+  if (dock && typeof dock.querySelectorAll === 'function') {
+    for (const tab of dock.querySelectorAll('[data-dock]')) {
+      tab.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const target = tab.dataset.dock;
+        if (modal === target) {
+          closeModal();
+        } else {
+          sfx('pickup');
+          haptic(14);
+          openModal(target);
+        }
+      });
+    }
+  }
 
   const ctx = els['btn-context'];
   if (ctx) {
@@ -74,7 +108,17 @@ export function initUI(handlers) {
 export function isModalOpen() { return !!modal; }
 
 export function showScreen(state) {
-  els['btn-attack'].classList.toggle('hidden', state !== 'land');
+  if (els['btn-attack']) els['btn-attack'].classList.toggle('hidden', state !== 'land');
+  if (els['hud-actions']) els['hud-actions'].classList.toggle('has-atk', state === 'land');
+}
+
+function updateDockState() {
+  const dock = els['harbor-dock'];
+  if (!dock || typeof dock.querySelectorAll !== 'function') return;
+  for (const tab of dock.querySelectorAll('[data-dock]')) {
+    const isAct = modal === tab.dataset.dock;
+    tab.classList.toggle('active', isAct);
+  }
 }
 
 export function openModal(name) {
@@ -87,6 +131,7 @@ export function openModal(name) {
   if (name === 'shop') renderShop();
   if (name === 'journal') renderJournal();
   if (name === 'inventory') renderInventory();
+  updateDockState();
 }
 
 export function closeModal() {
@@ -95,6 +140,7 @@ export function closeModal() {
     if (el) el.classList.add('hidden');
   }
   modal = null;
+  updateDockState();
   if (H && H.onModalClosed) H.onModalClosed();
 }
 
@@ -239,6 +285,18 @@ export function updateHUD(ctx) {
       `<span class="mono ${full ? 'gather-full' : ''}">palka ${gs.carried}/${gs.capacity}${full ? ' · PENUH' : ''}</span>`;
     chip.classList.remove('hidden');
   }
+
+  // ---- DOCK MENU HARBOR (navigasi dermaga standar mobile) ----
+  const inHarbor = st === 'harbor';
+  const dock = els['harbor-dock'];
+  if (dock) {
+    dock.classList.toggle('hidden', !inHarbor);
+    if (inHarbor) {
+      const bBadge = els['dock-badge-bench'];
+      if (bBadge) bBadge.classList.toggle('hidden', !canBuyNext());
+    }
+  }
+  updateDockState();
 }
 
 export function showHint(text, ms = 4200) {
@@ -262,7 +320,8 @@ let chartCanvas = null;
 
 
 function listCountOfIslands() {
-  const rows = els['chart-list'] ? els['chart-list'].querySelectorAll('[data-isl]') : [];
+  const list = els['chart-list'];
+  const rows = (list && typeof list.querySelectorAll === 'function') ? list.querySelectorAll('[data-isl]') : [];
   return rows ? rows.length : 0;
 }
 
@@ -321,11 +380,13 @@ function renderChartList() {
     ? `<div class="chart-row spent"><div class="cr-main"><span class="muted">+ ${unknownCount} perairan belum dikenal — tap "?" di peta sebagai tujuan.</span></div></div>`
     : '');
 
-  for (const row of list.querySelectorAll('[data-isl]')) {
-    row.addEventListener('click', () => {
-      if (H.onPickTarget) H.onPickTarget(+row.dataset.isl);
-      renderChart();
-    });
+  if (list && typeof list.querySelectorAll === 'function') {
+    for (const row of list.querySelectorAll('[data-isl]')) {
+      row.addEventListener('click', () => {
+        if (H.onPickTarget) H.onPickTarget(+row.dataset.isl);
+        renderChart();
+      });
+    }
   }
 }
 

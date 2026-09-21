@@ -88,7 +88,7 @@ export function initInput(handlers = {}) {
     if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return;
     if (!(e.target instanceof Element)) return;                          // event sintetis/aneh diabaikan
     if (joy.contains(e.target)) return;                                  // irama lama jalan duluan
-    if (e.target.closest('button, .modal, #pause-veil, a, input')) return; // UI tidak diambil alih
+    if (e.target.closest('button, .modal, #pause-veil, a, input, nav, #harbor-dock')) return; // UI tidak diambil alih
     if (!inJoyZone(e.clientX, e.clientY)) return;
     gesture();
     const r = joy.getBoundingClientRect();

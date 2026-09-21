@@ -520,6 +520,34 @@
     <div id="bank-beat" class="hidden"></div>
     <div id="toasts"></div>
 
+    <!-- ================= DOCK MENU FOOTER (Navigasi Dermaga Standar Mobile) ================= -->
+    <nav id="harbor-dock" class="harbor-dock hidden" aria-label="Navigasi Dermaga">
+      <div class="dock-bar">
+        <button class="dock-tab" id="dock-btn-chart" data-dock="chart" title="Peta Perairan">
+          <span class="dock-icon"><img src="assets/ui/icon_sail.png" alt=""></span>
+          <span class="dock-label">PETA</span>
+        </button>
+        <button class="dock-tab" id="dock-btn-bench" data-dock="bench" title="Meja Kerja / Refit">
+          <span class="dock-icon"><img src="assets/ui/icon_upgrade.png" alt=""></span>
+          <span class="dock-label">BENGKEL</span>
+          <span class="dock-badge hidden" id="dock-badge-bench"></span>
+        </button>
+        <button class="dock-tab" id="dock-btn-store" data-dock="inventory" title="Gudang & Kapal">
+          <span class="dock-icon"><img src="assets/ui/icon_inventory.png" alt=""></span>
+          <span class="dock-label">GUDANG</span>
+        </button>
+        <button class="dock-tab" id="dock-btn-journal" data-dock="journal" title="Jurnal Catatan">
+          <span class="dock-icon"><img src="assets/environment/note_scrap.png" alt=""></span>
+          <span class="dock-label">JURNAL</span>
+          <span class="dock-badge hidden" id="dock-badge-journal"></span>
+        </button>
+        <button class="dock-tab" id="dock-btn-shop" data-dock="shop" title="Kios Kosmetik">
+          <span class="dock-icon"><img src="assets/branding/coin_drif.png" alt=""></span>
+          <span class="dock-label">KIOS</span>
+        </button>
+      </div>
+    </nav>
+
     <div id="hud-bottom">
       <div id="joystick"><div id="joy-knob"></div></div>
       <div id="hud-actions">

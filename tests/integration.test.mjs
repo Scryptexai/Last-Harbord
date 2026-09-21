@@ -346,4 +346,4 @@ console.log('\n== 10. Muatan tidak disimpan di localStorage ==');
 }
 
 console.log(`\nHasil: ${pass} pass, ${fail} fail`);
-if (fail > 0) process.exit(1);
+process.exit(fail > 0 ? 1 : 0);

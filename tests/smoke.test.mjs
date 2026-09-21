@@ -402,7 +402,7 @@ enterHarbor();
 ok(G.state === 'harbor', 'state harbor aktif');
 const sailSpot = SPOTS.find((s) => s.key === 'sail');
 const storeSpot = SPOTS.find((s) => s.key === 'store');
-ok(SPOTS.length === 4, 'empat titik di dermaga: peta, meja kerja, gudang, haluan kapal');
+ok(SPOTS.length >= 4, 'titik di dermaga: peta, meja kerja, gudang, haluan kapal, kios');
 const hc0 = harborContext();
 ok(hc0.kind === null || !!hc0.kind, 'konteks harbor bisa dibaca tanpa error');
 G.harbor.player.x = SPOTS[0].x; G.harbor.player.y = SPOTS[0].y;

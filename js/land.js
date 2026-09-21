@@ -242,9 +242,9 @@ function pushOutOfDock(L, e) {
 
 function nearestNode(p) {
   const L = G.land;
-  let best = null, bd = P.GATHER_NEAR + 14;
+  let best = null, bd = P.GATHER_NEAR;
   for (const nd of L.nodes) {
-    if (nd.taken || (nd.cool | 0) > 0) continue;
+    if (nd.taken || (nd.cool | 0) > 0 || nd.kind === 'note') continue;
     const d = dist(nd.x, nd.y, p.x, p.y);
     if (d < bd) { bd = d; best = nd; }
   }
@@ -267,9 +267,8 @@ export function contextAction() {
 function startGather(node) {
   const p = G.land.player;
   if (!p || p.gather || (node.cool | 0) > 0) return;
-  const before = carriedLoad();
-  completeGather(node);
-  if (carriedLoad() <= before) node.cool = 2.4;
+  const need = node.kind === 'salvage' ? P.GATHER_SALVAGE : (node.rich ? P.GATHER_RICH : P.GATHER_SMALL);
+  p.gather = { node, t: 0, need };
 }
 
 function cancelGather() {
@@ -308,7 +307,13 @@ function completeGather(node) {
     } else {
       sfx('blockFull');
     }
-  } else {
+  } else if (node.kind === 'note') {
+    node.taken = true;
+    addNote(node.noteId);
+    markNote();
+    sfx('salvage');
+    burst(node.x, node.y, '#ffe6b0', 6, 70, 'spark', 2);
+  } else if (type && CFG.RESOURCES[type]) {
     added = addCarried(type, node.qty);
     if (added > 0) {
       node.taken = true;
@@ -346,12 +351,6 @@ export function updateLand(dt, move, opts = {}) {
   // jeda node yang gagal dipanen (palka penuh)
   for (const nd of L.nodes) if ((nd.cool | 0) > 0) nd.cool -= dt;
 
-  // SERANG OTOMATIS: berdiri diam dengan zombie dalam jangkauan -> ayunkan sendiri.
-  // Berjalan tetap tidak memicu ayunan, supaya kabur tidak tertahan kunci serangan.
-  if (!moving && !p.gather && p.atk.phase === 'idle' && !G.pendingDeath) {
-    const z = nearestZombie(L, p, P.ATTACK_RANGE - 6);
-    if (z) tryAttack();
-  }
 
   // ---- gerak: terkunci saat memanen / ancang-ancang ----
   const locked = !!p.gather || p.atk.phase === 'windup' || p.atk.phase === 'active';
@@ -417,7 +416,7 @@ export function updateLand(dt, move, opts = {}) {
 
   // AUTO-COLLECT: berhenti di dekat node (tidak sedang menyerang) -> mulai memanen
   // otomatis. Berjalan terus tidak memicu panen, jadi pemain tetap bebas lewat.
-  if (!p.gather && !moving && p.atk.phase === 'idle') {
+  if (!p.gather && !moving && p.atk.phase === 'idle' && !G.dying && !G.pendingDeath) {
     const node = nearestNode(p);
     if (node) startGather(node);
   }
@@ -474,7 +473,7 @@ function updateAttack(dt, move) {
 }
 
 function nearestZombie(L, p, range) {
-  let best = null, bd = range + 40;
+  let best = null, bd = range;
   for (const z of L.zombies) {
     const d = dist(z.x, z.y, p.x, p.y) - z.radius;
     if (d < bd) { bd = d; best = z; }
@@ -519,7 +518,7 @@ function killZombie(L, z) {
 function updateGather(dt) {
   const L = G.land;
   const p = L.player;
-  if (!p.gather) return;
+  if (!p.gather || G.dying || G.pendingDeath) return;
   const g = p.gather;
   const nd = g.node;
   if (nd.taken || dist(nd.x, nd.y, p.x, p.y) > P.GATHER_NEAR + 16) { cancelGather(); return; }
