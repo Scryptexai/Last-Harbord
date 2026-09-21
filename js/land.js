@@ -822,6 +822,18 @@ function drawNodeIcon(ctx, nd, x, y, size) {
     ctx.beginPath(); ctx.moveTo(x, y - size * 1.1); ctx.lineTo(x + size * 0.7, y - size * 0.85); ctx.lineTo(x, y - size * 0.6); ctx.closePath(); ctx.fill();
     return;
   }
+  // Lembar jurnal: sprite note_scrap, goyang ringan.
+  if (nd.kind === 'note') {
+    const img = ASSETS.note_scrap;
+    if (img && img.complete && img.naturalWidth > 0) {
+      const sway = Math.sin(G.time * 1.8 + (nd.bob || 0) * 2) * 2.2;
+      ctx.drawImage(img, x - size + sway * 0.4, y - size * 1.5 + sway * 0.2, size * 2, size * 2);
+      return;
+    }
+    ctx.fillStyle = '#e6d8ae';
+    ctx.fillRect(x - size * 0.8, y - size * 1.1, size * 1.6, size * 1.2);
+    return;
+  }
   // Resource di pulau = SPRITE unik per jenis (drum solar, kayu apung, keranjang
   // apel, bundel obat) — bukan lagi empat krat yang hanya beda warna.
   const def = CFG.RESOURCES[nd.type];

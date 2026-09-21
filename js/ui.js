@@ -540,9 +540,12 @@ function onChartMapClick(e) {
 }
 
 function bankChips() {
-  return RES_TYPES.map((t) =>
-    `<span class="res-chip"><i style="background:${CFG.RESOURCES[t].color}"></i>${G.banked[t] || 0}</span>`
-  ).join('');
+  // Chip bank: titik warna + angka + NAMA — tidak lagi "0 0 0 0" tanpa arti.
+  return RES_TYPES.map((t) => {
+    const r = CFG.RESOURCES[t];
+    const nm = (r.short || r.label || t).toUpperCase();
+    return `<span class="res-chip res-chip-lab" title="${r.label || t}"><i style="background:${r.color}"></i><b>${G.banked[t] || 0}</b><em>${nm}</em></span>`;
+  }).join('');
 }
 
 // ---------- Meja kerja ----------
