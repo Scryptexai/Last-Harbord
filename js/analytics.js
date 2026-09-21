@@ -47,6 +47,7 @@ export function markDeath() { mark((a) => { a.deaths += 1; }); }
 export function markDrifEarned(n) { if (n > 0) mark((a) => { a.drifEarned += n; }); }
 export function markDrifSpent(n) { if (n > 0) mark((a) => { a.drifSpent += n; }); }
 export function markShopOpen() { mark((a) => { a.shopOpens += 1; }); }
+export function markNote() { mark((a) => { a.notesFound = (a.notesFound || 0) + 1; }); }
 export function markPurchase() { mark((a) => { a.purchases += 1; }); }
 
 // Ringkasan untuk logbook pemain + verifikasi dev.
@@ -62,6 +63,7 @@ export function summary() {
     drifSpent: a.drifSpent,
     shopOpens: a.shopOpens,
     purchases: a.purchases,
+    notesFound: a.notesFound || 0,
     playMin: Math.round(a.playSec / 60),
   };
 }

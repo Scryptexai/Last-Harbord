@@ -642,14 +642,17 @@ export function drawSea(ctx, vw, vh) {
   }
   ctx.restore();
 
-  // penunjuk arah: target pilihan + harbor (kapal selalu bisa pulang)
-  if (G.target) {
-    const d = Math.hypot(G.target.x - boat.x, G.target.y - boat.y);
-    drawNavPointer(ctx, vw, vh, G.target.x, G.target.y, G.target.name.toUpperCase(), '#8fe3a0',
-      Math.round(d / 10) + ' m');
-  }
+  // ritual sinematik fajar: kompas jangan bertumpuk di atas layar
+  const isCeremony = () => { try { const dc = document.getElementById('dawn-ceremony'); return !!(dc && dc.classList.contains('show')); } catch (e) { return false; } };
   const hd = Math.hypot(HARBOR.x - boat.x, HARBOR.y - boat.y);
-  if (hd > 400) drawNavPointer(ctx, vw, vh, HARBOR.x, HARBOR.y, 'HARBOR', '#ffcf6a', Math.round(hd / 10) + ' m');
+  if (!isCeremony()) {
+    if (G.target) {
+      const d = Math.hypot(G.target.x - boat.x, G.target.y - boat.y);
+      drawNavPointer(ctx, vw, vh, G.target.x, G.target.y, G.target.name.toUpperCase(), '#8fe3a0',
+        Math.round(d / 10) + ' m');
+    }
+    if (hd > 400) drawNavPointer(ctx, vw, vh, HARBOR.x, HARBOR.y, 'HARBOR', '#ffcf6a', Math.round(hd / 10) + ' m');
+  }
   if (hd < 260) {
     // dermaga terlihat
     beginWorld(ctx, vw, vh);

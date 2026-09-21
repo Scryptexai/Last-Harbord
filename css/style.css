@@ -799,3 +799,63 @@ body.rm *, body.rm *::before, body.rm *::after {
 }
 .set-log b { font-size: 11px; letter-spacing: 2px; color: var(--brass); text-transform: uppercase; }
 .set-log p { margin-top: 6px; color: var(--muted); line-height: 1.6; font-size: 12px; }
+
+/* ---------- JURNAL PELAMPUNG (P0) ---------- */
+.journal-rows { display: flex; flex-direction: column; gap: 8px; max-height: 340px; overflow-y: auto; scrollbar-width: none; }
+.journal-rows::-webkit-scrollbar { display: none; }
+.journal-row {
+  background: rgba(216, 199, 154, 0.06);
+  border: 1px solid rgba(216, 170, 90, 0.22);
+  border-left: 3px solid var(--brass);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.journal-row b { display: block; font-size: 12px; letter-spacing: 1.2px; color: var(--brass); margin-bottom: 4px; }
+.journal-row p { font-size: 12.5px; line-height: 1.6; color: var(--ink); font-style: italic; }
+.journal-meta { margin-bottom: 10px; }
+
+/* ---------- Petunjuk peta kosong ---------- */
+#chart-map.chart-first { border-color: rgba(216, 170, 90, 0.7); box-shadow: 0 0 24px rgba(216, 170, 90, 0.32); }
+#chart-map.chart-first::after {
+  content: '← Ketuk ? di peta lalu BERLAYAR';
+  position: absolute; top: 10px; right: 12px;
+  background: rgba(8, 15, 24, 0.94);
+  border: 1px solid rgba(216, 170, 90, 0.55);
+  border-radius: 10px;
+  color: var(--brass); font-size: 11px; font-weight: 700; letter-spacing: 1px;
+  padding: 7px 10px;
+  animation: chartFirstPulse 1.6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes chartFirstPulse { 0%, 100% { transform: translateY(0); opacity: 1; } 50% { transform: translateY(4px); opacity: 0.82; } }
+#chart-map { position: relative; }
+
+/* ---------- Grid menu menu dgn tombol ketiga (JURNAL) ---------- */
+.dash-menu-grid { grid-template-columns: repeat(3, 1fr) !important; }
+.dash-menu-grid .dash-menu-btn:nth-child(3) { grid-column: 3; }
+
+/* ---------- FAJAR PERTAMA ---------- */
+#dawn-ceremony {
+  position: absolute; inset: 0; z-index: 400;   /* di atas toast/hud/modal — ritual harus bersih */
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.9s ease;
+}
+#dawn-ceremony.show { opacity: 1; pointer-events: auto; }
+.dc-bar {
+  position: absolute; left: 0; right: 0; height: 17vh;
+  background: #02060b;
+}
+.dc-top { top: 0; transform: translateY(-100%); transition: transform 1.1s cubic-bezier(0.2, 0.7, 0.3, 1); }
+.dc-bottom { bottom: 0; transform: translateY(100%); transition: transform 1.1s cubic-bezier(0.2, 0.7, 0.3, 1); }
+#dawn-ceremony.show .dc-top { transform: translateY(0); }
+#dawn-ceremony.show .dc-bottom { transform: translateY(0); }
+.dc-text { text-align: center; color: var(--ink); opacity: 0; transition: opacity 0.9s ease 0.6s; }
+#dawn-ceremony.show .dc-text { opacity: 1; }
+.dc-label { display: block; font-family: 'Montserrat', sans-serif; font-size: 30px; font-weight: 900; letter-spacing: 6px; color: #ffe6b0; text-shadow: 0 0 26px rgba(255, 190, 110, 0.6); margin-bottom: 10px; }
+.dc-text p { max-width: 420px; margin: 0 auto; font-size: 13.5px; line-height: 1.6; color: rgba(237, 242, 247, 0.88); font-style: italic; }
+
+/* Selama ritual fajar: tidak ada info bertumpuk di atasnya. */
+#dawn-ceremony { z-index: 1000; }
+#dawn-ceremony.show ~ #hud { visibility: hidden !important; }

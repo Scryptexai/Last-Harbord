@@ -13,6 +13,7 @@ const ASSET_PATHS = {
   boat_lv2: 'assets/characters/boat_lv2.png',
   boat_lv3: 'assets/characters/boat_lv3.png',
   player: 'assets/characters/player.png',
+  npc_keeper: 'assets/characters/npc_keeper.png',
   zombie_slow: 'assets/characters/zombie_slow.png',
   zombie_fast: 'assets/characters/zombie_fast.png',
   zombie_tank: 'assets/characters/zombie_tank.png',
@@ -26,6 +27,7 @@ const ASSET_PATHS = {
   bush: 'assets/environment/bush.png',
   salvage_buoy: 'assets/environment/salvage_buoy.png',
   stall_flair: 'assets/props/stall_flair.png',
+  note_scrap: 'assets/environment/note_scrap.png',
   // Bentuk pulau per flavor (tampilan atas) + siluet pulau jauh di laut/horizon.
   isle_quiet: 'assets/environment/isle_quiet.png',
   isle_reef: 'assets/environment/isle_reef.png',

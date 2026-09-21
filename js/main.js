@@ -12,6 +12,7 @@ import { addCarried, bankCarried, carriedLoad, emptyBag, RES_TYPES, dropCarried 
 import { buyNext, nextRung, canBuyNext, goalLabel, isMaxed, capacity } from './refit.js';
 import { resetTide, updateTide, tidePhase, tideTint, seaDrainRate } from './tide.js';
 import { bumpDeath, nightDone } from './stats.js';
+import { addNote } from './notes.js';
 import { markRun, markDawn, markDeath, trackPlay, flush, markShopOpen } from './analytics.js';
 import { loadAssets, ASSETS } from './assets.js';
 import { sfx, haptic, initAudio, setAmbience, tickAmbience, updateMusic, setMuted } from './audio.js';
@@ -69,6 +70,7 @@ function beginRun() {
 
 function pickTarget(id) {
   G.target = islandById(id);
+  refreshIfOpen();             // daftar peta menyegarkan — panah chart-first langsung hilang
   // tandai perairan ini disurvei — pulau yang diketuk di peta jadi "dikenal"
   if (G.target) G.surveyed[G.target.id] = true;
   if (H.onModalClosed) { /* peta tetap terbuka */ }
@@ -511,6 +513,14 @@ function update(dt) {
     if (G.tide && G.tide.justDawned) {
       try { nightDone(G.tide.night || 0); } catch (e) { /* noop */ }
       try { markDawn(); } catch (e) { /* noop */ }
+      // FAJAR PERTAMA (seumur hidup): ritual penutup — selamatan msing dunia.
+      try {
+        if (!localStorage.getItem('lh_dawn1')) {
+          localStorage.setItem('lh_dawn1', String(Date.now()));
+          addNote('n-dawn1');
+          dawnCeremony();
+        }
+      } catch (e) { /* noop */ }
       sfx('gull');
       addFlash(0.22);
       const w = G.state === 'land' && G.land ? G.land.player : G.boat;
@@ -566,6 +576,19 @@ function render() {
 // =================== Handlers UI ===================
 
 let __playAcc = 0;
+
+
+// Letterbox singkat yang membayar malam pertamamu: bisa dilewati dengan gesture.
+function dawnCeremony() {
+  const el = document.getElementById('dawn-ceremony');
+  if (!el) return;
+  el.classList.add('show');
+  let done = false;
+  const bye = () => { if (done) return; done = true; el.classList.remove('show'); window.removeEventListener('keydown', bye); window.removeEventListener('pointerdown', bye); };
+  window.addEventListener('keydown', bye);
+  window.addEventListener('pointerdown', bye);
+  setTimeout(bye, 3400);
+}
 
 const H = {
   onContextDown: () => pressContext(),

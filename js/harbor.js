@@ -9,6 +9,7 @@ import { capacity, nextRung, goalLabel, isMaxed } from './refit.js';
 import { ASSETS } from './assets.js';
 import { sheetFrame, drawCharSprite } from './sheets.js';
 import { sfx } from './audio.js';
+import { snapshot } from './stats.js';
 import { burst } from './fx.js';
 import { drawBoat, drawLanternPool } from './boat.js';
 import { HARBOR } from './world.js';
@@ -311,6 +312,7 @@ function drawDockProps(ctx, H) {
     { y: 120, draw: () => drawBarrels(ctx, H.t) },
     { y: H.spots.find((x) => x.key === 'store').y, draw: () => drawStore(ctx, H) },
     { y: H.spots.find((x) => x.key === 'shop').y, draw: () => drawStall(ctx, H) },
+    { y: KEEPER.y, draw: () => drawKeeper(ctx, H) },
     { y: 320, draw: () => drawLowerDeck(ctx) },
     { y: H.player.y, draw: () => drawPlayer(ctx, H.player) },
   ];
@@ -445,6 +447,86 @@ function drawWorkbench(ctx, H) {
 
 // Gudang: rak penyimpanan terbuka + tumpukan peti berwarna sesuai isi banked.
 // Ini "tempat menaruh resource" yang terlihat — bukan cuma angka di panel.
+
+
+// ---------- Penjaga Dermaga: satu jiwa yang menunggu kamu pulang ----------
+// Bark berubah sesuai perjalananmu (dibaca dari jurnal stats). Penjaga bukan quest —
+// ia memori yang berdiri di tepi papan.
+const KEEPER = { x: -148, y: 88 };
+const KEEPER_NEW = [
+  'Malam pertamamu? Tangani kayu, perbaiki palka, dan pulang sebelum air merayap.',
+  'Peta terbuka di meja sana. Ketuk tanda tanya — itu pulau, atau setidaknya doa.',
+  'Tidak ada yang datang ke dermaga ini untuk santai. Tapi kau datang...',
+];
+const KEEPER_COMEBACK = [
+  'Satu keretakan lambung adalah catatan. Dua adalah kebiasaan buruk.',
+  'Kau masih hidup. Itu berarti kau menang, bukan kalah.',
+  'Laut mengambil yang kedua darimu kemarin. Jangan beri yang ketiga.',
+  'Pelampungmu hanyut jauh? Tarik kembali — tikam pasang, bukan harapanmu.',
+];
+const KEEPER_VET = [
+  'Malam demi malam dan kau masih berdiri di sini. Tangguh.',
+  'Beberapa pelaut betulan tenggelam mengenang muatannya. Kau? Kau mengenang fajar.',
+  'Penjaga tua ini sudah lama menunggu yang seperti kamu datang.',
+];
+function keeperLine(H) {
+  const st = snapshot();
+  let pool = KEEPER_NEW;
+  if ((st.bestNight || 0) >= 4) pool = KEEPER_VET;
+  else if ((st.deaths || 0) >= 1) pool = KEEPER_COMEBACK;
+  return pool[Math.floor(H.t / 7) % pool.length];
+}
+function drawKeeper(ctx, H) {
+  const k = KEEPER;
+  const t = H.t;
+  const bobY = Math.sin(t * 1.6) * 1.4;                     // bernafas pelan
+  const nearP = dist(H.player.x, H.player.y, k.x, k.y);
+  const close = nearP < 76;
+  atUpright(ctx, k.x, k.y, () => {
+    ctx.translate(-k.x, -k.y);
+    // pelita tongkatnya menerangi papan di sekitarnya
+    const flick = 0.8 + Math.sin(t * 7.7) * 0.16;
+    const g = ctx.createRadialGradient(k.x + 8, k.y - 18, 3, k.x + 8, k.y - 18, 62 * flick);
+    g.addColorStop(0, 'rgba(255,190,110,0.34)');
+    g.addColorStop(1, 'rgba(255,190,110,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(k.x + 8, k.y - 18, 62 * flick, 0, Math.PI * 2); ctx.fill();
+    const img = ASSETS.npc_keeper;
+    if (img && img.complete && img.naturalWidth > 0) {
+      ctx.drawImage(img, k.x - 20, k.y - 46 + bobY, 40, 48);
+    } else {
+      ctx.fillStyle = '#5b4a35';
+      ctx.fillRect(k.x - 7, k.y - 24 + bobY, 14, 26);
+      ctx.fillStyle = '#caa46a';
+      ctx.beginPath(); ctx.arc(k.x, k.y - 30 + bobY, 6, 0, Math.PI * 2); ctx.fill();
+    }
+    if (close) {
+      const line = keeperLine(H);
+      // gelembung ucapan sederhana: maksimum dua baris
+      ctx.font = '600 10.5px Inter, system-ui, sans-serif';
+      const words = line.split(' ');
+      const lines = [];
+      let cur = '';
+      for (const w of words) { if ((cur + ' ' + w).trim().length > 34 && cur) { lines.push(cur); cur = w; } else cur = (cur + ' ' + w).trim(); }
+      if (cur) lines.push(cur);
+      let maxW = 0;
+      for (const l of lines) maxW = Math.max(maxW, ctx.measureText(l).width);
+      const bw = maxW + 16, bh = lines.length * 13 + 10;
+      const bx = k.x - bw / 2, by = k.y - 58 - bh + bobY;
+      ctx.fillStyle = 'rgba(8,15,24,0.92)';
+      ctx.strokeStyle = 'rgba(216,170,90,0.4)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      const rr = 6;
+      ctx.moveTo(bx + rr, by); ctx.arcTo(bx + bw, by, bx + bw, by + bh, rr); ctx.arcTo(bx + bw, by + bh, bx, by + bh, rr);
+      ctx.arcTo(bx, by + bh, bx, by, rr); ctx.arcTo(bx, by, bx + bw, by, rr); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#edf2f7';
+      ctx.textAlign = 'center';
+      lines.forEach((l, i) => ctx.fillText(l, k.x, by + 12 + i * 13));
+    }
+  });
+}
 
 function drawStall(ctx, H) {
   const s = H.spots.find((x) => x.key === 'shop');

@@ -14,6 +14,7 @@ import { snapshot, prefs, setPref, wipeStats, wipePrefs, bumpRun } from './stats
 import { setMuted, sfx, haptic } from './audio.js';
 import { sessionStart, summary as analyticsSummary } from './analytics.js';
 import { applyCosmetics } from './cosmetics.js';
+import { allNotes, hasNote } from './notes.js';
 
 // Tandai SEBELUM main.js dievaluasi: main.js menunda auto-boot bila flag ini ada.
 // (Test headless yang mengimpor main.js langsung tidak menyetel flag ini, jadi
@@ -216,9 +217,21 @@ function applyPrefs() {
 function wirePopovers() {
   const open = (id) => { const el = $(id); if (el) el.classList.remove('hidden'); };
   const close = (id) => { const el = $(id); if (el) el.classList.add('hidden'); };
-  const b1 = $('btn-menu-howto'); const b2 = $('btn-menu-settings');
+  const b1 = $('btn-menu-howto'); const b2 = $('btn-menu-settings'); const b3 = $('btn-menu-journal');
   if (b1) b1.addEventListener('click', () => { close('menu-settings'); open('menu-howto'); });
   if (b2) b2.addEventListener('click', () => { close('menu-howto'); open('menu-settings'); paintPrefs(); });
+  if (b3) b3.addEventListener('click', () => {
+    close('menu-howto'); close('menu-settings');
+    const m = $('modal-journal');
+    if (m) { renderBootJournal(); m.classList.remove('hidden'); }
+  });
+  // dipanggil ulang setiap dibuka (catatan baru saat game terakhir kali main)
+  const jm = $('modal-journal');
+  if (jm) {
+    jm.addEventListener('click', (e) => { if (e.target === jm) jm.classList.add('hidden'); });
+    const jc = $('journal-close');
+    if (jc) jc.addEventListener('click', () => jm.classList.add('hidden'));
+  }
   document.querySelectorAll('[data-pop-close]').forEach((b) => {
     b.addEventListener('click', () => close(b.getAttribute('data-pop-close')));
   });
@@ -252,6 +265,30 @@ function wirePopovers() {
     wipeStats(); wipePrefs();
     location.reload();
   });
+}
+
+
+// Render Jurnl langsung dari modul catatan — aman sebelum game di-boot (ui.js belum init).
+function renderBootJournal() {
+  const rows = $('journal-rows'), cnt = $('journal-count');
+  if (!rows) return;
+  const found = allNotes().filter((n) => hasNote(n.id));
+  const total = allNotes().length;
+  if (cnt) cnt.textContent = found.length + ' / ' + total + ' lembar';
+  rows.innerHTML = '';
+  if (!found.length) {
+    const d = document.createElement('p');
+    d.className = 'fineprint';
+    d.textContent = 'Belum ada catatan. Lembar kecil coklat kekuningan terombang-ambik di pulau — injak ia.';
+    rows.appendChild(d);
+    return;
+  }
+  for (const n of [...found].reverse()) {
+    const row = document.createElement('div');
+    row.className = 'journal-row';
+    row.innerHTML = '<b>' + n.title + '</b><p>' + n.text + '</p>';
+    rows.appendChild(row);
+  }
 }
 
 function setup() {

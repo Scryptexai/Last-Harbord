@@ -423,6 +423,7 @@
         <div class="dash-menu-grid">
           <button id="btn-menu-howto" class="dash-menu-btn"><b>⌁</b> CARA MAIN</button>
           <button id="btn-menu-settings" class="dash-menu-btn"><b>⚙</b> PENGATURAN</button>
+          <button id="btn-menu-journal" class="dash-menu-btn"><b>◈</b> JURNAL</button>
         </div>
         <p class="dash-version small">Driftholm · kabar dari dermaga terakhir</p>
       </div>
@@ -464,6 +465,16 @@
       <div class="loader-text">MEMUAT<span>.</span><span>.</span><span>.</span></div>
     </div>
   </section>
+
+  <!-- ================= FAJAR PERTAMA (ritual satu-dua kali seumur hidup) ================= -->
+  <div id="dawn-ceremony" aria-hidden="true">
+    <div class="dc-bar dc-top"></div>
+    <div class="dc-bar dc-bottom"></div>
+    <div class="dc-text">
+      <span class="dc-label">FAJAR PERTAMA</span>
+      <p>Air turun, langit pulih — dan kamu pulang. Catatan baru masuk ke jurnal.</p>
+    </div>
+  </div>
 
   <!-- ================= HUD ================= -->
   <section id="hud">
@@ -524,6 +535,7 @@
         <h2>JEDA</h2>
         <p class="muted">Laut menunggumu. Pasang pun ikut berhenti.</p>
         <button id="btn-resume" class="btn btn-primary wide">LANJUT</button>
+      <button id="btn-veil-journal" class="btn wide">JURNAL</button>
       </div>
     </div>
   </section>
@@ -583,6 +595,18 @@
       </div>
       <div class="shop-balance">Koin drif: <b id="shop-drif">0</b> <img src="assets/branding/coin_drif.png" alt=""></div>
       <div id="shop-rows" class="shop-rows"></div>
+    </div>
+  </section>
+
+  <section id="modal-journal" class="modal hidden">
+    <div class="panel modal-panel">
+      <div class="modal-head">
+        <h2>JURNAL PELAMPUNG</h2>
+        <button class="icon-btn" id="journal-close">✕</button>
+      </div>
+      <div class="journal-meta chips"><span class="res-chip">◧ <b id="journal-count">0 / 0 lembar</b></span></div>
+      <div id="journal-rows" class="journal-rows"></div>
+      <p class="fineprint">Catatan dari pelaut yang tidak pulang. Lembar terombang-ambik di pulau — injak ia.</p>
     </div>
   </section>
 

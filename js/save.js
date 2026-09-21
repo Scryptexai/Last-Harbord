@@ -36,6 +36,7 @@ export function saveGame() {
       nights: int(G.tide && G.tide.night),
       surveyed: Object.keys(G.surveyed || {}).map((k) => int(k)),
       tabbed: G.tabbed || {},
+      notes: (G.notes || []).slice(0, 40),
       muted: !!G.muted,
     };
     localStorage.setItem(CFG.SAVE_KEY, JSON.stringify(data));
@@ -87,6 +88,7 @@ export function loadGame() {
       }
     }
     G.tabbed = tk;
+    G.notes = Array.isArray(d.notes) ? d.notes.filter((x) => typeof x === 'string').slice(0, 40) : [];
     G.muted = !!d.muted;
     return true;
   } catch (e) {

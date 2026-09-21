@@ -11,6 +11,9 @@ import { addCarried, carriedFull, carriedLoad } from './inventory.js';
 import { capacity } from './refit.js';
 import { makeZombie } from './zombie.js';
 import { sfx, haptic } from './audio.js';
+import { toast } from './ui.js';
+import { notesForIsland, hasNote, addNote, noteById } from './notes.js';
+import { markNote } from './analytics.js';
 import { fx, burst, splash, flyItem, ring, addShake, addHitstop, addHurtDir, drawFxWorld } from './fx.js';
 import { bumpKill } from './stats.js';
 import { blobPath, markTaken, survey, islandRemaining, drawOceanBackground, drawHorizon } from './world.js';
@@ -149,6 +152,13 @@ function buildLand(island) {
       cargo: sv.cargo, taken: false, bob: 0,
     });
   }
+
+  // ---- lembar jurnal: catatan pelaut sebelumnya, satu-satunya 'kabar' di pulau ----
+      const noteId = notesForIsland(island.id);
+      if (!hasNote(noteId)) {
+        const p = place(r * 0.30, r * 0.58, r * 0.26);
+        nodes.push({ kind: 'note', noteId, x: p.x, y: p.y, qty: 1, taken: false, bob: rng() * 6.28 });
+      }
 
   // ---- kabut eksplorasi ----
   const cell = CFG.LAND.FOG_CELL;
@@ -378,6 +388,26 @@ export function updateLand(dt, move, opts = {}) {
 
   // ---- penggerak animasi: fase langkah & seberapa "sedang berlari" ----
   const spN = clamp(Math.hypot(p.vx, p.vy) / P.SPEED, 0, 1);
+
+  // Lembar catatan: diinjak = ditemukan. Ini satu-satunya cara dunia 'berbicara'.
+  for (const nd of L.nodes) {
+    if (nd.kind !== 'note' || nd.taken) continue;
+    if (dist(p.x, p.y, nd.x, nd.y) > 24) continue;
+    nd.taken = true;
+    if (addNote(nd.noteId)) { try { markNote(); } catch (e) { /* noop */ } }
+    sfx('pickup'); haptic([8, 18, 8]);
+    ring(p.x, p.y, 'rgba(255,230,176,0.9)', 34, 0.42);
+    const got = noteById(nd.noteId);
+    toast(got ? 'Lembar jurnal: ' + got.title : 'Lembar jurnal ditemukan.');
+    G.saveDirty = true;
+  }
+
+  // Hint palka penuh: 10 detik penuh di darat -> arahkan pulang (sekali per sortie).
+  if (carriedLoad() >= capacity()) {
+    L.fullT = (L.fullT || 0) + dt;
+    if (L.fullT >= 10 && !L.fullWarned) { L.fullWarned = true; toast('Palka penuh — kapalmu menunggu di tepi pantai. Aman itu mahal.'); }
+  } else { L.fullT = 0; }
+
   p.walkAmp = lerp(p.walkAmp, spN, Math.min(1, dt * 7));
   p.walkT += Math.hypot(p.vx, p.vy) * dt * 0.055;
   p.hurtT = Math.max(0, p.hurtT - dt);
@@ -1335,10 +1365,10 @@ function drawTree(ctx, t) {
 // Node resource: BARANG di tanah, bukan ikon datar yang ditempel di lantai.
 function drawNode(ctx, L, nd) {
   const bob = Math.sin(G.time * 2.6 + nd.bob) * 2.4;
-  const size = nd.kind === 'salvage' ? 23 : (nd.rich ? 21 : 15);
+  const size = nd.kind === 'salvage' ? 23 : nd.kind === 'note' ? 16 : (nd.rich ? 21 : 15);
   const gl = 0.3 + Math.sin(G.time * 3 + nd.bob) * 0.16;
   ctx.globalAlpha = gl;
-  ctx.fillStyle = nd.kind === 'salvage' ? '#ffcf6a' : CFG.RESOURCES[nd.type].color;
+  ctx.fillStyle = nd.kind === 'salvage' ? '#ffcf6a' : nd.kind === 'note' ? '#ffe6b0' : CFG.RESOURCES[nd.type].color;
   ctx.beginPath(); ctx.ellipse(nd.x, nd.y + 2, size * 0.85, size * 0.4, 0, 0, Math.PI * 2); ctx.fill();
   ctx.globalAlpha = 1;
   atUpright(ctx, nd.x, nd.y, () => {

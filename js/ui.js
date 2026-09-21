@@ -1,6 +1,7 @@
 import { snapshot } from './stats.js';
 import { sfx, haptic } from './audio.js';
 import { saveGame } from './save.js';
+import { allNotes, hasNote } from './notes.js';
 import { CATALOG, FAMILIES, owned, equipped, buy, equip, courseColor as styleCourseColor } from './cosmetics.js';
 // ============ UI overlay ============
 // Aturan: dunia dulu, HUD kedua, menu ketiga.
@@ -34,8 +35,9 @@ const IDS = [
   'modal-bench', 'bench-rows', 'bench-bank', 'bench-close', 'bench-title', 'bench-sub',
   'modal-inventory', 'inv-resources', 'inv-boat', 'inv-close',
   'modal-shop', 'shop-rows', 'shop-drif', 'shop-close',
+  'modal-journal', 'journal-rows', 'journal-count', 'journal-close',
   'modal-debrief', 'db-title', 'db-cause', 'db-lost', 'db-kept', 'db-salvage', 'db-night', 'db-goal', 'db-records', 'db-close',
-  'hint-line',
+  'hint-line', 'btn-veil-journal',
 ];
 
 export function initUI(handlers) {
@@ -50,6 +52,7 @@ export function initUI(handlers) {
   bind('inv-close', () => closeModal());
   bind('db-close', () => closeModal());
   bind('shop-close', () => closeModal());
+  bind('journal-close', () => closeModal());  bind('btn-veil-journal', () => { renderJournal(); els['modal-journal'].classList.remove('hidden'); });
   bind('btn-mute', () => { if (H.onMute) H.onMute(); });
   bind('btn-pause', () => { if (H.onPause) H.onPause(true); });
   bind('btn-resume', () => { if (H.onPause) H.onPause(false); });
@@ -82,6 +85,7 @@ export function openModal(name) {
   if (name === 'chart') renderChart();
   if (name === 'bench') renderBench();
   if (name === 'shop') renderShop();
+  if (name === 'journal') renderJournal();
   if (name === 'inventory') renderInventory();
 }
 
@@ -256,6 +260,12 @@ function distToHarbor(isl) { return Math.hypot(isl.x - HARBOR.x, isl.y - HARBOR.
 const CHART_MAP = 440;   // ukuran logis peta (px)
 let chartCanvas = null;
 
+
+function listCountOfIslands() {
+  const rows = els['chart-list'] ? els['chart-list'].querySelectorAll('[data-isl]') : [];
+  return rows ? rows.length : 0;
+}
+
 export function renderChart() {
   els['chart-bank'].innerHTML = bankChips();
   drawChartMap();
@@ -266,6 +276,9 @@ export function renderChart() {
     : 'Tap satu titik di peta, atau pilih dari daftar di bawah, lalu berlayar.';
   els['chart-sail'].textContent = sel ? 'BERLAYAR SEKARANG' : 'BERLAYAR TANPA TUJUAN';
   renderChartList();
+  // Chart yang kosong di run pertama: petunjuk tap ? dibuat tegas (bukan bisik-bisik).
+  const map = els['chart-map'];
+  if (map) map.classList.toggle('chart-first', !G.target && (listCountOfIslands() === 0));
 }
 
 // Daftar pulau yang sudah disurvei — pilihan tujuan yang bisa diketuk LANGSUNG,
@@ -680,6 +693,31 @@ export function renderShop() {
   } catch (e) { console.warn('renderShop:', e); }
 }
 
+
+// ---------- JURNAL PELAMPUNG: semua catatan yang pernah kamu injak ----------
+export function renderJournal() {
+  const box = els['journal-rows'];
+  if (!box) return;
+  const found = allNotes().filter((n) => hasNote(n.id));
+  const total = allNotes().length;
+  if (els['journal-count']) els['journal-count'].textContent = found.length + ' / ' + total + ' lembar';
+  box.innerHTML = '';
+  if (!found.length) {
+    const d = document.createElement('p');
+    d.className = 'fineprint';
+    d.textContent = 'Belum ada catatan. Lembar kecil coklat kekuningan terombang-ambik di pulau — injak ia.';
+    box.appendChild(d);
+    return;
+  }
+  // lembar terbaru di paling atas (rasa halaman ditambs)
+  for (const n of [...found].reverse()) {
+    const row = document.createElement('div');
+    row.className = 'journal-row';
+    row.innerHTML = `<b>${n.title}</b><p>${n.text}</p>`;
+    box.appendChild(row);
+  }
+}
+
 export function renderDebrief(info) {
   els['db-title'].textContent = 'KAPAL TENGGELAM';
   // Rekor lintas-run di lubang kematian: motivasi utama roguelike ("nyaris").
@@ -717,6 +755,7 @@ export function refreshIfOpen() {
   if (modal === 'chart') renderChart();
   if (modal === 'bench') renderBench();
   if (modal === 'shop') renderShop();
+  if (modal === 'journal') renderJournal();
   if (modal === 'inventory') renderInventory();
 }
 
