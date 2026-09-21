@@ -1,15 +1,59 @@
-# ⚓ Last Harbor
+# ⚓ Last Harbor (+ Last Asylum: Plague)
 
-Game survival HTML5: berlayar dari dermaga, mendarat di pulau, memanen sebelum air pasang
-menutup jalan pulang, dan membangun kapalmu satu bagian demi satu bagian.
+Repo ini berisi **dua game HTML5** (vanilla JS + Canvas 2D, **tanpa build step,
+tanpa dependency**; audio disintesis penuh dengan WebAudio):
 
-Vanilla JavaScript (ES modules) + Canvas 2D + overlay HTML/CSS. **Tanpa build step,
-tanpa dependency.** Audio disintesis penuh dengan WebAudio — tidak ada file suara.
+| Game | Entry | Genre |
+|---|---|---|
+| **Last Harbor / "Driftholm"** | `index.html` | Survival naval + rogue-lite + tycoon refit |
+| **Last Asylum: Plague** | `asylum.html` | Arcade idle / hospital tycoon (medieval plague) |
+
+Keduanya berbagi fondasi mesin (proyeksi kamera miring, input joystick,
+WebAudio, partikel, pola test Node + DOM palsu) tapi state, save, dan loop-nya
+terpisah. Pintu antar-game: dashboard boot Driftholm → tombol **⚕ LAST ASYLUM**;
+pause Last Asylum → **KE DERMAGA (DRIFTHOLM)**.
 
 ```bash
 python3 -m http.server 8000
-# buka http://localhost:8000
+# Driftholm:  http://localhost:8000/          (index.html)
+# Last Asylum: http://localhost:8000/asylum.html
 ```
+
+## Last Asylum: Plague (game kedua — 2026-09)
+
+Kamu dokter wabah terakhir di rumah sakit kota yang lumpuh. Pasien datang sendiri
+lewat gerbang utara (idle); kamu memanen **gandum**, **daun herbal**, dan **kayu**;
+**berdiri** di samping kasur untuk menangani pasien (12 herbal + 2 gandum, tanpa
+tombol interaksi — `ProximityTrigger`); koin per pasien yang sembuh; koin + kayu
+membuka bangsal baru di atas **ghost tile** bercahaya (transfer 1 koin per tick
+0.05s + partikel melayang).
+
+Angka spesifikasi terpenuhi di kode (dan diuji):
+
+- **Kamera** §1 — pitch 58° (`TILT = cos 58°`), FOV telephoto 28–32° (skala
+  kedalaman sempit), damped follow `smoothDamp` (port Unity, smoothTime 0.18,
+  tanpa overshoot) + look-ahead `1.2 × velocity`.
+- **Gerak** §2 — rotasi diklamp **720°/s** (tanpa snapping), **Turning Penalty
+  60%** saat berbalik >90°, akselerasi 0.10s / deselerasi 0.15s, animasi
+  tersinkron kecepatan (`AnimSpeedMultiplier = speed / base`).
+- **Rig** §3 — jubah: 3 chain × 3 bone verlet + spring (stiffness 0.35, damping
+  0.45, drag 0.20) — melipat maju saat berhenti mendadak, tertinggal saat
+  berbelok; lentera: pendulum teredam limit **±25°**, berayun ritmis mengikuti
+  langkah; vial ramuan di tangan kanan.
+- **UI** §4 — portrait 9:16 mobile-first: top dashboard (4 resource, bold + ikon
+  mini), quest capsule + progress bar, dialog pembuka (ilustrasi prosedural
+  kanan bawah + teks kiri bawah, tap untuk lanjut).
+
+Spesifikasi lengkap + peta implementasi: [`docs/ASYLUM_SPEC.md`](docs/ASYLUM_SPEC.md).
+Test: `node tests/asylum.test.mjs` (58 asersi, termasuk regresi pacing — bot
+ideal harus membangun Bangsal II < 240 detik simulasi).
+
+---
+
+## Driftholm — Last Harbor
+
+Game survival HTML5: berlayar dari dermaga, mendarat di pulau, memanen sebelum air pasang
+menutup jalan pulang, dan membangun kapalmu satu bagian demi satu bagian.
 
 ---
 
@@ -36,9 +80,10 @@ menanyakan hal itu lebih sering, fitur itu tidak ada di sini.
    `carried` (bisa hilang) vs `banked` (aman). Bertemu kapal bukan berarti aman —
    kau harus sampai ke dermaga. Mati = muatan di tangan jatuh menjadi **pelampung**
    yang bisa diambil kembali di pulau itu.
-2. **Memanen menahanmu di tempat** (0.8 / 1.2 / 1.4 detik). Mendekati node langsung
-   memanen secara otomatis; selama panen kau terkunci di tempat (itulah risikonya).
-   Bergerak membatalkan panen, dan node-nya tidak hilang.
+2. **Memanen otomatis saat berhenti di dekat node** (PANEN LANGSUNG — hasil
+   langsung masuk palka, tanpa bar progres dan tanpa terkunci di tempat).
+   Berjalan melewati node tidak memetik apa pun; risikonya bukan lagi waktu
+   terkurung, melainkan jarak — node kaya selalu lebih dalam pulau.
 3. **Kau harus berjalan kembali ke kapal.** Tidak ada tombol teleport.
    Dermaga adalah satu-satunya jalan keluar.
 4. **Zombie melambat di pantai.** Kalau kau bisa mencapai air, kau bisa lolos.
@@ -232,10 +277,12 @@ kau **tidak bisa bergerak**.
 
 ```
 index.html            markup HUD + 3 modal (peta, meja kerja, debrief)
+asylum.html           game kedua: HUD Last Asylum (spec §4)
 css/style.css         HUD instrumen gelap, bukan dashboard
+css/asylum.css        HUD Last Asylum (dark medieval, portrait 9:16)
 js/
   main.js             bootstrap, state machine, loop, onboarding bertahap
-  config.js           SEMUA angka balancing ada di sini
+  config.js           SEMUA angka balancing Driftholm ada di sini
   state.js            state global
   refit.js            tangga progresi + stat turunan (palka/layar/lambung)
   inventory.js        carried vs banked
@@ -246,18 +293,37 @@ js/
   harbor.js           dermaga yang bisa dijalani (peta / meja kerja / haluan)
   boat.js             inersia + bagian refit yang terlihat
   zombie.js           factory zombie
-  input.js            keyboard + joystick + aksi konteks
+  input.js            keyboard + joystick + aksi konteks (dipakai kedua game)
   ui.js               HUD, peta, meja kerja, debrief, toast
   audio.js            seluruh SFX & ambience (WebAudio, disintesis, tanpa file)
   fx.js               partikel, hit-stop, guncangan, indikator arah
   save.js             localStorage v2 (muatan TIDAK disimpan)
   util.js             rng, clamp, lerp, format
+js/asylum/            GAME KEDUA — Last Asylum: Plague (lihat docs/ASYLUM_SPEC.md)
+  config.js           semua angka Last Asylum (konstanta spec §1-§5)
+  state.js            state global A (terpisah dari G)
+  camera.js           spec §1: smoothDamp (port Unity) + look-ahead + TILT=cos58°
+  doctor.js           spec §2: turn clamp 720°/s, penalty 60%, accel/decel, stride
+  rig.js              spec §3: jubah spring-bone (3 chain × 3 bone) + lentera ±25°
+  proximity.js        spec §6: ProximityTrigger (port pseudocode, multi-resource)
+  patients.js         core loop §5: spawn, antre, kasur, treatment, koin
+  building.js         ghost tile bangsal: trigger build 1 koin/0.05s + partikel
+  quests.js           quest tracker (spec §4.1.2)
+  dialogue.js         dialog pembuka + ilustrasi prosedural (spec §4.1.4)
+  world.js            pelataran, node gandum/herbal/kayu, seluruh gambar 2.5D
+  ui.js               HUD: dashboard resource, quest capsule, toast, dialog
+  save.js             localStorage v1 (kunci last-asylum-save-v1)
+  main.js             loop + state machine + input
 tests/
   smoke.test.mjs       logika + regresi ekonomi + bahasa visual pasang
   integration.test.mjs loop game sungguhan (main.js) di atas DOM palsu
   render.test.mjs      semua jalur gambar dengan canvas tiruan
   camera.test.mjs      kontrak proyeksi miring (posisi sprite, kedalaman, framing)
   pacing.test.mjs      alat ukur: bot bermain di atas modul asli
+  asylum.test.mjs      Last Asylum: angka spec + core loop + regresi pacing
+docs/
+  ASYLUM_SPEC.md       spesifikasi Last Asylum + peta implementasi
+  LAST_HARBOR_DESIGN_AUDIT.md  audit desain Driftholm (analysis only)
 assets/               sprite (kapal 3 tier, zombie, pemain, pulau, ikon UI, branding)
 asset_viewer.html     galeri aset (alat pengembang, tidak ada di UI pemain)
 scripts/              generator aset (Python/PIL)
@@ -312,10 +378,16 @@ kabut, penunjuk arah, dan keputusan "lanjut atau berbalik", tapi bukan pelayaran
 ## Test
 
 ```bash
-node tests/smoke.test.mjs        # 137: logika, ekonomi, malam, bentuk pulau, kawanan
-node tests/integration.test.mjs  #  57: LOOP GAME SUNGGUHAN lewat main.js, tanpa browser
+# Driftholm (Last Harbor)
+node tests/smoke.test.mjs        # 153: logika, ekonomi, malam, bentuk pulau, kawanan
+node tests/integration.test.mjs  #  58: LOOP GAME SUNGGUHAN lewat main.js, tanpa browser
 node tests/render.test.mjs       #  29: semua jalur gambar dengan canvas tiruan
 node tests/tension.test.mjs      # busur ketegangan satu malam, 6 kanal visual sekaligus
 node tests/camera.test.mjs       #  15: kontrak kamera miring (posisi & kedalaman sprite)
 node tests/pacing.test.mjs       # alat ukur, bukan test: laporan pacing bot
+
+# Last Asylum: Plague
+node tests/asylum.test.mjs       #  58: angka spec (kamera/gerak/rig/proximity),
+                                 #     core loop pasien->koin->bangsal, save, render,
+                                 #     + regresi pacing (bot bangun Bangsal II < 240s)
 ```

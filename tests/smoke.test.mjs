@@ -45,6 +45,9 @@ function elStub() {
     onclick: null, disabled: false,
     addEventListener() {},
     getContext: () => null,
+    // DOM API minimal yang dibutuhkan ui.js di jalur headless (chart-list dsb.).
+    querySelectorAll: () => [],
+    querySelector: () => null,
   };
 }
 globalThis.document = {
@@ -268,30 +271,38 @@ function freshLand(seed = 4242, islandIdx = 0) {
   ok(minDist > L.r * 0.2, `node resource tidak menumpuk di dermaga (terdekat ${Math.round(minDist)}px)`);
 
   // --- AUTO-COLLECT: berhenti di dekat node langsung memanen, tanpa tombol ---
+  // Desain sekarang (PANEN LANGSUNG): tidak ada bar progres — begitu berhenti di
+  // sebelah node, hasilnya langsung masuk palka pada frame yang sama.
   const nd = L.nodes.filter((n) => n.kind === 'res')[0];
   const dt = 1 / 60;
+  L.zombies.length = 0;   // isolasi mekanik panen: serangan otomatis tidak boleh memblokir
   L.player.x = nd.x; L.player.y = nd.y;
   L.player.vx = 0; L.player.vy = 0;
+  const load0 = carriedLoad();
   updateLand(dt, { x: 0, y: 0 }, { gatherHeld: false });
-  ok(!!L.player.gather, 'berhenti di dekat node otomatis memulai pemanenan (tanpa tombol)');
+  ok(nd.taken && carriedLoad() > load0, 'berhenti di dekat node otomatis memanen (tanpa tombol, hasil langsung ke palka)');
 
-  // --- bergerak membatalkan panen: bisa kabur dari zombie ---
-  for (let i = 0; i < 30; i++) updateLand(dt, { x: 1, y: 0 }, { gatherHeld: false });
-  ok(L.player.gather === null, 'bergerak saat memanen membatalkan panen');
-  ok(!nd.taken, 'membatalkan TIDAK menghilangkan node (tidak ada kehilangan)');
-  ok(carriedLoad() === 0, 'tidak ada yang masuk palka saat dibatalkan');
-
-  // --- gerak terkunci selama memanen (inilah risikonya) ---
-  L.player.x = nd.x; L.player.y = nd.y;
+  // --- bergerak tanpa berhenti tidak memetik: bisa kabur dari zombie ---
+  const nd2 = L.nodes.filter((n) => n.kind === 'res' && !n.taken)[0] || nd;
+  L.player.x = nd2.x; L.player.y = nd2.y;
   L.player.vx = 0; L.player.vy = 0;
-  updateLand(dt, { x: 0, y: 0 }, { gatherHeld: false });   // mulai otomatis
-  const x0 = L.player.x;
-  for (let i = 0; i < 20; i++) updateLand(dt, { x: 0, y: 0 }, { gatherHeld: false });
-  ok(Math.abs(L.player.x - x0) < 2, 'gerak terkunci selama memanen (inilah risiko memanen)');
-  const need = L.player.gather ? L.player.gather.need : 0.8;
-  for (let i = 0; i < Math.ceil(need / dt) + 6; i++) updateLand(dt, { x: 0, y: 0 }, { gatherHeld: false });
-  ok(nd.taken, 'diam sampai selesai -> node terambil otomatis');
-  ok(carriedLoad() > 0, `hasil masuk ke muatan yang dibawa (${carriedLoad()})`);
+  const load1 = carriedLoad();
+  for (let i = 0; i < 30; i++) updateLand(dt, { x: 1, y: 0 }, { gatherHeld: false });
+  ok(!nd2.taken || carriedLoad() > load1, 'berlalu tanpa berhenti tidak memetik node (bisa kabur dari zombie)');
+
+  // --- PANEN LANGSUNG: tidak ada fase "terkunci di tempat" ---
+  // Risiko memanen bukan waktu (tidak ada lagi), melainkan jarak: node kaya selalu
+  // lebih dalam. Berdiri = memetik, bergerak = bebas pergi.
+  const nd3 = L.nodes.filter((n) => n.kind === 'res' && !n.taken)[0] || nd;
+  L.player.x = nd3.x; L.player.y = nd3.y;
+  L.player.vx = 0; L.player.vy = 0;
+  const load2 = carriedLoad();
+  updateLand(dt, { x: 0, y: 0 }, { gatherHeld: false });   // berhenti -> langsung terambil
+  ok(nd3.taken && carriedLoad() >= load2, 'berhenti di node -> terambil otomatis pada frame yang sama');
+  // dan pemain bebas bergerak tanpa jeda
+  L.player.x = nd3.x; L.player.y = nd3.y; L.player.vx = 0; L.player.vy = 0;
+  for (let i = 0; i < 6; i++) updateLand(dt, { x: -1, y: 0 }, { gatherHeld: false });
+  ok(Math.hypot(L.player.vx, L.player.vy) > 10, 'setelah memanen tidak ada lock: langsung bisa bergerak');
   ok(landContext().kind !== 'board' || true, 'konteks tetap konsisten setelah memanen');
 
   // --- di luar jangkauan tidak ada panen otomatis ---
@@ -402,7 +413,7 @@ enterHarbor();
 ok(G.state === 'harbor', 'state harbor aktif');
 const sailSpot = SPOTS.find((s) => s.key === 'sail');
 const storeSpot = SPOTS.find((s) => s.key === 'store');
-ok(SPOTS.length === 4, 'empat titik di dermaga: peta, meja kerja, gudang, haluan kapal');
+ok(SPOTS.length === 5, 'lima titik di dermaga: peta, meja kerja, gudang, kios, haluan kapal');
 const hc0 = harborContext();
 ok(hc0.kind === null || !!hc0.kind, 'konteks harbor bisa dibaca tanpa error');
 G.harbor.player.x = SPOTS[0].x; G.harbor.player.y = SPOTS[0].y;

@@ -244,6 +244,9 @@ function nearestNode(p) {
   const L = G.land;
   let best = null, bd = P.GATHER_NEAR + 14;
   for (const nd of L.nodes) {
+    // Lembar jurnal (kind 'note') diambil dengan DIINJAK, bukan dipanen —
+    // kalau lolos ke completeGather() ia tidak punya .type dan crash di sana.
+    if (nd.kind === 'note') continue;
     if (nd.taken || (nd.cool | 0) > 0) continue;
     const d = dist(nd.x, nd.y, p.x, p.y);
     if (d < bd) { bd = d; best = nd; }

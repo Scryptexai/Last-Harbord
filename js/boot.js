@@ -220,6 +220,10 @@ function wirePopovers() {
   const b1 = $('btn-menu-howto'); const b2 = $('btn-menu-settings'); const b3 = $('btn-menu-journal');
   if (b1) b1.addEventListener('click', () => { close('menu-settings'); open('menu-howto'); });
   if (b2) b2.addEventListener('click', () => { close('menu-howto'); open('menu-settings'); paintPrefs(); });
+  // Pintu ke game kedua di repo ini (Last Asylum: Plague) — progresnya
+  // terpisah total dari Driftholm (localStorage key sendiri).
+  const ba = $('btn-menu-asylum');
+  if (ba) ba.addEventListener('click', () => { try { location.href = 'asylum.html'; } catch (e) {} });
   if (b3) b3.addEventListener('click', () => {
     close('menu-howto'); close('menu-settings');
     const m = $('modal-journal');

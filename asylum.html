@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f15">
+<title>Last Asylum: Plague</title>
+<meta name="description" content="Last Asylum: Plague — arcade idle tycoon wabah. Tangani pasien, panen herbal, bangun bangsal baru.">
+<link rel="stylesheet" href="css/asylum.css">
+</head>
+<body class="as-body">
+<canvas id="as-game"></canvas>
+
+<!-- ============ HUD (spec §4: portrait 9:16, mobile-first) ============ -->
+<div id="as-ui">
+
+  <!-- §4.1.1 — top resource dashboard: statis, selalu terbaca -->
+  <div id="as-top">
+    <div class="as-card" id="as-res" role="status" aria-label="Sumber daya">
+      <span class="as-chip" title="Gandum (makanan pasien)">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#e0b95a" stroke-width="2" stroke-linecap="round"><path d="M12 21V6M12 6l-4 4M12 6l4 4M12 11l-4 4M12 11l4 4"/></svg>
+        <b id="as-wheat">0</b>
+      </span>
+      <span class="as-chip" title="Daun Herbal (obat)">
+        <svg viewBox="0 0 24 24" width="15" height="15"><path d="M12 21c0-7 2-11 8-14-1 8-3 12-8 14z" fill="#7cb45e"/><path d="M12 21c0-5-1.6-8-6-10 .8 6 2.4 8.6 6 10z" fill="#5f8a4a"/></svg>
+        <b id="as-herb">0</b>
+      </span>
+      <span class="as-chip" title="Kayu (bangunan)">
+        <svg viewBox="0 0 24 24" width="15" height="15"><ellipse cx="12" cy="12" rx="8.5" ry="5" fill="#a06a35"/><ellipse cx="18" cy="13" rx="2.4" ry="3.8" fill="#c8913f"/></svg>
+        <b id="as-wood">0</b>
+      </span>
+      <span class="as-chip as-coin" title="Koin">
+        <svg viewBox="0 0 24 24" width="15" height="15"><circle cx="12" cy="12" r="8.5" fill="#e8c25a" stroke="#8a6a24" stroke-width="1.6"/><path d="M12 8v8M8 12h8" stroke="#8a6a24" stroke-width="2"/></svg>
+        <b id="as-coins">0</b>
+      </span>
+    </div>
+    <div class="as-topbtns">
+      <button id="as-mute" class="as-icon-btn" title="Suara (M)">♪</button>
+      <button id="as-pause" class="as-icon-btn" title="Jeda (P)">❚❚</button>
+    </div>
+  </div>
+
+  <!-- §4.1.2 — quest tracker capsule: tujuan berikutnya + progress bar -->
+  <div id="as-quest" class="as-card as-capsule" role="status">
+    <span id="as-quest-icon" class="as-qicon"></span>
+    <div class="as-quest-body">
+      <div id="as-quest-label">—</div>
+      <div class="as-quest-bar"><div id="as-quest-fill"></div></div>
+    </div>
+    <span id="as-quest-count" class="as-qcount">0/1</span>
+  </div>
+
+  <!-- hint baris (onboarding pelan) -->
+  <div id="as-hint" class="hidden"></div>
+
+  <!-- toast -->
+  <div id="as-toasts"></div>
+
+  <!-- §4.1.4 — dialog box: teks kiri bawah + ilustrasi kanan bawah -->
+  <div id="as-dialog" class="hidden">
+    <div class="as-dialog-text as-card">
+      <p id="as-dialog-line"></p>
+      <span id="as-dialog-tap" class="as-dialog-tap">ketuk untuk lanjut ▸</span>
+    </div>
+    <canvas id="as-portrait" width="112" height="140" aria-label="Ilustrasi dokter wabah"></canvas>
+  </div>
+
+  <!-- bottom: joystick (kiri bawah, satu-satunya kontrol gerak) -->
+  <div id="as-bottom">
+    <div id="joystick"><div id="joy-knob"></div></div>
+    <div class="as-bottom-note">berhenti di dekat sesuatu = berinteraksi</div>
+  </div>
+
+  <!-- pause veil -->
+  <div id="as-pause-veil" class="hidden">
+    <div class="as-pause-card as-card">
+      <h2>JEDA</h2>
+      <p class="as-muted">Pasien masih menunggu di gerbang.<br>Wabah tidak beristirahat.</p>
+      <button id="as-resume" class="as-btn as-btn-primary">LANJUT</button>
+      <button id="as-veil-home" class="as-btn">KE DERMAGA (DRIFTHOLM)</button>
+    </div>
+  </div>
+
+</div>
+
+<noscript><div class="as-noscript">Last Asylum: Plague butuh JavaScript.</div></noscript>
+<script type="module" src="js/asylum/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,331 @@
+/* ============================================================
+   Last Asylum: Plague — HUD (portrait 9:16, mobile first)
+   Palet: dark stylized low-poly medieval plague.
+   ============================================================ */
+
+.as-body, .as-body * { box-sizing: border-box; margin: 0; padding: 0; }
+.as-body {
+  background: #0b0f15;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  overflow: hidden;
+  height: 100vh;
+  height: 100dvh;
+  color: #d8d2c4;
+  -webkit-user-select: none; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+#as-game {
+  position: fixed; inset: 0;
+  display: block;
+  touch-action: none;
+}
+.hidden { display: none !important; }
+.as-muted { color: #8b93a1; font-size: 12px; line-height: 1.6; }
+
+/* ---------- HUD root ---------- */
+#as-ui {
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ---------- top dashboard (spec §4.1.1) ---------- */
+#as-top {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: max(8px, env(safe-area-inset-top)) 10px 0;
+  gap: 8px;
+}
+.as-card {
+  background: rgba(9, 13, 19, 0.82);
+  border: 1px solid rgba(216, 170, 90, 0.16);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+}
+#as-res {
+  display: flex;
+  gap: 4px;
+  padding: 6px 8px;
+  pointer-events: auto;
+}
+.as-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  min-width: 44px;
+  justify-content: center;
+}
+.as-chip svg { flex: none; filter: drop-shadow(0 1px 1px rgba(0,0,0,.6)); }
+.as-chip b {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  color: #ece6d8;
+}
+.as-chip.as-coin { background: rgba(232, 194, 90, 0.10); border: 1px solid rgba(232, 194, 90, 0.25); }
+.as-chip.as-coin b { color: #ffd98a; }
+
+.as-topbtns { display: flex; gap: 6px; pointer-events: auto; }
+.as-icon-btn {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: rgba(9, 13, 19, 0.82);
+  border: 1px solid rgba(216, 170, 90, 0.16);
+  color: #9aa3b0;
+  font-size: 15px;
+  cursor: pointer;
+  display: grid; place-items: center;
+}
+.as-icon-btn:active { transform: scale(0.94); }
+
+/* ---------- quest capsule (spec §4.1.2) ---------- */
+#as-quest {
+  position: absolute;
+  top: calc(max(8px, env(safe-area-inset-top)) + 58px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(330px, 86vw);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 12px;
+  pointer-events: none;
+}
+.as-qicon {
+  color: #d8aa5a;
+  display: grid; place-items: center;
+  width: 26px; height: 26px;
+  flex: none;
+  background: rgba(216, 170, 90, 0.12);
+  border-radius: 8px;
+}
+.as-quest-body { flex: 1; min-width: 0; }
+#as-quest-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #ece6d8;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  letter-spacing: 0.01em;
+}
+.as-quest-bar {
+  margin-top: 4px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.09);
+  overflow: hidden;
+}
+#as-quest-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #d8aa5a, #ffd98a);
+  transition: width 0.25s ease;
+}
+.as-qcount {
+  font-size: 11px;
+  font-weight: 800;
+  color: #9aa3b0;
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+/* ---------- hint ---------- */
+#as-hint {
+  position: absolute;
+  bottom: 148px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(340px, 88vw);
+  text-align: center;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #d8d2c4;
+  background: rgba(9, 13, 19, 0.8);
+  border: 1px solid rgba(216, 170, 90, 0.14);
+  padding: 7px 12px;
+  border-radius: 10px;
+  line-height: 1.45;
+  pointer-events: none;
+  animation: as-hint-in 0.3s ease;
+}
+@keyframes as-hint-in { from { opacity: 0; transform: translate(-50%, 6px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* ---------- toast ---------- */
+#as-toasts {
+  position: absolute;
+  top: calc(max(8px, env(safe-area-inset-top)) + 118px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  width: min(340px, 88vw);
+  pointer-events: none;
+}
+.as-toast {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #ece6d8;
+  background: rgba(12, 17, 24, 0.9);
+  border: 1px solid rgba(255, 217, 138, 0.28);
+  padding: 7px 14px;
+  border-radius: 999px;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  box-shadow: 0 3px 12px rgba(0,0,0,.5);
+}
+.as-toast.show { opacity: 1; transform: translateY(0); }
+
+/* ---------- dialog box (spec §4.1.4) ---------- */
+#as-dialog {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 12px;
+  padding-bottom: max(126px, calc(env(safe-area-inset-bottom) + 110px));
+  pointer-events: none;
+}
+.as-dialog-text {
+  flex: 1;
+  min-width: 0;
+  padding: 14px 16px;
+  max-height: 46vh;
+  overflow-y: auto;
+  pointer-events: auto;
+}
+.as-dialog-text p {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.55;
+  color: #ece6d8;
+  letter-spacing: 0.01em;
+}
+.as-dialog-tap {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #d8aa5a;
+  animation: as-tap-pulse 1.6s ease-in-out infinite;
+}
+@keyframes as-tap-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+#as-portrait {
+  flex: none;
+  width: 112px;
+  height: 140px;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.6);
+}
+
+/* ---------- bottom: joystick (konvensi repo) ---------- */
+#as-bottom {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 14px;
+  padding-bottom: max(14px, env(safe-area-inset-bottom));
+  pointer-events: none;
+}
+.as-bottom-note {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(154, 163, 176, 0.55);
+  padding-bottom: 14px;
+}
+#joystick {
+  pointer-events: auto;
+  position: relative;
+  width: 116px; height: 116px;
+  border-radius: 50%;
+  background: rgba(8, 16, 26, 0.4);
+  border: 1px solid rgba(216, 170, 90, 0.22);
+  touch-action: none;
+}
+#joy-knob {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 50px; height: 50px;
+  border-radius: 50%;
+  margin: -25px 0 0 -25px;
+  background: rgba(216, 170, 90, 0.18);
+  border: 1px solid rgba(216, 170, 90, 0.4);
+  box-shadow: 0 2px 8px rgba(0,0,0,.4);
+}
+
+/* ---------- pause veil ---------- */
+#as-pause-veil {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 7, 12, 0.72);
+  backdrop-filter: blur(3px);
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+  z-index: 20;
+}
+.as-pause-card {
+  padding: 26px 30px;
+  text-align: center;
+  width: min(320px, 84vw);
+}
+.as-pause-card h2 {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+  color: #ece6d8;
+  margin-bottom: 8px;
+}
+.as-pause-card .as-muted { margin-bottom: 18px; }
+.as-btn {
+  display: block;
+  width: 100%;
+  padding: 13px;
+  margin-top: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(216, 170, 90, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+  color: #d8d2c4;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+.as-btn:active { transform: scale(0.98); }
+.as-btn-primary {
+  background: linear-gradient(180deg, #e8c25a, #c99a3d);
+  border-color: #8a6a24;
+  color: #241a08;
+}
+
+.as-noscript {
+  position: fixed; inset: 0;
+  display: grid; place-items: center;
+  color: #d8d2c4;
+  font-size: 15px;
+}
+
+/* desktop: joystick tetap kiri bawah, dunia di tengah */
+@media (min-width: 900px) {
+  #as-quest { width: 360px; }
+}

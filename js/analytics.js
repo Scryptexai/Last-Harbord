@@ -70,6 +70,10 @@ export function summary() {
 
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', flush);
-  setInterval(flush, 8000);
+  // unref: timer flush berkala tidak boleh MENAHAN proses tetap hidup.
+  // Di browser setInterval() mengembalikan angka (tanpa unref) — `?.` aman;
+  // di Node (test headless) ini membiarkan proses keluar setelah test selesai.
+  const flushTimer = setInterval(flush, 8000);
+  if (flushTimer && typeof flushTimer.unref === 'function') flushTimer.unref();
   window.__analytics = summary;   // hook dev / test
 }

@@ -30,6 +30,11 @@ function mkEl(tag = 'div') {
     remove() { if (el.parent) el.parent.removeChild(el); },
     addEventListener(t, fn) { (el._h[t] = el._h[t] || []).push(fn); },
     removeEventListener() {},
+    // DOM API minimal untuk jalur headless ui.js (chart-list memakai
+    // querySelectorAll untuk mengikat handler click — aman dikembalikan kosong).
+    querySelectorAll: () => [],
+    querySelector: () => null,
+    closest: () => null,
     dispatch(t, ev = {}) { (el._h[t] || []).forEach((fn) => fn({ preventDefault() {}, stopPropagation() {}, type: t, ...ev })); },
     getBoundingClientRect: () => ({ left: 0, top: 0, width: 800, height: 600 }),
     setPointerCapture() {}, focus() {},
@@ -187,12 +192,23 @@ step(120);                                        // diam 2 detik -> panen otoma
 ok(carriedLoad() > before, `mendekat otomatis memanen (${before} -> ${carriedLoad()} unit)`);
 ok(node.taken, 'node habis setelah dipanen otomatis');
 
-// berjalan MELEWATI node tidak memanen: harus berhenti dulu
+// berjalan MELEWATI node tidak memanen: harus berhenti dulu.
+// Catatan desain (PANEN LANGSUNG): berhenti = langsung memetik, jadi "melewati"
+// berarti tetap bergerak melewati radius auto-collect (48px) tanpa jeda, dan
+// berhenti di titik yang bersih dari node lain (radius aman 60px).
 const node2 = L.nodes.find((n) => n.kind === 'res' && !n.taken);
 const before2 = carriedLoad();
+let stopX = null;
+for (let x = node2.x + 56; x < node2.x + 320; x += 6) {
+  const clean = L.nodes.every((n) => n.kind !== 'res' || n.taken || Math.hypot(n.x - x, n.y - node2.y) > 60);
+  if (clean) { stopX = x; break; }
+}
+ok(stopX !== null, 'ada titik berhenti yang bersih dari node lain');
 L.player.x = node2.x - 60; L.player.y = node2.y;
-keyDown('d'); step(30); keyUp('d'); step(1);      // berjalan terus, tidak berhenti di node
-ok(carriedLoad() === before2, 'berjalan melewati node tidak memanen (harus berhenti sejenak)');
+keyDown('d');
+for (let i = 0; i < 400 && L.player.x < stopX; i++) step(1);   // jalan terus melewati node2
+keyUp('d'); step(1);
+ok(!node2.taken && carriedLoad() === before2, 'berjalan melewati node tidak memanen (harus berhenti sejenak)');
 
 // serangan tidak boleh melempar error walau tidak ada target
 keyDown(' '); step(20); keyUp(' ');
@@ -346,4 +362,6 @@ console.log('\n== 10. Muatan tidak disimpan di localStorage ==');
 }
 
 console.log(`\nHasil: ${pass} pass, ${fail} fail`);
-if (fail > 0) process.exit(1);
+// Exit eksplisit di kedua arah: kalau semua lulus, tanpa exit eksplisit proses
+// bisa ditahan handle tersisa (mis. timer flush analytics) — suite "gantung".
+process.exit(fail > 0 ? 1 : 0);
