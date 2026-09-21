@@ -543,12 +543,16 @@ function updateZombies(dt, L) {
     const d = Math.hypot(dx, dy) || 1;
     z.alertT = Math.max(0, (z.alertT || 0) - dt);
     z.callCd = Math.max(0, (z.callCd || 0) - dt);
+    z.spotAlert = Math.max(0, (z.spotAlert || 0) - dt);
     const alertMul = z.alertT > 0 ? CFG.PACK.AGGRO_MUL : 1;
     const aggro = z.aggro * (gathering ? 1.35 : 1) * alertMul;
     const wasChasing = z.chasing;
 
     if (d < aggro) {
       z.chasing = true;
+      if (!wasChasing) {
+        z.spotAlert = 1.2;
+      }
       if (z.groanCd <= 0) {
         z.groanCd = 4 + Math.random() * 7;
         // atenuasi jarak: dekat = menggelegar, jauh = samar — suara punya ruang
@@ -612,11 +616,13 @@ function packRadius(L) {
 
 function callPack(L, caller) {
   const R = packRadius(L);
+  caller.spotAlert = 1.4;
   let woke = 0;
   for (const o of L.zombies) {
     if (o === caller || o.alertT > 1.5) continue;
     if (dist(o.x, o.y, caller.x, caller.y) > R) continue;
     o.alertT = CFG.PACK.ALERT_T;
+    o.spotAlert = 1.4;
     woke++;
   }
   if (woke > 0) {
@@ -1459,6 +1465,25 @@ function drawZombie(ctx, L, z) {
   }
 
   if (revealed) {
+    if (z.spotAlert > 0) {
+      const bounce = Math.sin(Math.min(1, (1.2 - z.spotAlert) * 6) * Math.PI) * 4;
+      const ay = -z.radius * 2.8 - bounce;
+      ctx.save();
+      ctx.fillStyle = '#e0554a';
+      ctx.beginPath();
+      ctx.arc(0, ay, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 10px Inter, system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('!', 0, ay + 0.5);
+      ctx.restore();
+    }
+
     // HP bar hanya untuk yang benar-benar ganas (raksasa) — sampah tidak perlu bar
     if (z.type === 'tank' || z.hp < z.maxHp) {
       const bw = 26;
@@ -1580,9 +1605,25 @@ function drawPlayer(ctx, L) {
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.rotate(p.face);
-    ctx.strokeStyle = `rgba(255,238,170,${0.35 + k * 0.6})`;
-    ctx.lineWidth = 5 - k * 2;
-    ctx.beginPath(); ctx.arc(0, 0, CFG.PLAYER.ATTACK_RANGE * 0.62, -spread, spread); ctx.stroke();
+    if (a.phase === 'windup') {
+      ctx.strokeStyle = `rgba(255,215,110,${0.25 + k * 0.45})`;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(0, 0, CFG.PLAYER.ATTACK_RANGE * 0.62, -spread, spread); ctx.stroke();
+    } else {
+      const r = CFG.PLAYER.ATTACK_RANGE * 0.62;
+      // 1. outer glow
+      ctx.strokeStyle = `rgba(255,200,90,${0.35 * (1 - k * 0.3)})`;
+      ctx.lineWidth = 7;
+      ctx.beginPath(); ctx.arc(0, 0, r, -spread, spread); ctx.stroke();
+      // 2. core blade arc (terang putih-emas)
+      ctx.strokeStyle = `rgba(255,255,230,${0.9 - k * 0.3})`;
+      ctx.lineWidth = 3.5;
+      ctx.beginPath(); ctx.arc(0, 0, r, -spread, spread); ctx.stroke();
+      // 3. aksen bilah ungu (warna bilah dayung)
+      ctx.strokeStyle = `rgba(200,110,255,${0.75 - k * 0.4})`;
+      ctx.lineWidth = 1.8;
+      ctx.beginPath(); ctx.arc(0, 0, r + 2, -spread * 0.75, spread * 0.75); ctx.stroke();
+    }
     ctx.restore();
   }
 }

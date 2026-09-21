@@ -15,6 +15,7 @@ export function makeZombie(type, x, y) {
     hitFlash: 0,
     chasing: false,
     alertT: 0,     // sedang terbangun oleh teriakan kawanan
+    spotAlert: 0,  // durasi animasi tanda seru (!) saat mendeteksi pemain
     callCd: 0,     // jeda sebelum boleh memanggil lagi
     face: Math.random() * Math.PI * 2,
     walkT: Math.random() * 6.28,   // fase langkah (animasi)

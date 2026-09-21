@@ -1,3 +1,6 @@
 # scratch render/screenshot harnesses (dev only, not part of the game)
 .shots/
 node_modules/
+image-search/
+analysis_frames/
+
