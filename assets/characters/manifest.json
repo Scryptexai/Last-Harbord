@@ -1,36 +1,4 @@
 {
-  "player": {
-    "front": [
-      "assets/characters/player_front_0.png",
-      "assets/characters/player_front_1.png",
-      "assets/characters/player_front_2.png",
-      "assets/characters/player_front_3.png"
-    ],
-    "back": [
-      "assets/characters/player_back_0.png",
-      "assets/characters/player_back_1.png",
-      "assets/characters/player_back_2.png",
-      "assets/characters/player_back_3.png"
-    ],
-    "side": [
-      "assets/characters/player_side_0.png",
-      "assets/characters/player_side_1.png",
-      "assets/characters/player_side_2.png",
-      "assets/characters/player_side_3.png"
-    ],
-    "ne": [
-      "assets/characters/player_ne_0.png",
-      "assets/characters/player_ne_1.png",
-      "assets/characters/player_ne_2.png",
-      "assets/characters/player_ne_3.png"
-    ],
-    "se": [
-      "assets/characters/player_se_0.png",
-      "assets/characters/player_se_1.png",
-      "assets/characters/player_se_2.png",
-      "assets/characters/player_se_3.png"
-    ]
-  },
   "zombie_slow": {
     "front": [
       "assets/characters/zombie_slow_front_0.png",

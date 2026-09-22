@@ -4,15 +4,15 @@ export const ASSETS = {};
 // Karakter arah + animasi (diproduksi dari strip 5 arah × 3 frame). Frame 0 = diam,
 // frame 1..n = siklus langkah. 'side' menghadap kanan (di-cermin untuk kiri);
 // 'ne'/'se' diagonal, di-cermin untuk NW/SW.
-const SHEET_SPEC = { player: 3, zombie_slow: 3, zombie_fast: 3, zombie_tank: 3 };
+const SHEET_SPEC = { zombie_slow: 3, zombie_fast: 3, zombie_tank: 3 };
 const SHEET_DIRS = ['front', 'back', 'side', 'ne', 'se'];
 
 const ASSET_PATHS = {
-  // Characters & Entities
+  // Characters & Entities (Pemain kini beralih ke 3D GLB model)
+  character_glb: 'character_glb_idle_box_03_run_walk_7.glb',
   boat_lv1: 'assets/characters/boat_lv1.png',
   boat_lv2: 'assets/characters/boat_lv2.png',
   boat_lv3: 'assets/characters/boat_lv3.png',
-  player: 'assets/characters/player.png',
   npc_keeper: 'assets/characters/npc_keeper.png',
   zombie_slow: 'assets/characters/zombie_slow.png',
   zombie_fast: 'assets/characters/zombie_fast.png',
@@ -46,11 +46,9 @@ const ASSET_PATHS = {
   food: 'assets/resources/food.png',
   medicine: 'assets/resources/medicine.png',
 
-  // Art peta perkamen + dekor + pose serangan karakter
+  // Art peta perkamen + dekor
   bg_parchment: 'assets/ui/bg_parchment.png',
   compass: 'assets/ui/compass.png',
-  player_atk_0: 'assets/characters/player_atk_0.png',
-  player_atk_1: 'assets/characters/player_atk_1.png',
 
   // UI Icons
   icon_sail: 'assets/ui/icon_sail.png',

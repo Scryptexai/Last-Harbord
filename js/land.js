@@ -19,6 +19,7 @@ import { bumpKill } from './stats.js';
 import { blobPath, markTaken, survey, islandRemaining, drawOceanBackground, drawHorizon } from './world.js';
 import { ASSETS } from './assets.js';
 import { sheetFrame, drawCharSprite } from './sheets.js';
+import { drawCharacter3D, updateCharacter3D } from './character3d.js';
 import { consumeReinforce, tideTint, tideDanger, tidePhase } from './tide.js';
 import { beginWorld, endWorld, upright, atUpright, byDepth } from './camera.js';
 import { drawBoat, drawLanternPool } from './boat.js';
@@ -347,6 +348,7 @@ export function updateLand(dt, move, opts = {}) {
   p.invuln = Math.max(0, p.invuln - dt);
   p.gatherFade = Math.max(0, p.gatherFade - dt * 2);
   updateAttack(dt, move);
+  updateCharacter3D(dt, p);
 
   // jeda node yang gagal dipanen (palka penuh)
   for (const nd of L.nodes) if ((nd.cool | 0) > 0) nd.cool -= dt;
@@ -1560,40 +1562,8 @@ function drawPlayer(ctx, L) {
 
   atUpright(ctx, p.x, p.y, () => {
     if (p.invuln > 0 && Math.floor(G.time * 20) % 2 === 0) ctx.globalAlpha = 0.5;
-    const sz = 72;
-
-    // ---- animasi: badan hidup + arah hadap + siklus langkah ----
-    const an = playerAnim(p);
-    const moving = p.moveIntent;   // intent input: berbalik arah tidak melompat ke pose diam
-    const fdx = moving ? p.vx : (p.faceDirX || 0);
-    const fdy = moving ? p.vy : (p.faceDirY || -1);
-    const fr = sheetFrame('player', fdx, fdy, p.walkT, moving, p.faceIdx);
-    if (fr) p.faceIdx = fr.idx;
-    const flip = fr ? fr.flip : (Math.cos(p.face) < 0 ? -1 : 1);
-
-    // POSE SERANGAN: saat windup/active, karakter berganti ke frame ayunan dayung —
-    // bukan lagi cuma busur garis. Arah kiri dicerminkan dari profil kanan.
-    const atkImg = p.atk.phase === 'windup' ? ASSETS.player_atk_0
-      : p.atk.phase === 'active' || p.atk.phase === 'recover' ? ASSETS.player_atk_1 : null;
-    const atkOk = atkImg && atkImg.complete && atkImg.naturalWidth > 0;
-
-    ctx.scale(flip, 1);
-    ctx.translate(an.lunge, an.bob);
-    ctx.rotate(an.lean);
-    ctx.scale(an.sqX, an.sqY);
-
-    if (atkOk) {
-      drawCharSprite(ctx, atkImg, sz * 1.12);
-    } else if (fr && fr.img && fr.img.complete && fr.img.naturalWidth > 0) {
-      drawCharSprite(ctx, fr.img, sz);
-    } else if (img && img.complete && img.naturalWidth > 0) {
-      drawCharSprite(ctx, img, sz);
-    } else {
-      ctx.fillStyle = '#e67e22';
-      ctx.beginPath(); ctx.ellipse(0, -15, 12, 16, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#f0c39a';
-      ctx.beginPath(); ctx.arc(0, -27, 7, 0, Math.PI * 2); ctx.fill();
-    }
+    const sz = 74;
+    drawCharacter3D(ctx, p, sz);
     ctx.globalAlpha = 1;
   });
 

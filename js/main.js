@@ -15,6 +15,7 @@ import { bumpDeath, nightDone } from './stats.js';
 import { addNote } from './notes.js';
 import { markRun, markDawn, markDeath, trackPlay, flush, markShopOpen } from './analytics.js';
 import { loadAssets, ASSETS } from './assets.js';
+import { initCharacter3D } from './character3d.js';
 import { sfx, haptic, initAudio, setAmbience, tickAmbience, updateMusic, setMuted } from './audio.js';
 import { fx, updateFx, timeScale, shakeOffset, drawFxScreen, resetFx, addFlash, addShake, ring, flushGulls, returnGulls } from './fx.js';
 import { clamp, dist, lerp, fmtTime } from './util.js';
@@ -633,6 +634,7 @@ if (typeof window !== 'undefined') {
 async function boot() {
   resize();
   await loadAssets();
+  initCharacter3D();
   resetTide();                 // default; loadGame() boleh menimpa jam malam ini
   const loaded = loadGame();
   if (!G.worldSeed) G.worldSeed = (Math.random() * 1e9) >>> 0;

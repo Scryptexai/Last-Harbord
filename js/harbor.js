@@ -8,6 +8,7 @@ import { clamp, dist, makeRng } from './util.js';
 import { capacity, nextRung, goalLabel, isMaxed } from './refit.js';
 import { ASSETS } from './assets.js';
 import { sheetFrame, drawCharSprite } from './sheets.js';
+import { drawCharacter3D, updateCharacter3D } from './character3d.js';
 import { sfx } from './audio.js';
 import { snapshot } from './stats.js';
 import { burst } from './fx.js';
@@ -92,6 +93,7 @@ export function updateHarbor(dt, move, ctxBusy) {
   p.walkAmp = clamp(p.walkAmp + ((Math.hypot(p.vx, p.vy) > 0.01 ? 1 : 0) - p.walkAmp) * Math.min(1, dt * 7), 0, 1);
   p.walkT += Math.hypot(p.vx, p.vy) * dt * 0.055;
   clampToWalkable(p);
+  updateCharacter3D(dt, p);
 }
 
 function clampToWalkable(p) {
@@ -664,28 +666,10 @@ function drawCargo(ctx) {
 }
 
 function drawPlayer(ctx, p) {
-  const img = ASSETS.player;
   // bayangan rata di dek
-  ctx.fillStyle = 'rgba(0,0,0,0.3)';
-  ctx.beginPath(); ctx.ellipse(p.x, p.y + 3, 11, 4.5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.32)';
+  ctx.beginPath(); ctx.ellipse(p.x, p.y + 3, 12, 5, 0, 0, Math.PI * 2); ctx.fill();
   atUpright(ctx, p.x, p.y, () => {
-    // arah hadap + siklus langkah dari sheet; napas halus saat diam
-    const mv = p.moveIntent;
-    const fdx = mv ? p.vx : (p.faceDirX || 0);
-    const fdy = mv ? p.vy : (p.faceDirY || -1);
-    const fr = sheetFrame('player', fdx, fdy, p.walkT, mv, p.faceIdx);
-    if (fr) p.faceIdx = fr.idx;
-    const flip = fr ? fr.flip : (Math.cos(p.face) < 0 ? -1 : 1);
-    const bob = Math.sin(G.time * 2.4) * (mv ? 0 : 1.4);
-    ctx.scale(flip, 1);
-    ctx.translate(0, bob);
-    if (fr && fr.img && fr.img.complete && fr.img.naturalWidth > 0) {
-      drawCharSprite(ctx, fr.img, 64);
-    } else if (img && img.complete && img.naturalWidth > 0) {
-      drawCharSprite(ctx, img, 64);
-    } else {
-      ctx.fillStyle = '#e67e22';
-      ctx.beginPath(); ctx.ellipse(0, -14, 11, 15, 0, 0, Math.PI * 2); ctx.fill();
-    }
+    drawCharacter3D(ctx, p, 70);
   });
 }
