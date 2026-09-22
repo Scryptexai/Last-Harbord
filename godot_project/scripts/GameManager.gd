@@ -3,11 +3,7 @@ extends Node
 # ==============================================================================
 # Last Harbor - GameManager (Godot 4 Singleton)
 # Mengelola siklus permainan, ekonomi kargo kapal, status Pulau Suaka,
-<<<<<<< HEAD
 # dan progresi ekspedisi kepulauan zombie.
-=======
-# dan progresi ekspedisi pulau zombie.
->>>>>>> d86a06ef6fccb232b9a4bc382d6f451c571063d5
 # ==============================================================================
 
 signal cargo_changed
@@ -52,11 +48,7 @@ var colony: Dictionary = {
 var islands_data: Array = [
 	{
 		"id": 1,
-<<<<<<< HEAD
 		"name": "Pulau Karang (Shallows)",
-=======
-		"name": "Pulau Karang",
->>>>>>> d86a06ef6fccb232b9a4bc382d6f451c571063d5
 		"ring": 1,
 		"threat_level": 1,
 		"zombie_types": ["scavenger"],
@@ -66,11 +58,7 @@ var islands_data: Array = [
 	},
 	{
 		"id": 2,
-<<<<<<< HEAD
 		"name": "Kepulauan Karam (Sunken Ruins)",
-=======
-		"name": "Pulau Tengkorak",
->>>>>>> d86a06ef6fccb232b9a4bc382d6f451c571063d5
 		"ring": 2,
 		"threat_level": 2,
 		"zombie_types": ["armored_brute", "stalker_runner"],
@@ -80,11 +68,7 @@ var islands_data: Array = [
 	},
 	{
 		"id": 3,
-<<<<<<< HEAD
 		"name": "Karang Maut (Blood Reef)",
-=======
-		"name": "Pulau Api & Reruntuhan",
->>>>>>> d86a06ef6fccb232b9a4bc382d6f451c571063d5
 		"ring": 3,
 		"threat_level": 3,
 		"zombie_types": ["night_terror", "toxic_spitter"],
