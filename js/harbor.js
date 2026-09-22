@@ -158,54 +158,12 @@ export function drawHarbor(ctx, vw, vh) {
 
   ctx.restore();
 
-  // Overlay HUD info pemukiman Pulau Suaka
-  drawColonyHeader(ctx, vw, vh);
-
   // vignette: gelap di tepi layar
   const vg = ctx.createRadialGradient(vw / 2, vh / 2, Math.min(vw, vh) * 0.34, vw / 2, vh / 2, Math.max(vw, vh) * 0.7);
   vg.addColorStop(0, 'rgba(0,0,0,0)');
   vg.addColorStop(1, 'rgba(0,0,0,0.55)');
   ctx.fillStyle = vg;
   ctx.fillRect(0, 0, vw, vh);
-}
-
-// Banner HUD status Pulau Suaka: Menampilkan tanggung jawab pemain terhadap korban selamat
-function drawColonyHeader(ctx, vw, vh) {
-  const food = G.banked.food || 0;
-  const med = G.banked.medicine || 0;
-  const fuel = G.banked.fuel || 0;
-  const wood = G.banked.wood || 0;
-
-  ctx.save();
-  ctx.fillStyle = 'rgba(6, 12, 18, 0.82)';
-  ctx.strokeStyle = 'rgba(216, 170, 90, 0.45)';
-  ctx.lineWidth = 1;
-  const bw = Math.min(620, vw - 32);
-  const bx = (vw - bw) / 2;
-  const by = 14;
-
-  ctx.beginPath();
-  const rr = 6;
-  ctx.moveTo(bx + rr, by);
-  ctx.arcTo(bx + bw, by, bx + bw, by + 34, rr);
-  ctx.arcTo(bx + bw, by + 34, bx, by + 34, rr);
-  ctx.arcTo(bx, by + 34, bx, by, rr);
-  ctx.arcTo(bx, by, bx + bw, by, rr);
-  ctx.closePath();
-  ctx.fill();
-  ctx.stroke();
-
-  ctx.font = '600 11px Inter, system-ui, sans-serif';
-  ctx.fillStyle = '#f3ba46';
-  ctx.textAlign = 'left';
-  ctx.fillText('🏝️ PULAU SUAKA (ZONA AMAN)', bx + 14, by + 21);
-
-  ctx.textAlign = 'right';
-  ctx.font = '500 10.5px Inter, system-ui, sans-serif';
-  ctx.fillStyle = '#d1d5db';
-  const cap = capacity();
-  ctx.fillText(`👥 6 Jiwa | 🍞 Makan: ${food} | 💊 Obat: ${med} | 🪵 Kayu: ${wood} | ⚓ Palka: ${cap} Unit`, bx + bw - 14, by + 21);
-  ctx.restore();
 }
 
 let lastWaterLine = null;
