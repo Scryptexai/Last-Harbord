@@ -92,10 +92,13 @@ export function initCharacter3D() {
         characterModel.scale.set(1, 1, 1);
 
         characterModel.traverse((child) => {
-          if (child.isMesh && child.material) {
-            child.material.metalness = 0.15;
-            child.material.roughness = 0.82;
-            child.material.depthWrite = true;
+          if (child.isMesh) {
+            child.frustumCulled = false; // Mencegah Three.js culling mesh saat animasi skeletal berjalan
+            if (child.material) {
+              child.material.metalness = 0.15;
+              child.material.roughness = 0.82;
+              child.material.depthWrite = true;
+            }
           }
         });
 
@@ -103,10 +106,36 @@ export function initCharacter3D() {
 
         mixer = new THREE.AnimationMixer(characterModel);
 
-        // Petakan 4 animasi bawaan model
+        // Petakan 4 animasi bawaan model (loop repeat mulus tanpa clamp)
         for (const clip of gltf.animations) {
           const name = (clip.name || '').toLowerCase();
+
+          // Pastikan track hips in-place agar looping tidak jumping / keluar layar
+          if (name.includes('walk') || name.includes('run')) {
+            for (const track of clip.tracks) {
+              if (track.name.toLowerCase().includes('hips.position')) {
+                const len = track.values.length / 3;
+                const tMax = track.times[track.times.length - 1];
+                const baseZ = -0.0134;
+                const baseX = 0.0019;
+                const z0 = track.values[2];
+                const zEnd = track.values[(len - 1) * 3 + 2];
+                const x0 = track.values[0];
+                const xEnd = track.values[(len - 1) * 3 + 0];
+                for (let i = 0; i < len; i++) {
+                  const prog = tMax > 0 ? track.times[i] / tMax : 0;
+                  const linZ = z0 + (zEnd - z0) * prog;
+                  const linX = x0 + (xEnd - x0) * prog;
+                  track.values[i * 3 + 2] = baseZ + (track.values[i * 3 + 2] - linZ);
+                  track.values[i * 3 + 0] = baseX + (track.values[i * 3 + 0] - linX);
+                }
+              }
+            }
+          }
+
           const action = mixer.clipAction(clip);
+          action.setLoop(THREE.LoopRepeat, Infinity);
+          action.clampWhenFinished = false;
           if (name.includes('idle')) actions.idle = action;
           else if (name.includes('box') || name.includes('atk') || name.includes('attack')) actions.attack = action;
           else if (name.includes('run')) actions.run = action;
@@ -167,16 +196,32 @@ export function updateCharacter3D(dt, p) {
     nextKey = 'idle';
   }
 
-  // Cross-fade animasi
+  // Cross-fade animasi secara mulus tanpa memutus loop
   if (nextKey !== currentActionKey) {
     const nextAct = actions[nextKey] || actions.idle;
     if (nextAct && nextAct !== currentAction) {
-      nextAct.reset();
-      nextAct.fadeIn(0.12);
+      nextAct.enabled = true;
+      nextAct.setEffectiveTimeScale(1);
+      nextAct.setEffectiveWeight(1);
+      if (currentAction) {
+        nextAct.crossFadeFrom(currentAction, 0.15, true);
+      }
       nextAct.play();
-      if (currentAction) currentAction.fadeOut(0.12);
       currentAction = nextAct;
       currentActionKey = nextKey;
+    }
+  }
+
+  // Sesuaikan kecepatan putar animasi dengan kecepatan gerak pemain
+  if (currentAction) {
+    if (currentActionKey === 'walk' || currentActionKey === 'run') {
+      const sp = Math.hypot(p.vx || 0, p.vy || 0);
+      const targetScale = currentActionKey === 'run' ? Math.max(0.8, sp / 140) : Math.max(0.6, sp / 85);
+      currentAction.timeScale = targetScale;
+    } else if (currentActionKey === 'attack') {
+      currentAction.timeScale = 1.35;
+    } else {
+      currentAction.timeScale = 1.0;
     }
   }
 
