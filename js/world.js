@@ -651,10 +651,10 @@ export function drawSea(ctx, vw, vh) {
       drawNavPointer(ctx, vw, vh, G.target.x, G.target.y, G.target.name.toUpperCase(), '#8fe3a0',
         Math.round(d / 10) + ' m');
     }
-    if (hd > 400) drawNavPointer(ctx, vw, vh, HARBOR.x, HARBOR.y, 'HARBOR', '#ffcf6a', Math.round(hd / 10) + ' m');
+    if (hd > 400) drawNavPointer(ctx, vw, vh, HARBOR.x, HARBOR.y, 'SUAKA (HAVEN)', '#ffcf6a', Math.round(hd / 10) + ' m');
   }
-  if (hd < 260) {
-    // dermaga terlihat
+  if (hd < 950) {
+    // Pulau Suaka (Haven Island) & dermaga terlihat di laut
     beginWorld(ctx, vw, vh);
     drawHarborMarker(ctx);
     endWorld(ctx);
@@ -670,27 +670,128 @@ export function drawSea(ctx, vw, vh) {
   }
 }
 
-// Dermaga kecil di dunia laut — selalu bisa dilihat saat mendekat.
+// Pulau Suaka (Haven Sanctuary Island) & Dermaga di Dunia Laut:
+// Bukan dermaga terapung di tengah laut kosong, melainkan pulau aman berpenghuni
+// dengan pantai pasir, bukit hijau, tenda pengungsi, api suar, tanggul batu, dan dermaga kayu.
 function drawHarborMarker(ctx) {
   const { x, y } = HARBOR;
-  const s = 1.6;
+  const t = G.time || 0;
   ctx.save();
-  upright(ctx, x, y);            // di dalam save/restore fungsi ini
-  ctx.fillStyle = '#6b4522';
-  ctx.fillRect(-14 * s, -4 * s, 28 * s, 46 * s);
-  ctx.fillStyle = '#8a5c30';
-  for (let i = 0; i < 10; i++) ctx.fillRect(-14 * s, (-4 + i * 5) * s, 28 * s, 1.6 * s);
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  ctx.fillRect(-14 * s, -4 * s, 28 * s, 2);
-  // lentera dermaga
-  const flick = 0.85 + Math.sin(G.time * 6) * 0.1;
-  const g = ctx.createRadialGradient(22 * s, 30 * s, 2, 22 * s, 30 * s, 70 * flick);
-  g.addColorStop(0, 'rgba(255,200,120,0.55)');
-  g.addColorStop(1, 'rgba(255,170,80,0)');
-  ctx.fillStyle = g;
-  ctx.beginPath(); ctx.arc(22 * s, 30 * s, 70 * flick, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#ffd79a';
-  ctx.beginPath(); ctx.arc(22 * s, 30 * s, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.translate(x, y);
+
+  // 1. Zona Air Dangkal & Buih Pantai Pulau Suaka
+  const r = 95;
+  ctx.fillStyle = 'rgba(38,110,135,0.45)';
+  ctx.beginPath();
+  ctx.ellipse(0, 10, r * 1.35, r * 0.95, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Buih ombak pantai yang berayun lembut
+  const wave = Math.sin(t * 2.1) * 3;
+  ctx.strokeStyle = 'rgba(215,240,255,0.4)';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.ellipse(0, 10, (r * 1.25) + wave, (r * 0.88) + wave * 0.7, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // 2. Daratan Pantai Pasir Emas
+  ctx.fillStyle = '#dfcf9a';
+  ctx.beginPath();
+  ctx.ellipse(0, 6, r * 1.15, r * 0.8, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 3. Inti Bukit Rumput Hijau (Zona Aman Pemukiman)
+  ctx.fillStyle = '#367b43';
+  ctx.beginPath();
+  ctx.ellipse(0, -6, r * 0.82, r * 0.58, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Ketinggian bukit bagian dalam
+  ctx.fillStyle = '#2d6838';
+  ctx.beginPath();
+  ctx.ellipse(0, -14, r * 0.55, r * 0.38, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 4. Tanggul Batu Pemecah Ombak (Dam Pelindung Kamp)
+  ctx.fillStyle = '#4c5660';
+  ctx.fillRect(-r * 0.75, 12, r * 1.5, 6);
+  ctx.fillStyle = '#65727d';
+  for (let i = 0; i < 7; i++) {
+    ctx.fillRect(-r * 0.72 + i * 20, 10, 16, 4);
+  }
+
+  // 5. Tenda & Shelter Pengungsi (Apocalypse Haven)
+  const drawTent = (tx, ty, scale = 1) => {
+    ctx.fillStyle = '#c0b498';
+    ctx.beginPath();
+    ctx.moveTo(tx, ty - 12 * scale);
+    ctx.lineTo(tx - 10 * scale, ty + 2 * scale);
+    ctx.lineTo(tx + 10 * scale, ty + 2 * scale);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#3a2c20';
+    ctx.beginPath();
+    ctx.moveTo(tx, ty - 12 * scale);
+    ctx.lineTo(tx, ty + 2 * scale);
+    ctx.lineTo(tx + 4 * scale, ty + 2 * scale);
+    ctx.closePath();
+    ctx.fill();
+  };
+  drawTent(-35, -24, 0.9);
+  drawTent(38, -20, 0.85);
+  drawTent(-18, -36, 0.75);
+
+  // 6. Api Suar & Menara Pengawas Suaka (Beacon & Smoke Plume)
+  // Kolom asap suaka membubung tinggi ke langit (terlihat menembus kabut laut)
+  const flick = 0.82 + Math.sin(t * 7.5) * 0.18;
+  for (let i = 0; i < 5; i++) {
+    const py = -42 - i * 16 - (t * 18 + i * 14) % 70;
+    const px = Math.sin(t * 1.4 + i * 1.2) * (5 + i * 3);
+    const alpha = Math.max(0, 0.38 - i * 0.07);
+    ctx.fillStyle = `rgba(180,188,198,${alpha})`;
+    ctx.beginPath();
+    ctx.arc(px, py, 6 + i * 3.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Cahaya api suar (2D radial light glow)
+  const bg = ctx.createRadialGradient(0, -42, 2, 0, -42, 65 * flick);
+  bg.addColorStop(0, 'rgba(255,190,80,0.6)');
+  bg.addColorStop(0.5, 'rgba(255,140,40,0.25)');
+  bg.addColorStop(1, 'rgba(255,100,20,0)');
+  ctx.fillStyle = bg;
+  ctx.beginPath();
+  ctx.arc(0, -42, 65 * flick, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffe090';
+  ctx.beginPath();
+  ctx.arc(0, -42, 4.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 7. Dermaga Kayu Solid (Menjorok dari pantai selatan pulau ke arah laut)
+  const s = 1.6;
+  const dockY = 16;
+  ctx.fillStyle = '#422812';
+  ctx.fillRect(-16 * s, dockY, 32 * s, 48 * s);
+  ctx.fillStyle = '#7a5128';
+  for (let i = 0; i < 11; i++) {
+    ctx.fillRect(-16 * s, (dockY + 2 + i * 4.2 * s), 32 * s, 1.8 * s);
+  }
+  // Pilar dan tiang tambat dermaga
+  ctx.fillStyle = '#2a1a0c';
+  ctx.fillRect(-17 * s, dockY, 3.5 * s, 48 * s);
+  ctx.fillRect(13.5 * s, dockY, 3.5 * s, 48 * s);
+
+  // Lentera tiang dermaga menyambut kapal
+  const lx = 20 * s, ly = dockY + 36 * s;
+  const lg = ctx.createRadialGradient(lx, ly, 2, lx, ly, 75 * flick);
+  lg.addColorStop(0, 'rgba(255,210,120,0.65)');
+  lg.addColorStop(0.6, 'rgba(255,160,60,0.25)');
+  lg.addColorStop(1, 'rgba(255,130,40,0)');
+  ctx.fillStyle = lg;
+  ctx.beginPath(); ctx.arc(lx, ly, 75 * flick, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fff0ba';
+  ctx.beginPath(); ctx.arc(lx, ly, 3.5, 0, Math.PI * 2); ctx.fill();
+
   ctx.restore();
 }
 

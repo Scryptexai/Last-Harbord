@@ -993,6 +993,8 @@ export function drawLand(ctx, vw, vh) {
 
   // dermaga
   drawPier(ctx, L);
+  // DAM / TANGGUL BATU pemecah ombak di pesisir pulau
+  drawBreakwaterDam(ctx, L);
   // PEMBATAS zona aman: pagar/tali yang menandai batas dermaga — zombie berhenti di sini
   drawDockBarrier(ctx, L);
 
@@ -1079,6 +1081,55 @@ export function drawLand(ctx, vw, vh) {
     dark.addColorStop(1, `rgba(6,10,18,${(tint - 0.3) * 0.7})`);
     ctx.fillStyle = dark; ctx.fillRect(0, 0, vw, vh);
   }
+
+  // HUD Indikator Ancaman Pulau & Status Palka
+  drawIslandThreatBadge(ctx, vw, vh, L);
+}
+
+function drawIslandThreatBadge(ctx, vw, vh, L) {
+  const isl = L.island;
+  const ringIdx = isl.ringIdx || 0;
+  const threatLevels = [
+    { lvl: 'LV. 1 (RENDAH)', col: '#48bb78', desc: 'Zombi Lapar' },
+    { lvl: 'LV. 2 (SEDANG)', col: '#ed8936', desc: 'Zombi Zirah & Pelari' },
+    { lvl: 'LV. 3 (MAUT)',   col: '#e53e3e', desc: 'Teror Mutasi Malam' },
+  ];
+  const info = threatLevels[ringIdx] || threatLevels[0];
+
+  const load = carriedLoad();
+  const cap = capacity();
+  const isFull = load >= cap;
+
+  ctx.save();
+  const bw = Math.min(580, vw - 32);
+  const bx = (vw - bw) / 2;
+  const by = 14;
+
+  ctx.fillStyle = 'rgba(8, 14, 22, 0.88)';
+  ctx.strokeStyle = info.col;
+  ctx.lineWidth = 1.2;
+
+  ctx.beginPath();
+  const rr = 6;
+  ctx.moveTo(bx + rr, by);
+  ctx.arcTo(bx + bw, by, bx + bw, by + 32, rr);
+  ctx.arcTo(bx + bw, by + 32, bx, by + 32, rr);
+  ctx.arcTo(bx, by + 32, bx, by, rr);
+  ctx.arcTo(bx, by, bx + bw, by, rr);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.font = '700 11px Inter, system-ui, sans-serif';
+  ctx.fillStyle = info.col;
+  ctx.textAlign = 'left';
+  ctx.fillText(`⚠️ ${isl.name.toUpperCase()} · ${info.lvl}`, bx + 14, by + 20);
+
+  ctx.textAlign = 'right';
+  ctx.font = '600 10.5px Inter, system-ui, sans-serif';
+  ctx.fillStyle = isFull ? '#ef4444' : '#e2e8f0';
+  ctx.fillText(`⚓ Palka: ${load} / ${cap} ${isFull ? '(PENUH - PULANG!)' : 'Unit'}`, bx + bw - 14, by + 20);
+  ctx.restore();
 }
 
 function shadeHex(hex, k) {
@@ -1135,6 +1186,37 @@ function drawPier(ctx, L) {
   ctx.beginPath(); ctx.arc(lx, ly, 90 * flick, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#ffd79a';
   ctx.beginPath(); ctx.arc(lx, ly, 3.4, 0, Math.PI * 2); ctx.fill();
+}
+
+// Tanggul Batu Dam Pemecah Ombak di Pesisir Pulau (2.5D Coastal Breakwater Dam)
+function drawBreakwaterDam(ctx, L) {
+  const r = L.r;
+  const t = G.time || 0;
+  const segments = [
+    { a0: 0.15, a1: 0.55 },
+    { a0: 2.55, a1: 2.95 },
+  ];
+  ctx.save();
+  for (const seg of segments) {
+    for (let a = seg.a0; a <= seg.a1; a += 0.09) {
+      const rx = Math.cos(a) * r * 0.95;
+      const ry = Math.sin(a) * r * 0.95;
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(rx - 8, ry - 5, 16, 10);
+      ctx.fillStyle = '#64748b'; // sisi atas terkena cahaya
+      ctx.fillRect(rx - 8, ry - 5, 16, 3.5);
+      ctx.fillStyle = '#334155'; // bayangan bawah
+      ctx.fillRect(rx - 8, ry + 1.5, 16, 3.5);
+
+      if (Math.sin(t * 3.2 + a * 5) > 0.45) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+        ctx.beginPath();
+        ctx.arc(rx, ry - 3, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+  ctx.restore();
 }
 
 // Pagar/tali pembatas zona aman dermaga. Busur tiang + tali pada tepi zona aman
@@ -1239,10 +1321,27 @@ function drawRock(ctx, rk) {
     if (img && img.complete && img.naturalWidth > 0) {
       ctx.drawImage(img, -sz / 2, -sz * 0.66, sz, sz);
     } else {
-      ctx.fillStyle = '#52606d';
-      ctx.beginPath(); ctx.ellipse(0, -rk.s * 0.4 * p, rk.s * p, rk.s * 0.8 * p, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#3a4450';
-      ctx.beginPath(); ctx.ellipse(-rk.s * 0.25 * p, -rk.s * 0.55 * p, rk.s * 0.5 * p, rk.s * 0.35 * p, -0.3, 0, Math.PI * 2); ctx.fill();
+      // 2.5D bongkahan batu granit bertekstur
+      const s = rk.s * p;
+      ctx.fillStyle = '#414d59';
+      ctx.beginPath();
+      ctx.ellipse(0, -s * 0.4, s * 1.05, s * 0.8, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Sisi atas batu terpapar cahaya matahari (2.5D top facet highlight)
+      ctx.fillStyle = '#677582';
+      ctx.beginPath();
+      ctx.ellipse(-s * 0.15, -s * 0.58, s * 0.75, s * 0.45, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Celah retakan batu
+      ctx.strokeStyle = '#262f38';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.2, -s * 0.7);
+      ctx.lineTo(0, -s * 0.4);
+      ctx.lineTo(s * 0.3, -s * 0.45);
+      ctx.stroke();
     }
   });
 }
@@ -1251,22 +1350,23 @@ function drawRock(ctx, rk) {
 function drawBush(ctx, b) {
   atUpright(ctx, b.x, b.y, (p) => {
     const s = b.s * p;
+    const sway = Math.sin(G.time * 2.4 + b.x * 0.05) * 1.5;
     const img = ASSETS.bush;
     if (img && img.complete && img.naturalWidth > 0) {
       ctx.drawImage(img, -s * 1.3, -s * 1.75, s * 2.6, s * 2.6);
       return;
     }
     const fl = CFG.FLAVORS[G.land.island.flavor];
-    const base = shadeHex(fl.grass, -0.08);
+    const base = shadeHex(fl.grass, -0.12);
     ctx.fillStyle = base;
     ctx.beginPath();
-    ctx.ellipse(-s * 0.4, -s * 0.55, s * 0.55, s * 0.5, 0, 0, Math.PI * 2);
-    ctx.ellipse(s * 0.35, -s * 0.5, s * 0.5, s * 0.45, 0, 0, Math.PI * 2);
-    ctx.ellipse(0, -s * 0.75, s * 0.5, s * 0.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(-s * 0.4 + sway * 0.3, -s * 0.55, s * 0.55, s * 0.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(s * 0.35 + sway * 0.4, -s * 0.5, s * 0.5, s * 0.45, 0, 0, Math.PI * 2);
+    ctx.ellipse(0 + sway * 0.5, -s * 0.75, s * 0.5, s * 0.5, 0, 0, Math.PI * 2);
     ctx.fill();
-    // kilap tipis di atas
-    ctx.fillStyle = shadeHex(fl.grass, 0.10);
-    ctx.beginPath(); ctx.ellipse(-s * 0.2, -s * 0.85, s * 0.26, s * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+    // kilap daun atas (2.5D volume)
+    ctx.fillStyle = shadeHex(fl.grass, 0.18);
+    ctx.beginPath(); ctx.ellipse(-s * 0.2 + sway * 0.5, -s * 0.85, s * 0.3, s * 0.22, 0, 0, Math.PI * 2); ctx.fill();
   });
 }
 
@@ -1361,10 +1461,11 @@ function drawFlavorProp(ctx, L, fp) {
 
 function drawTree(ctx, t) {
   atUpright(ctx, t.x, t.y, (p) => {
-    // Pohon = kanopi hutan, harus JELAS menjulang di atas karakter (~2x tinggi).
+    // Pohon 2.5D: menjulang tinggi dengan volume kanopi organik dan goyangan angin
     const sz = t.s * 6.4 * p;
-    // variasi spesies per rasa pulau: karang->palem, abu/karam->pinus, sisanya
-    // gubug; sebagian kecil campuran supaya rimba tidak seragam monoton.
+    const danger = tideDanger();
+    const sway = Math.sin((G.time || 0) * 1.8 + t.x * 0.02 + (t.seed || 0)) * (2.4 + t.s * 0.1) * (1 + danger * 0.6);
+
     const fl = (G.land && G.land.island && G.land.island.flavor) || 'quiet';
     const MAIN = { reef: 'tree3', ash: 'tree2', wreck: 'tree2', quiet: 'tree', ruins: 'tree' }[fl] || 'tree';
     const h = (t.seed || 0) % 1;
@@ -1373,10 +1474,48 @@ function drawTree(ctx, t) {
     if (img && img.complete && img.naturalWidth > 0) {
       ctx.drawImage(img, -sz / 2, -sz * 0.88, sz, sz);
     } else {
-      ctx.fillStyle = '#3b3122';
-      ctx.fillRect(-t.s * 0.14 * p, -t.s * 0.9 * p, t.s * 0.28 * p, t.s * 0.9 * p);
-      ctx.fillStyle = '#1c4627';
-      ctx.beginPath(); ctx.arc(0, -t.s * 1.25 * p, t.s * 0.95 * p, 0, Math.PI * 2); ctx.fill();
+      // 2.5D Prosedural Organic Tree: Batang gnarled + akar + kanopi bertingkat 3/4 volume
+      const s = t.s * p;
+      // 1. Batang kayu gnarled dengan pelebaran akar
+      ctx.fillStyle = '#3a2b1c';
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.22, 0);
+      ctx.lineTo(s * 0.22, 0);
+      ctx.lineTo(s * 0.12 + sway * 0.2, -s * 1.3);
+      ctx.lineTo(-s * 0.12 + sway * 0.2, -s * 1.3);
+      ctx.closePath();
+      ctx.fill();
+
+      // Alur serat kulit kayu
+      ctx.strokeStyle = '#251b11';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.05, 0);
+      ctx.lineTo(-s * 0.02 + sway * 0.15, -s * 1.2);
+      ctx.stroke();
+
+      // 2. Rindang kanopi organik bertingkat
+      const cy = -s * 1.3;
+      // Lapis bawah (bayangan oklusi)
+      ctx.fillStyle = '#0f381c';
+      ctx.beginPath();
+      ctx.arc(sway, cy, s * 0.95, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Lapis tengah (warna dedaunan subur)
+      ctx.fillStyle = '#1e592f';
+      ctx.beginPath();
+      ctx.arc(sway - s * 0.15, cy - s * 0.18, s * 0.75, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(sway + s * 0.2, cy - s * 0.1, s * 0.65, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Lapis atas (sunlit highlight sudut 2.5D kiri-atas)
+      ctx.fillStyle = '#3da357';
+      ctx.beginPath();
+      ctx.arc(sway - s * 0.28, cy - s * 0.32, s * 0.45, 0, Math.PI * 2);
+      ctx.fill();
     }
   });
 }
@@ -1562,8 +1701,12 @@ function drawPlayer(ctx, L) {
 
   atUpright(ctx, p.x, p.y, () => {
     if (p.invuln > 0 && Math.floor(G.time * 20) % 2 === 0) ctx.globalAlpha = 0.5;
-    const sz = 74;
-    drawCharacter3D(ctx, p, sz);
+    const sz = 72;
+    if (typeof window === 'undefined' && ASSETS && ASSETS.player) {
+      ctx.drawImage(ASSETS.player, -sz / 2, -sz * 0.88, sz, sz);
+    } else {
+      drawCharacter3D(ctx, p, sz);
+    }
     ctx.globalAlpha = 1;
   });
 
