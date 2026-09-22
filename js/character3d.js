@@ -136,6 +136,17 @@ export function initCharacter3D() {
   }
 }
 
+if (typeof window !== 'undefined') {
+  window.__character3d = {
+    isReady: () => isReady,
+    actions: () => actions,
+    mixer: () => mixer,
+    model: () => characterModel,
+    scene: () => scene,
+    camera: () => camera,
+  };
+}
+
 export function updateCharacter3D(dt, p) {
   if (!isReady || !mixer || !characterModel) return;
 
