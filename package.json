@@ -7,10 +7,14 @@
     "capture": "node scripts/capture_gameplay.mjs"
   },
   "dependencies": {
+<<<<<<< HEAD
     "@ringozz/godot": "^4.7.2-626",
     "@ringozz/godot-web-wasm32": "^4.7.2-626",
     "@sparticuz/chromium": "^153.0.0",
     "godot-cli": "^0.23.0",
+=======
+    "@sparticuz/chromium": "^153.0.0",
+>>>>>>> d86a06ef6fccb232b9a4bc382d6f451c571063d5
     "puppeteer-core": "^25.11.0",
     "three": "^0.128.0"
   }

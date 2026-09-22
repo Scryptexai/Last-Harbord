@@ -24,8 +24,13 @@ var flood_ratio: float = 0.0 # 0.0 = pantai kering, 1.0 = pasang puncak
 var dark_tint_alpha: float = 0.0
 
 func _process(delta: float) -> void:
+<<<<<<< HEAD
 	var gm = get_node_or_null("/root/GameManager")
 	if gm and gm.get("current_state") == 0: # 0 = HARBOR_SANCTUARY
+=======
+	if GameManager.current_state == GameManager.GameState.HARBOR_SANCTUARY:
+		# Di Pulau Suaka waktu pasang dibekukan (zona damai di luar waktu)
+>>>>>>> d86a06ef6fccb232b9a4bc382d6f451c571063d5
 		return
 		
 	tide_time += delta
@@ -48,6 +53,10 @@ func update_tide_logic() -> void:
 		var t = (tide_time - CALM_DURATION - TURNING_DURATION) / HIGH_TIDE_DURATION
 		flood_ratio = lerp(0.5, 1.0, t)
 		dark_tint_alpha = 0.75
+<<<<<<< HEAD
+=======
+		# Pasang tinggi di laut terbuka mengikis hull kapal bila tidak dekat daratan
+>>>>>>> d86a06ef6fccb232b9a4bc382d6f451c571063d5
 	else:
 		current_phase = TidePhase.DAWN
 		flood_ratio = lerp(1.0, 0.0, (tide_time - 420.0) / DAWN_DURATION)

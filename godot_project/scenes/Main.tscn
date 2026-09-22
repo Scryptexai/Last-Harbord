@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 [gd_scene load_steps=3 format=3 uid="uid://dmau34qplhy8n"]
 
 [ext_resource type="Script" path="res://scripts/Main.gd" id="1_main"]
@@ -16,3 +17,27 @@ script = ExtResource("1_main")
 environment = SubResource("Environment_main")
 
 [node name="SceneContainer" type="Node3D" parent="."]
+=======
+[gd_scene load_steps=5 format=3 uid="uid://dmau34qplhy8n"]
+
+[sub_resource type="Environment" id="Environment_1"]
+background_mode = 3
+glow_enabled = true
+glow_intensity = 0.8
+glow_strength = 1.05
+glow_bloom = 0.15
+glow_blend_mode = 0
+
+[node name="Main" type="Node2D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_1")
+
+[node name="CanvasModulate" type="CanvasModulate" parent="."]
+color = Color(0.92, 0.94, 0.98, 1)
+
+[node name="SceneContainer" type="Node2D" parent="."]
+
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="."]
+volume_db = -6.0
+>>>>>>> d86a06ef6fccb232b9a4bc382d6f451c571063d5

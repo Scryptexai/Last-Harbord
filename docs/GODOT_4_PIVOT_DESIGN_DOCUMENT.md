@@ -106,13 +106,20 @@ Sesuai instruksi mutlak user:
 
 ---
 
+<<<<<<< HEAD
 ## 6. ARSITEKTUR TEKNIS PIVOT KE GODOT ENGINE 4 (HEADLESS VERIFIED)
 
 Struktur proyek lengkap yang telah dibangun dan divalidasi di folder `/godot_project/`:
+=======
+## 6. ARSITEKTUR TEKNIS PIVOT KE GODOT ENGINE 4
+
+Struktur proyek lengkap telah dibuat di folder `/godot_project/`:
+>>>>>>> d86a06ef6fccb232b9a4bc382d6f451c571063d5
 
 ```
 godot_project/
 ├── project.godot               # Konfigurasi Godot 4 (GL Compatibility, 1280x720, Autoloads)
+<<<<<<< HEAD
 ├── export_presets.cfg          # Preset Export to Web (Wasm/WebGL) + Headless
 ├── scenes/
 │   ├── Main.tscn               # Root coordinator + WorldEnvironment + Dynamic scene loading
@@ -135,11 +142,30 @@ godot_project/
 │   ├── ZombieAI.gd             # AI zombi berjenjang + panggilan kawanan + serangan
 │   ├── SurvivorNPC.gd          # Dialog & kebutuhan penyintas di suaka
 │   └── run_headless_validation.gd # Automated test suite pengujian headless
+=======
+├── export_presets.cfg          # Preset Export to Web (Wasm/WebGL) + PWA
+├── scenes/
+│   ├── Main.tscn               # Root scene + WorldEnvironment (Glow) + CanvasModulate
+│   ├── SanctuaryIsland.tscn    # Pulau Suaka aman + pengungsi + api unggun + dermaga
+│   ├── CombatIsland.tscn       # Pulau ekspedisi zombi + tanggul dam + pohon organik
+│   ├── Player.tscn             # Karakter 2.5D + integrasi GLB 3D + PointLight2D
+│   ├── Boat.tscn               # Perahu inersia + lentera haluan + GPUParticles buih
+│   └── Zombie.tscn             # Zombi berjenjang (Lv 1-3) + mata bersinar + telegraph
+├── scripts/
+│   ├── GameManager.gd          # Singleton ekonomi, status koloni, dan palka
+│   ├── TideSystem.gd           # Siklus pasang air naik & kegelapan malam
+│   ├── PlayerController.gd     # Kendali 2.5D, serangan combo, panen
+│   ├── SanctuaryIsland.gd      # Logika Pulau Suaka & pembongkaran kargo
+│   ├── BoatController.gd       # Fisika berlayar laut lepas
+│   ├── ZombieAI.gd             # AI zombi berjenjang + panggilan kawanan
+│   └── SurvivorNPC.gd          # Dialog & kebutuhan korban selamat
+>>>>>>> d86a06ef6fccb232b9a4bc382d6f451c571063d5
 ├── shaders/
 │   ├── water_25d.gdshader      # Shader air laut 2.5D + riak kaustik & buih pantai
 │   ├── foliage_sway.gdshader   # Shader goyangan angin pohon & semak
 │   └── glow_fire.gdshader      # Shader cahaya api unggun & lentera
 └── assets/
+<<<<<<< HEAD
     ├── character_glb_idle_box_03_run_walk_7.glb # Model 3D Karakter Utuh (TERKUNCI)
     ├── branding/
     ├── environment/
@@ -170,3 +196,30 @@ godot --headless --path godot_project --quit-after 5
 godot --headless --path godot_project --script /scripts/run_headless_validation.gd
 ```
 
+=======
+    ├── character_glb_idle_box_03_run_walk_7.glb
+    ├── branding/
+    └── environment/
+```
+
+### Fitur Unggulan Godot 4 yang Dimaksimalkan:
+1. **WorldEnvironment & CanvasItem Glow**:
+   - Menghidupkan cahaya lentera, api unggun, dan mata merah zombi tanpa komputasi manual.
+2. **2D PointLight2D & DirectionalLight2D**:
+   - Pencahayaan dinamis yang memanjang saat senja dan pasang malam.
+3. **GPUParticles2D**:
+   - Bara api unggun melayang, buih ombak membentur dam, dan jejak buih di belakang perahu.
+4. **TileMapLayer Organik**:
+   - Transisi autotile pasir pantai, tanggul batu, dan padang rumput.
+5. **Export to Web (HTML5/Wasm/WebGL)**:
+   - Game bisa langsung di-export via satu klik di Godot 4 (`export_presets.cfg` sudah dikonfigurasi) dan dimainkan di browser desktop maupun mobile.
+
+---
+
+## 7. CARA MENJALANKAN & MENGEKSPOR DI GODOT 4
+
+1. Buka **Godot Engine 4.3+**.
+2. Klik **Import**, pilih folder `/home/user/Last-Harbord/godot_project/project.godot`.
+3. Klik **Run** (`F5`) untuk langsung memainkan adegan `Main.tscn`.
+4. Untuk Web Export: Buka menu **Project > Export**, pilih preset **Web**, lalu klik **Export Project**.
+>>>>>>> d86a06ef6fccb232b9a4bc382d6f451c571063d5
