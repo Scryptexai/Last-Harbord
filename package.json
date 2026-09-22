@@ -1,0 +1,17 @@
+{
+  "name": "last-harbord",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node tests/camera.test.mjs && node tests/integration.test.mjs && node tests/smoke.test.mjs && node tests/tension.test.mjs && node tests/render.test.mjs",
+    "capture": "node scripts/capture_gameplay.mjs"
+  },
+  "dependencies": {
+    "@ringozz/godot": "^4.7.2-626",
+    "@ringozz/godot-web-wasm32": "^4.7.2-626",
+    "@sparticuz/chromium": "^153.0.0",
+    "godot-cli": "^0.23.0",
+    "puppeteer-core": "^25.11.0",
+    "three": "^0.128.0"
+  }
+}

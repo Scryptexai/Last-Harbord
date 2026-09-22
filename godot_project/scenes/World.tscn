@@ -1,0 +1,139 @@
+[gd_scene load_steps=12 format=3 uid="uid://bwh7q92xpl51k"]
+
+[ext_resource type="Script" path="res://scripts/World.gd" id="1_world"]
+[ext_resource type="PackedScene" path="res://scenes/Boat.tscn" id="2_boat"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_world_ocean"]
+size = Vector2(800, 800)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_world_water"]
+albedo_color = Color(0.03, 0.1, 0.16, 0.98)
+roughness = 0.18
+metallic = 0.1
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_haven"]
+top_radius = 24.0
+bottom_radius = 32.0
+height = 2.5
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_haven"]
+albedo_color = Color(0.25, 0.35, 0.2, 1)
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_dock_zone"]
+radius = 16.0
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_tier1"]
+top_radius = 18.0
+bottom_radius = 24.0
+height = 2.2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tier1"]
+albedo_color = Color(0.32, 0.3, 0.22, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_tier3"]
+top_radius = 22.0
+bottom_radius = 28.0
+height = 3.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tier3"]
+albedo_color = Color(0.2, 0.12, 0.12, 1)
+
+[node name="World" type="Node3D"]
+script = ExtResource("1_world")
+
+[node name="SunLight" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 40, 0)
+light_color = Color(1, 0.94, 0.85, 1)
+light_energy = 1.2
+shadow_enabled = true
+
+[node name="OceanWater" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, 0)
+mesh = SubResource("PlaneMesh_world_ocean")
+surface_material_override/0 = SubResource("StandardMaterial3D_world_water")
+
+[node name="Islands" type="Node3D" parent="."]
+
+[node name="SanctuaryHaven" type="Node3D" parent="Islands"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Terrain" type="MeshInstance3D" parent="Islands/SanctuaryHaven"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0)
+mesh = SubResource("CylinderMesh_haven")
+surface_material_override/0 = SubResource("StandardMaterial3D_haven")
+
+[node name="DockZone" type="Area3D" parent="Islands/SanctuaryHaven"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 24)
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Islands/SanctuaryHaven/DockZone"]
+shape = SubResource("SphereShape3D_dock_zone")
+
+[node name="IslandTier1" type="Node3D" parent="Islands"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 95, 0, -80)
+
+[node name="Terrain" type="MeshInstance3D" parent="Islands/IslandTier1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0)
+mesh = SubResource("CylinderMesh_tier1")
+surface_material_override/0 = SubResource("StandardMaterial3D_tier1")
+
+[node name="AnchorZone" type="Area3D" parent="Islands/IslandTier1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 20)
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Islands/IslandTier1/AnchorZone"]
+shape = SubResource("SphereShape3D_dock_zone")
+
+[node name="IslandTier3" type="Node3D" parent="Islands"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -140, 0, 160)
+
+[node name="Terrain" type="MeshInstance3D" parent="Islands/IslandTier3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0)
+mesh = SubResource("CylinderMesh_tier3")
+surface_material_override/0 = SubResource("StandardMaterial3D_tier3")
+
+[node name="AnchorZone" type="Area3D" parent="Islands/IslandTier3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 22)
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Islands/IslandTier3/AnchorZone"]
+shape = SubResource("SphereShape3D_dock_zone")
+
+[node name="Boat" parent="." instance=ExtResource("2_boat")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 34)
+
+[node name="Camera3D" type="Camera3D" parent="Boat"]
+transform = Transform3D(1, 0, 0, 0, 0.766044, 0.642788, 0, -0.642788, 0.766044, 0, 22, 22)
+current = true
+fov = 50.0
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="SeaHUD" type="HBoxContainer" parent="CanvasLayer"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 24.0
+offset_top = 16.0
+offset_right = -24.0
+offset_bottom = 48.0
+grow_horizontal = 2
+theme_override_constants/separation = 24
+
+[node name="CompassLabel" type="Label" parent="CanvasLayer/SeaHUD"]
+layout_mode = 2
+text = "🧭 HALUAN: 0° | KOOR: (0, 0)"
+
+[node name="TideLabel" type="Label" parent="CanvasLayer/SeaHUD"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "🌊 PASANG: Tenang (Malam ke-1)"
+horizontal_alignment = 1
+
+[node name="CargoLabel" type="Label" parent="CanvasLayer/SeaHUD"]
+layout_mode = 2
+text = "📦 PALKA: 0 / 10"
+
+[connection signal="body_entered" from="Islands/SanctuaryHaven/DockZone" to="." method="_on_sanctuary_dock_entered"]

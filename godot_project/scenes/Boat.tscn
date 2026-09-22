@@ -1,0 +1,51 @@
+[gd_scene load_steps=6 format=3 uid="uid://bt18w0plkq72m"]
+
+[ext_resource type="Script" path="res://scripts/BoatController.gd" id="1_boat"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_hull"]
+size = Vector3(2.4, 1.2, 5.2)
+
+[sub_resource type="BoxMesh" id="BoxMesh_hull"]
+size = Vector3(2.2, 1.0, 5.0)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_boat"]
+albedo_color = Color(0.38, 0.28, 0.18, 1)
+roughness = 0.85
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_mast"]
+top_radius = 0.08
+bottom_radius = 0.12
+height = 4.2
+
+[node name="Boat" type="CharacterBody3D" groups=["boat"]]
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("1_boat")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+shape = SubResource("BoxShape3D_hull")
+
+[node name="HullMesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+mesh = SubResource("BoxMesh_hull")
+surface_material_override/0 = SubResource("StandardMaterial3D_boat")
+
+[node name="MastMesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4, 0.4)
+mesh = SubResource("CylinderMesh_mast")
+
+[node name="BowLantern" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, -2.6)
+light_color = Color(1, 0.85, 0.45, 1)
+light_energy = 2.4
+omni_range = 10.0
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="CargoLabel" type="Label" parent="CanvasLayer"]
+offset_left = 24.0
+offset_top = 70.0
+offset_right = 160.0
+offset_bottom = 96.0
+text = "📦 Palka: 0/10"

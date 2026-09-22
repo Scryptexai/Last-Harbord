@@ -1,0 +1,41 @@
+[gd_scene load_steps=6 format=3 uid="uid://cmeu7q48a03yp"]
+
+[ext_resource type="Script" path="res://scripts/ZombieAI.gd" id="1_zombie"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_zombie"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_zombie"]
+top_radius = 0.38
+bottom_radius = 0.38
+height = 1.7
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_zombie"]
+albedo_color = Color(0.32, 0.38, 0.3, 1)
+roughness = 0.9
+
+[sub_resource type="SphereMesh" id="SphereMesh_eye"]
+radius = 0.1
+height = 0.2
+
+[node name="Zombie" type="CharacterBody3D" groups=["zombies"]]
+collision_layer = 4
+collision_mask = 7
+script = ExtResource("1_zombie")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_zombie")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+mesh = SubResource("CylinderMesh_zombie")
+surface_material_override/0 = SubResource("StandardMaterial3D_zombie")
+
+[node name="EyeLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0.35)
+light_color = Color(1, 0.18, 0.18, 1)
+light_energy = 1.5
+omni_range = 3.5
+omni_attenuation = 0.6

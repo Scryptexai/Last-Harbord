@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Last Harbor - Godot 4 Engine WebGL Runner</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body, html {
+      width: 100%;
+      height: 100%;
+      background: #050a10;
+      color: #e0e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow: hidden;
+    }
+    #canvas-container {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #050a10;
+    }
+    #canvas {
+      width: 100%;
+      height: 100%;
+      max-width: 1280px;
+      max-height: 720px;
+      aspect-ratio: 16 / 9;
+      display: block;
+      outline: none;
+    }
+    #loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(5, 10, 16, 0.94);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      transition: opacity 0.5s ease;
+    }
+    .title {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #ffd27d;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: #8da2b5;
+      margin-bottom: 24px;
+    }
+    .progress-bar-bg {
+      width: 320px;
+      height: 8px;
+      background: #152230;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .progress-bar-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #ff9f43, #ffd27d);
+      transition: width 0.2s ease;
+    }
+    #status-text {
+      font-size: 12px;
+      color: #6d8299;
+    }
+    #controls-tip {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10, 20, 32, 0.85);
+      border: 1px solid rgba(255, 210, 125, 0.2);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      color: #a0b4c8;
+      pointer-events: none;
+      z-index: 50;
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas-container">
+    <canvas id="canvas" tabindex="1"></canvas>
+  </div>
+
+  <div id="loading-overlay">
+    <div class="title">LAST HARBOR</div>
+    <div class="subtitle">Godot 4.7.2 WebGL Engine | 2.5D Apocalypse Arena</div>
+    <div class="progress-bar-bg">
+      <div id="progress-fill" class="progress-bar-fill"></div>
+    </div>
+    <div id="status-text">Memuat Godot WebAssembly Engine...</div>
+  </div>
+
+  <div id="controls-tip">
+    🕹️ WASD / Panah: Gerak | Spasi: Tebas Dayung | E: Interaksi Dermaga/Lumbung
+  </div>
+
+  <script type="module">
+    const canvas = document.getElementById('canvas');
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const progressFill = document.getElementById('progress-fill');
+    const statusText = document.getElementById('status-text');
+
+    function updateProgress(percent, msg) {
+      progressFill.style.width = percent + '%';
+      statusText.textContent = msg;
+    }
+
+    async function initGodot() {
+      try {
+        updateProgress(15, 'Mengunduh modul Godot 4 WebAssembly (17MB)...');
+        const wasmResp = await fetch('/vendor/godot/godot.web.template_release.wasm32.nothreads.wasm');
+        if (!wasmResp.ok) throw new Error('Gagal mengunduh Godot WASM: ' + wasmResp.status);
+        const wasmBinary = await wasmResp.arrayBuffer();
+
+        updateProgress(45, 'Menginisialisasi runtime Godot 4 WebGL2...');
+        const mod = await import('/vendor/godot/godot.web.template_release.wasm32.nothreads.js');
+        const godotFactory = mod.default;
+
+        const godot = await godotFactory({
+          canvas: canvas,
+          wasmBinary: wasmBinary,
+          noInitialRun: true,
+          print: (text) => console.log('[Godot 4 Engine]', text),
+          printErr: (text) => console.error('[Godot 4 Err]', text),
+        });
+
+        godot.initConfig({ canvas: canvas });
+
+        updateProgress(65, 'Mengunduh berkas aset proyek Godot 4...');
+        const manifestResp = await fetch('/api/godot_manifest');
+        const filesList = await manifestResp.json();
+
+        let loaded = 0;
+        for (const fileRel of filesList) {
+          const resp = await fetch('/godot_project/' + fileRel);
+          if (resp.ok) {
+            const buf = await resp.arrayBuffer();
+            godot.copyToFS('/' + fileRel, new Uint8Array(buf));
+          }
+          loaded++;
+          const pct = 65 + Math.round((loaded / filesList.length) * 30);
+          updateProgress(pct, `Memuat aset: ${fileRel} (${loaded}/${filesList.length})`);
+        }
+
+        updateProgress(100, 'Memulai rendering adegan Pulau Suaka & Dermaga...');
+        setTimeout(() => {
+          loadingOverlay.style.opacity = '0';
+          setTimeout(() => loadingOverlay.style.display = 'none', 500);
+          canvas.focus();
+        }, 400);
+
+        // Jalankan Godot 4 Engine main loop
+        godot.callMain(['--path', '/']);
+      } catch (err) {
+        console.error('Fatal initialization error:', err);
+        statusText.textContent = 'Error: ' + err.message;
+        statusText.style.color = '#ff6b6b';
+      }
+    }
+
+    window.addEventListener('load', initGodot);
+  </script>
+</body>
+</html>
