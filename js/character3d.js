@@ -22,6 +22,7 @@ let mixer = null;
 let characterModel = null;
 let currentAction = null;
 let currentActionKey = 'idle';
+let progressListeners = [];
 
 const actions = {
   idle: null,
@@ -35,6 +36,9 @@ export function isCharacter3DReady() {
 }
 
 export function initCharacter3D(onProgress, retryCount = 0) {
+  if (onProgress && typeof onProgress === 'function' && !progressListeners.includes(onProgress)) {
+    progressListeners.push(onProgress);
+  }
   if (isReady) return Promise.resolve(true);
   if (initPromise) return initPromise;
   if (typeof window === 'undefined' || typeof document === 'undefined') {
@@ -191,9 +195,11 @@ export function initCharacter3D(onProgress, retryCount = 0) {
           resolve(true);
         },
         (xhr) => {
-          if (xhr && xhr.lengthComputable && onProgress) {
+          if (xhr && xhr.lengthComputable) {
             const pct = Math.min(99, Math.round((xhr.loaded / xhr.total) * 100));
-            onProgress(pct);
+            for (const cb of progressListeners) {
+              try { cb(pct); } catch (e) { /* ignore */ }
+            }
           }
         },
         (err) => {
