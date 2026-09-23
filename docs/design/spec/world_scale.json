@@ -1,0 +1,95 @@
+{
+  "version": "1.0.0",
+  "date": "2026-09-23",
+  "status": "LOCKED - changes require Design Director approval",
+  "unit": "meters",
+  "master_reference": {
+    "note": "The FINAL CHARACTER GLB is the master scale reference. All environment assets are validated against it.",
+    "character_glb": "assets/characters/character_glb_idle_box_03_run_walk_7.glb",
+    "authored_height": 0.98,
+    "import_scale": 1.53,
+    "game_height": 1.5,
+    "game_height_tolerance": 0.06,
+    "collision_capsule": { "radius": 0.35, "height": 1.6 },
+    "style": "LOCKED: chibi/stylized, expressive. Uniform scale only. No redesign."
+  },
+  "world_dimensions": {
+    "character":      { "height": [1.44, 1.56], "note": "1.5 m stylized survivor (chibi ~3 heads)" },
+    "door":           { "height": [1.95, 2.10], "width": [0.90, 1.05] },
+    "house":          { "ridge_height": [3.00, 4.60], "footprint": [3.50, 7.00] },
+    "tree_palm":      { "height": [6.00, 9.50] },
+    "tree_tropical":  { "height": [5.00, 9.00] },
+    "tree_dead":      { "height": [3.50, 6.50] },
+    "rock_small":     { "height": [0.30, 0.90] },
+    "rock_medium":    { "height": [0.80, 1.90] },
+    "rock_large":     { "height": [1.90, 3.60] },
+    "rock_cliff":     { "height": [3.50, 9.00] },
+    "boat":           { "length": [4.20, 6.00], "beam": [1.60, 2.40], "hull_height": [0.90, 1.60] },
+    "dock":           { "length": [9.0, 16.0], "width": [2.20, 3.40], "deck_above_water": [0.70, 1.30] },
+    "road_main":      { "width": [2.40, 3.00] },
+    "road_branch":    { "width": [1.40, 1.80] },
+    "beach":          { "width": [8.0, 14.0], "max_slope_deg": 12 },
+    "island_sector":  { "safe_island": [128, 128], "danger_island_1": [96, 96] }
+  },
+  "asset_categories": {
+    "character":     { "match": "characters/*.glb",                 "height": [1.40, 1.60], "apply_import_scale": true, "textures_min": 1, "tris_max": 25000 },
+    "veg_palm":      { "match": "models/vegetation/coconut_palm*",  "height": [6.0, 9.5],  "ymin_tol": [-0.10, 0.10], "textures_min": 2, "tris_max": 4000 },
+    "veg_tree":      { "match": "models/vegetation/tropical_tree*", "height": [5.0, 9.0],  "ymin_tol": [-0.10, 0.10], "textures_min": 2, "tris_max": 8000 },
+    "veg_dead":      { "match": "models/vegetation/dead_tree*",     "height": [3.5, 6.5],  "ymin_tol": [-0.10, 0.10], "textures_min": 1, "tris_max": 3000 },
+    "veg_bush":      { "match": "models/vegetation/tropical_bush*", "height": [0.7, 1.8],  "ymin_tol": [-0.10, 0.10], "textures_min": 1, "tris_max": 1500 },
+    "veg_grass":     { "match": "models/vegetation/tall_grass*",    "height": [0.25, 0.7], "ymin_tol": [-0.05, 0.05], "textures_min": 1, "tris_max": 400 },
+    "veg_small":     { "match": "models/vegetation/small_plants*",  "height": [0.15, 0.6], "ymin_tol": [-0.05, 0.05], "textures_min": 1, "tris_max": 600 },
+    "veg_fallen":    { "match": "models/vegetation/fallen_branch*", "height": [0.1, 0.9],  "ymin_tol": [-0.10, 0.15], "textures_min": 1, "tris_max": 500 },
+    "rock_small":    { "match": "models/rocks/rock_small*",         "height": [0.3, 0.9],  "ymin_tol": [-0.40, 0.10], "textures_min": 1, "tris_max": 800 },
+    "rock_medium":   { "match": "models/rocks/rock_medium*",        "height": [0.8, 1.9],  "ymin_tol": [-0.40, 0.10], "textures_min": 1, "tris_max": 1500 },
+    "rock_large":    { "match": "models/rocks/rock_large*",         "height": [1.9, 3.6],  "ymin_tol": [-0.40, 0.10], "textures_min": 1, "tris_max": 2500 },
+    "rock_cliff":    { "match": "models/rocks/cliff_rock*",         "height": [3.5, 9.0],  "ymin_tol": [-1.00, 0.10], "textures_min": 1, "tris_max": 4000 },
+    "arch_house":    { "match": "models/architecture/*cabin*|models/architecture/*hut*|models/architecture/*shed*", "height": [3.0, 4.6], "ymin_tol": [-0.10, 0.10], "textures_min": 3, "tris_max": 3500 },
+    "arch_dock":     { "match": "models/architecture/wooden_dock*", "height": [0.7, 1.6],  "ymin_tol": [-1.20, 0.10], "textures_min": 1, "tris_max": 3000 },
+    "boat":          { "match": "models/boats/*",                   "height": [0.9, 1.6],  "ymin_tol": [-0.80, 0.10], "textures_min": 1, "tris_max": 3000 },
+    "prop_barrel":   { "match": "models/props/barrel*",             "height": [0.85, 1.1], "ymin_tol": [-0.10, 0.05], "textures_min": 1, "tris_max": 700 },
+    "prop_crate":    { "match": "models/props/wooden_crate*",       "height": [0.5, 1.0],  "ymin_tol": [-0.05, 0.05], "textures_min": 1, "tris_max": 700 },
+    "prop_general":  { "match": "models/props/*",                   "height": [0.1, 1.8],  "ymin_tol": [-0.30, 0.10], "textures_min": 1, "tris_max": 900 },
+    "terrain":       { "match": "models/terrain/*",                 "height": [5.0, 14.0], "ymin_tol": [-6.0, 0.10], "textures_min": 2, "tris_max": 40000 }
+  },
+  "camera": {
+    "projection": "perspective",
+    "fov_vertical_range": [38.0, 48.0],
+    "fov_vertical_default": 42.0,
+    "pitch_down_deg_range": [35.0, 50.0],
+    "pitch_down_deg_default": 40.0,
+    "yaw_deg_default": 18.0,
+    "distance_default": [13.0, 17.0],
+    "distance_explore": [15.0, 18.0],
+    "distance_combat": [9.0, 12.0],
+    "player_screen_height_ratio": [0.08, 0.14],
+    "follow_damping": [6.0, 10.0],
+    "rotation_damping": [3.5, 6.0],
+    "collision_min_distance": 3.0,
+    "forbidden": ["orthographic", "top_down_rts", "fixed_isometric"]
+  },
+  "mobile_budget": {
+    "draw_calls_per_scene_max": 120,
+    "visible_tris_max": 150000,
+    "dynamic_lights_max": 4,
+    "shadow_casting_lights_max": 2,
+    "texture_vram_mb_max": 80,
+    "texture_size_hero": 1024,
+    "texture_size_props": 512,
+    "fps_target_midrange": 30,
+    "particles_per_emitter_max": 64
+  },
+  "renderer": {
+    "primary": "gl_compatibility",
+    "secondary_test": "mobile",
+    "unsupported_features_forbidden": [
+      "ssr", "ssao", "ssil", "sdfgi", "voxel_gi", "volumetric_fog",
+      "decals", "depth_of_field", "variable_rate_shading", "gpu_particles_required"
+    ],
+    "supported_and_allowed": [
+      "directional_shadows", "omni_spot_shadows", "depth_height_fog",
+      "tonemapping", "glow", "color_adjustments", "reflection_probes_2_per_mesh",
+      "lightmap_gi_rendering", "vertex_color_blending", "multimesh_instancing"
+    ]
+  }
+}

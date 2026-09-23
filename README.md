@@ -13,6 +13,28 @@ python3 -m http.server 8000
 
 ---
 
+## 🧭 Produksi 3D (Godot 4) — fase DESIGN VALIDATION
+
+Build Godot (`project.godot`, `scenes/`, `scripts/`, `assets/models/`) adalah produksi aktif;
+build HTML5 di atas adalah prototipe logika/loop yang tetap menjadi referensi desain.
+
+Sebelum konten dunia baru diimplementasikan, spesifikasi visual & gameplay benchmark-driven
+sudah dikunci di **`docs/design/`**:
+
+- `docs/design/BENCHMARK_STUDY.md` — studi Lost in Blue, Ocean Is Home, LDoE, Dawn of Zombies (prinsip saja)
+- `docs/design/VISUAL_SPEC.md` — identitas, kamera, skala dunia, terrain, vegetasi, material, lighting, air, dock, budget mobile, strategi renderer
+- `docs/design/WORLD_PLAN.md` — zona A–K Safe Island + Danger Island 1 + environmental storytelling
+- `docs/design/GAMEPLAY_SPEC.md` — HUD/UX, core loop, kapasitas perahu, progresi pulau
+- `docs/design/VERTICAL_SLICE.md` — scope lock & acceptance path 13 langkah
+- `docs/design/VISUAL_QA_PLAN.md` — 6 shot QA + rubrik 10 kriteria + auto-fail "Roblox-tell"
+- `docs/design/spec/world_scale.json` — spec LOCKED (machine-readable)
+- `docs/design/audit/SCALE_AUDIT_2026-09-23.md` — audit terukur baseline (80 PASS / 3 WARN / 53 FAIL)
+
+Gate implementasi: `python3 tools/validate_world_spec.py --strict` harus 0 FAIL sebelum
+Vertical Slice mulai; karakter chibi LOCKED (tidak ada redesign), dunia wajib skala realistis.
+
+---
+
 ## Kalimat yang harus dijawab game ini
 
 > **"Seberapa jauh aku mau pergi sebelum aku berbalik?"**
