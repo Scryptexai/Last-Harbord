@@ -1,11 +1,11 @@
 // ============ 3D GLB Character System ============
-// Menggantikan 2D photo frame sprite dengan model 3D GLB beralur animasi nyata:
+// Mengimpor dan merender langsung file 3D GLB karakter:
 //   - File GLB: character_glb_idle_box_03_run_walk_7.glb
-//   - 4 Animasi tulang skeletal: idle, box_03 (serangan dayung/tinju), run, walk
-//   - Kamera 3/4 isometrik top-down (~30° pitch) mencocokkan perspektif game
-//   - Rotasi 360° kontinu mengikuti arah hadap pemain (p.face)
-//   - Cross-fade mulus antar state animasi
-//   - Fallback teruji untuk lingkungan non-WebGL / headless Node test suite
+//   - 4 Animasi skeletal: idle, box_03 (serangan tempur), run, walk
+//   - Root motion Z-neutralized in-place agar looping mulus tanpa jumping
+//   - Kamera isometrik 30° mencocokkan perspektif game Last Harbor
+//   - Pencahayaan 3-point light dengan sRGB encoding
+//   - Offscreen canvas WebGL composited langsung ke Canvas 2D game
 
 let isInitialized = false;
 let isReady = false;
@@ -32,14 +32,17 @@ export function isCharacter3DReady() {
 export function initCharacter3D() {
   if (isInitialized) return;
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
-  if (!window.THREE) {
-    // Tunggu bila Three.js sedang dimuat asinkron
-    window.addEventListener('load', () => initCharacter3D(), { once: true });
+
+  const THREE = window.THREE;
+  const LoaderClass = THREE && (THREE.GLTFLoader || (window.THREE && window.THREE.GLTFLoader));
+
+  if (!THREE || !LoaderClass) {
+    // Retry otomatis hingga script Three.js & GLTFLoader lokal selesai dimuat
+    setTimeout(() => initCharacter3D(), 40);
     return;
   }
 
   try {
-    const THREE = window.THREE;
     offCanvas = document.createElement('canvas');
     offCanvas.width = 256;
     offCanvas.height = 256;
@@ -54,33 +57,32 @@ export function initCharacter3D() {
     renderer.setPixelRatio(1);
     renderer.setSize(256, 256);
     renderer.setClearColor(0x000000, 0);
+    if (THREE.sRGBEncoding) renderer.outputEncoding = THREE.sRGBEncoding;
 
     scene = new THREE.Scene();
 
-    // Sudut kamera miring ~30° matching perspektif 2.5D Last Harbor
+    // Kamera 3/4 isometrik top-down ~30° matching perspektif game
     camera = new THREE.PerspectiveCamera(34, 1, 0.1, 50);
     camera.position.set(0, 1.42, 2.12);
     camera.lookAt(0, 0.48, 0);
 
-    // Pencahayaan atmosferik laut & karakter
-    const hemi = new THREE.HemisphereLight(0xffeedd, 0x223344, 1.4);
+    // Pencahayaan 3-point agar tekstur dan lekuk pakaian karakter terlihat jelas & hidup
+    const hemi = new THREE.HemisphereLight(0xffeedd, 0x334455, 1.6);
     scene.add(hemi);
 
-    const dirKey = new THREE.DirectionalLight(0xfff2dd, 1.8);
+    const dirKey = new THREE.DirectionalLight(0xfff5ea, 2.0);
     dirKey.position.set(2, 4, 3);
     scene.add(dirKey);
 
-    const dirRim = new THREE.DirectionalLight(0x77bbee, 1.1);
+    const dirFill = new THREE.DirectionalLight(0xffffff, 1.2);
+    dirFill.position.set(0, 1.2, 3);
+    scene.add(dirFill);
+
+    const dirRim = new THREE.DirectionalLight(0x77bbee, 1.3);
     dirRim.position.set(-2, 2, -2);
     scene.add(dirRim);
 
-    // Muat GLB model
-    const LoaderClass = THREE.GLTFLoader || (window.THREE && window.THREE.GLTFLoader);
-    if (!LoaderClass) {
-      console.warn('THREE.GLTFLoader belum tersedia, menunggu...');
-      return;
-    }
-
+    // Muat langsung model GLB karakter
     const loader = new LoaderClass();
     const modelUrl = 'character_glb_idle_box_03_run_walk_7.glb';
 
@@ -93,7 +95,7 @@ export function initCharacter3D() {
 
         characterModel.traverse((child) => {
           if (child.isMesh) {
-            child.frustumCulled = false; // Mencegah Three.js culling mesh saat animasi skeletal berjalan
+            child.frustumCulled = false; // Mencegah culling mesh saat tulang skeletal bergerak
             if (child.material) {
               child.material.metalness = 0.15;
               child.material.roughness = 0.82;
@@ -165,7 +167,14 @@ export function initCharacter3D() {
   }
 }
 
+// Inisialisasi otomatis segera begitu script dimuat
 if (typeof window !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => initCharacter3D());
+  } else {
+    initCharacter3D();
+  }
+
   window.__character3d = {
     isReady: () => isReady,
     actions: () => actions,
@@ -173,6 +182,7 @@ if (typeof window !== 'undefined') {
     model: () => characterModel,
     scene: () => scene,
     camera: () => camera,
+    canvas: () => offCanvas,
   };
 }
 
@@ -241,71 +251,16 @@ export function updateCharacter3D(dt, p) {
 
 export function drawCharacter3D(ctx, p, sz) {
   if (isReady && offCanvas) {
-    ctx.drawImage(offCanvas, -sz * 0.58, -sz * 0.98, sz * 1.16, sz * 1.16);
+    // Posisi kaki tepat di y=0 (titik jangkar pemain)
+    ctx.drawImage(offCanvas, -sz * 0.67, -sz * 1.05, sz * 1.34, sz * 1.34);
     return;
   }
 
-  // ---- PROSEDURAL GOTHIC HUNTER FALLBACK ----
-  // Digunakan saat 3D GLB sedang dimuat atau pada lingkungan test (Node/headless).
-  // Karakter: Jubah duster hitam-kelabu dengan keliman lebar, kerah tinggi, boot kulit gelap.
-  const bob = Math.sin((p.walkT || 0)) * 2;
-  const lean = (p.vx || 0) * 0.02;
-
+  // Fallback netral saat memuat awal / test headless: bayangan lingkaran halus di tanah
   ctx.save();
-  ctx.translate(lean, bob);
-
-  // Jubah panjang / coat tails
-  ctx.fillStyle = '#20242c';
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
   ctx.beginPath();
-  ctx.moveTo(-11, -38);
-  ctx.lineTo(11, -38);
-  ctx.lineTo(15, -4);
-  ctx.lineTo(-15, -4);
-  ctx.closePath();
+  ctx.ellipse(0, 0, 11, 4.5, 0, 0, Math.PI * 2);
   ctx.fill();
-
-  // Celana & Boot
-  ctx.fillStyle = '#161920';
-  ctx.fillRect(-8, -12, 6, 12);
-  ctx.fillRect(2, -12, 6, 12);
-  ctx.fillStyle = '#3a2c24';
-  ctx.fillRect(-9, -4, 7, 5);
-  ctx.fillRect(2, -4, 7, 5);
-
-  // Rompi / Vest dalam
-  ctx.fillStyle = '#383e4a';
-  ctx.beginPath();
-  ctx.ellipse(0, -28, 9, 13, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Sabuk & Gesper emas
-  ctx.fillStyle = '#1a1d24';
-  ctx.fillRect(-8, -20, 16, 3.5);
-  ctx.fillStyle = '#d4af37';
-  ctx.fillRect(-2.5, -20.5, 5, 4.5);
-
-  // Kerah jubah tinggi
-  ctx.fillStyle = '#2c3340';
-  ctx.beginPath();
-  ctx.moveTo(-9, -38);
-  ctx.lineTo(-12, -48);
-  ctx.lineTo(0, -42);
-  ctx.lineTo(12, -48);
-  ctx.lineTo(9, -38);
-  ctx.closePath();
-  ctx.fill();
-
-  // Kepala & Rambut Gothic
-  ctx.fillStyle = '#e8d3b8';
-  ctx.beginPath();
-  ctx.arc(0, -46, 6, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Rambut gelap terurai
-  ctx.fillStyle = '#14171d';
-  ctx.beginPath();
-  ctx.arc(0, -48, 6.5, Math.PI * 0.8, Math.PI * 2.2);
-  ctx.fill();
-
   ctx.restore();
 }
