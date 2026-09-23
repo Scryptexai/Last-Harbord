@@ -5,48 +5,37 @@
 [ext_resource type="PackedScene" uid="uid://df7h4k8m2p9v" path="res://scenes/player/Player.tscn" id="3_player"]
 [ext_resource type="PackedScene" uid="uid://c8m4n2p6q9v1" path="res://scenes/player/IsometricCamera.tscn" id="4_camera"]
 [ext_resource type="PackedScene" uid="uid://b2k8n4p9q7m5" path="res://scenes/boat/Boat.tscn" id="5_boat"]
-[ext_resource type="PackedScene" uid="uid://c9v7m2k5p3x8" path="res://scenes/world/SurvivorNPC.tscn" id="6_npc"]
-[ext_resource type="PackedScene" uid="uid://df4m8v2p6q9x" path="res://scenes/ui/HUD.tscn" id="7_hud"]
+[ext_resource type="PackedScene" uid="uid://b1m7k9v4q2x8" path="res://scenes/world/SurvivorCabin.tscn" id="6_cabin"]
+[ext_resource type="PackedScene" uid="uid://d2k4m8n1p9x5" path="res://scenes/world/PalmTree.tscn" id="7_palm"]
+[ext_resource type="PackedScene" uid="uid://cb4k7m9v1p2x" path="res://scenes/world/PineTree.tscn" id="8_pine"]
+[ext_resource type="PackedScene" uid="uid://df7k3m1p8v9x" path="res://scenes/world/Campfire.tscn" id="9_fire"]
+[ext_resource type="PackedScene" uid="uid://c9v7m2k5p3x8" path="res://scenes/world/SurvivorNPC.tscn" id="10_npc"]
+[ext_resource type="PackedScene" uid="uid://df4m8v2p6q9x" path="res://scenes/ui/HUD.tscn" id="11_hud"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ocean"]
-albedo_color = Color(0.0352941, 0.0862745, 0.137255, 0.92)
-roughness = 0.15
-metallic = 0.1
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_grass"]
-albedo_color = Color(0.180392, 0.25098, 0.160784, 1)
-roughness = 0.9
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dirt"]
-albedo_color = Color(0.360784, 0.27451, 0.188235, 1)
-roughness = 0.95
+albedo_color = Color(0.035, 0.12, 0.18, 0.94)
+roughness = 0.18
+metallic = 0.35
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sand"]
-albedo_color = Color(0.639216, 0.54902, 0.380392, 1)
+albedo_color = Color(0.68, 0.58, 0.42, 1)
+roughness = 0.92
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_grass_soil"]
+albedo_color = Color(0.24, 0.32, 0.2, 1)
 roughness = 0.88
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rock"]
-albedo_color = Color(0.282353, 0.301961, 0.321569, 1)
-roughness = 0.85
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_path"]
+albedo_color = Color(0.38, 0.28, 0.18, 1)
+roughness = 0.95
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wood_dock"]
-albedo_color = Color(0.419608, 0.270588, 0.133333, 1)
-roughness = 0.82
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_cabin"]
-albedo_color = Color(0.301961, 0.203922, 0.12549, 1)
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rock_cliff"]
+albedo_color = Color(0.32, 0.33, 0.36, 1)
 roughness = 0.9
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fire"]
-emission_enabled = true
-emission = Color(1, 0.470588, 0.117647, 1)
-emission_energy_multiplier = 4.0
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_ocean_col"]
-size = Vector3(200, 1, 200)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_dock_col"]
-size = Vector3(2.8, 0.4, 7.5)
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dock_timber"]
+albedo_color = Color(0.36, 0.25, 0.16, 1)
+roughness = 0.85
 
 [node name="SafeIsland" type="Node3D"]
 script = ExtResource("1_safe_island")
@@ -55,149 +44,136 @@ script = ExtResource("1_safe_island")
 environment = ExtResource("2_env")
 
 [node name="SunLight" type="DirectionalLight3D" parent="."]
-transform = Transform3D(0.819152, -0.40558, 0.40558, 0, 0.707107, 0.707107, -0.573576, -0.579228, 0.579228, 0, 15, 0)
-light_color = Color(1, 0.92549, 0.819608, 1)
+transform = Transform3D(0.819152, -0.40558, 0.40558, 0, 0.707107, 0.707107, -0.573576, -0.579228, 0.579228, 0, 24, 0)
+light_color = Color(1, 0.92, 0.82, 1)
 light_energy = 1.35
 shadow_enabled = true
 
 [node name="OceanWater" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
-size = Vector3(200, 1, 200)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, 0)
+size = Vector3(180, 0.6, 180)
 material = SubResource("StandardMaterial3D_ocean")
 
 [node name="Terrain" type="Node3D" parent="."]
 
-[node name="VillagePlateau" type="CSGCylinder3D" parent="Terrain"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, -16)
-use_collision = true
-radius = 15.0
-height = 2.5
-sides = 24
-material = SubResource("StandardMaterial3D_grass")
-
-[node name="PathSlopes" type="CSGBox3D" parent="Terrain"]
-transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 1.2, -6.5)
-use_collision = true
-size = Vector3(4.2, 0.8, 12.0)
-material = SubResource("StandardMaterial3D_dirt")
-
 [node name="BeachShore" type="CSGCylinder3D" parent="Terrain"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+transform = Transform3D(1.2, 0, 0, 0, 1, 0, 0, 0, 0.9, 0, 0.2, 3)
 use_collision = true
-radius = 9.0
+radius = 14.0
 height = 0.6
 sides = 24
 material = SubResource("StandardMaterial3D_sand")
 
-[node name="ShoreRocks" type="Node3D" parent="Terrain"]
-
-[node name="Rock1" type="CSGSphere3D" parent="Terrain/ShoreRocks"]
-transform = Transform3D(1.4, 0, 0, 0, 0.8, 0, 0, 0, 1.2, -3.5, 0.3, 1.5)
+[node name="VillageTerrace" type="CSGBox3D" parent="Terrain"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, -11)
 use_collision = true
-radius = 1.2
-material = SubResource("StandardMaterial3D_rock")
+size = Vector3(28, 2.4, 22)
+material = SubResource("StandardMaterial3D_grass_soil")
 
-[node name="Rock2" type="CSGSphere3D" parent="Terrain/ShoreRocks"]
-transform = Transform3D(1.2, 0, 0, 0, 0.9, 0, 0, 0, 1.5, 4.2, 0.4, 1.8)
+[node name="BackHills" type="CSGBox3D" parent="Terrain"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.2, -26)
 use_collision = true
-radius = 1.3
-material = SubResource("StandardMaterial3D_rock")
+size = Vector3(32, 4.8, 16)
+material = SubResource("StandardMaterial3D_rock_cliff")
+
+[node name="MainPath" type="CSGBox3D" parent="Terrain"]
+transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 1.1, -4.5)
+use_collision = true
+size = Vector3(3.8, 0.3, 14)
+material = SubResource("StandardMaterial3D_path")
 
 [node name="Village" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, -16)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, -11)
 
-[node name="Bonfire" type="CSGSphere3D" parent="Village"]
-transform = Transform3D(1, 0, 0, 0, 0.4, 0, 0, 0, 1, 0, 0.1, 0)
-radius = 0.6
-material = SubResource("StandardMaterial3D_fire")
+[node name="Campfire" parent="Village" instance=ExtResource("9_fire")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 1.5)
 
-[node name="FireLight" type="OmniLight3D" parent="Village/Bonfire"]
-transform = Transform3D(1, 0, 0, 0, 2.5, 0, 0, 0, 1, 0, 0.8, 0)
-light_color = Color(1, 0.588235, 0.235294, 1)
-light_energy = 2.4
-omni_range = 10.0
+[node name="ClinicCabin" parent="Village" instance=ExtResource("6_cabin")]
+transform = Transform3D(0.939693, 0, 0.34202, 0, 1, 0, -0.34202, 0, 0.939693, -7.5, 0, -2)
 
-[node name="CabinA" type="CSGBox3D" parent="Village"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 1.4, -3)
-use_collision = true
-size = Vector3(4.2, 2.8, 4.5)
-material = SubResource("StandardMaterial3D_cabin")
+[node name="WorkshopCabin" parent="Village" instance=ExtResource("6_cabin")]
+transform = Transform3D(0.939693, 0, -0.34202, 0, 1, 0, 0.34202, 0, 0.939693, 7.5, 0, -1.5)
 
-[node name="CabinB" type="CSGBox3D" parent="Village"]
-transform = Transform3D(0.965926, 0, 0.258819, 0, 1, 0, -0.258819, 0, 0.965926, 5.2, 1.4, -2.5)
-use_collision = true
-size = Vector3(4.0, 2.8, 4.2)
-material = SubResource("StandardMaterial3D_cabin")
+[node name="ElderCabin" parent="Village" instance=ExtResource("6_cabin")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, -9.5)
 
-[node name="StockpileCrates" type="CSGBox3D" parent="Village"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.5, 0.5, 2.5)
-use_collision = true
-size = Vector3(1.8, 1.0, 1.8)
-material = SubResource("StandardMaterial3D_wood_dock")
-
-[node name="NPC_Manager" parent="Village" instance=ExtResource("6_npc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.2, 0, 1.2)
+[node name="NPC_Manager" parent="Village" instance=ExtResource("10_npc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8, 0, 0.5)
 npc_name = "Paman Jamil"
 role = "Pengelola Gudang Komunitas"
-dialogue = "Selamat kembali. Persediaan makanan dan obat kita kian menipis. Tolong periksa kebutuhan warga sebelum kau berlayar lagi."
 
-[node name="NPC_Fisherman" parent="Village" instance=ExtResource("6_npc")]
-transform = Transform3D(0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866025, -3.8, 0, 1.5)
+[node name="NPC_Fisherman" parent="Village" instance=ExtResource("10_npc")]
+transform = Transform3D(0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866025, -3.8, 0, 2.0)
 npc_name = "Pak Hasan"
 role = "Nelayan Tua"
-dialogue = "Laut sekarang sedang aneh, anak muda. Saat pasang tinggi datang, zombie di pulau-pulau luar menjadi sangat agresif. Jangan terlambat pulang ke perahu."
 
-[node name="NPC_Medic" parent="Village" instance=ExtResource("6_npc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0, -3.2)
+[node name="NPC_Medic" parent="Village" instance=ExtResource("10_npc")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.2, 0, -0.5)
 npc_name = "Dokter Sari"
 role = "Tenaga Medis"
-dialogue = "Beberapa penyintas di kabin mulai terserang demam. Bila kau menemukan pulau dengan fasilitas klinik, cari obat-obatan sebanyak yang kau bisa."
+
+[node name="Foliage" type="Node3D" parent="."]
+
+[node name="Palm1" parent="Foliage" instance=ExtResource("7_palm")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 0.4, 2.5)
+
+[node name="Palm2" parent="Foliage" instance=ExtResource("7_palm")]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, 6.8, 0.35, 1.5)
+
+[node name="Pine1" parent="Foliage" instance=ExtResource("8_pine")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 4.0, -22)
+
+[node name="Pine2" parent="Foliage" instance=ExtResource("8_pine")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.8, -28)
+
+[node name="Pine3" parent="Foliage" instance=ExtResource("8_pine")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 4.2, -23)
 
 [node name="Dock" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 4.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 6.0)
 
 [node name="Boardwalk" type="CSGBox3D" parent="Dock"]
 use_collision = true
-size = Vector3(2.6, 0.3, 7.2)
-material = SubResource("StandardMaterial3D_wood_dock")
+size = Vector3(3.0, 0.25, 8.5)
+material = SubResource("StandardMaterial3D_dock_timber")
 
 [node name="Piling1" type="CSGCylinder3D" parent="Dock"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.2, -0.8, -2.5)
-radius = 0.12
-height = 2.0
-material = SubResource("StandardMaterial3D_wood_dock")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.3, -0.9, -3.0)
+radius = 0.16
+height = 2.4
+material = SubResource("StandardMaterial3D_dock_timber")
 
 [node name="Piling2" type="CSGCylinder3D" parent="Dock"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, -0.8, -2.5)
-radius = 0.12
-height = 2.0
-material = SubResource("StandardMaterial3D_wood_dock")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3, -0.9, -3.0)
+radius = 0.16
+height = 2.4
+material = SubResource("StandardMaterial3D_dock_timber")
 
 [node name="Piling3" type="CSGCylinder3D" parent="Dock"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.2, -0.8, 2.5)
-radius = 0.12
-height = 2.0
-material = SubResource("StandardMaterial3D_wood_dock")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.3, -0.9, 3.0)
+radius = 0.16
+height = 2.4
+material = SubResource("StandardMaterial3D_dock_timber")
 
 [node name="Piling4" type="CSGCylinder3D" parent="Dock"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, -0.8, 2.5)
-radius = 0.12
-height = 2.0
-material = SubResource("StandardMaterial3D_wood_dock")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3, -0.9, 3.0)
+radius = 0.16
+height = 2.4
+material = SubResource("StandardMaterial3D_dock_timber")
 
 [node name="DockLantern" type="OmniLight3D" parent="Dock"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 1.5, 1.5)
-light_color = Color(1, 0.745098, 0.419608, 1)
-light_energy = 1.8
-omni_range = 8.0
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3, 2.2, 2.0)
+light_color = Color(1, 0.72, 0.38, 1)
+light_energy = 2.2
+omni_range = 10.0
 
 [node name="Boat" parent="Dock" instance=ExtResource("5_boat")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.4, -0.3, 1.2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8, -0.3, 1.6)
 
 [node name="Player" parent="." instance=ExtResource("3_player")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6, -11)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, -4)
 
 [node name="IsometricCamera" parent="." instance=ExtResource("4_camera")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.6, -11)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, -4)
 
-[node name="HUD" parent="." instance=ExtResource("7_hud")]
+[node name="HUD" parent="." instance=ExtResource("11_hud")]

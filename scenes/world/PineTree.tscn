@@ -1,0 +1,58 @@
+[gd_scene load_steps=5 format=3 uid="uid://cb4k7m9v1p2x"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pine_bark"]
+albedo_color = Color(0.24, 0.17, 0.12, 1)
+roughness = 0.95
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_needles"]
+albedo_color = Color(0.11, 0.24, 0.13, 1)
+roughness = 0.88
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_trunk_col"]
+height = 8.0
+radius = 0.3
+
+[node name="PineTree" type="Node3D"]
+
+[node name="Trunk" type="CSGCylinder3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.0, 0)
+radius = 0.28
+height = 8.0
+sides = 8
+material = SubResource("StandardMaterial3D_pine_bark")
+
+[node name="Tier1" type="CSGCone3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.2, 0)
+radius = 2.4
+height = 2.6
+sides = 7
+material = SubResource("StandardMaterial3D_needles")
+
+[node name="Tier2" type="CSGCone3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.8, 0)
+radius = 1.9
+height = 2.4
+sides = 7
+material = SubResource("StandardMaterial3D_needles")
+
+[node name="Tier3" type="CSGCone3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 7.2, 0)
+radius = 1.4
+height = 2.2
+sides = 7
+material = SubResource("StandardMaterial3D_needles")
+
+[node name="Tier4" type="CSGCone3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8.4, 0)
+radius = 0.85
+height = 1.8
+sides = 7
+material = SubResource("StandardMaterial3D_needles")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.0, 0)
+shape = SubResource("CylinderShape3D_trunk_col")

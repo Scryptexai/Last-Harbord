@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Last Harbor — 2.5D Godot Rebuild (Vertical Slice Preview)</title>
+<title>Last Harbor — Realistic 3D Survival Settlement</title>
 <link rel="icon" type="image/png" href="assets/branding/appicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,7 +15,7 @@
   html, body {
     width: 100%; height: 100%;
     overflow: hidden;
-    background: #03080e;
+    background: #02060c;
     font-family: 'Inter', system-ui, sans-serif;
     color: #f1f5f9;
   }
@@ -28,387 +28,123 @@
     z-index: 1;
   }
 
-  /* HUD OVERLAY */
-  #hud-layer {
+  /* MINIMALIST CINEMATIC BADGE (WORLD FIRST, MINIMAL UI) */
+  #cinematic-hud {
     position: absolute;
-    inset: 0;
+    top: 18px;
+    left: 20px;
     z-index: 10;
     pointer-events: none;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    padding: 14px 18px;
+    gap: 4px;
+    background: rgba(3, 8, 16, 0.75);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 10px 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
   }
-
-  /* TOP BAR */
-  .top-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: rgba(4, 12, 22, 0.92);
-    border: 1px solid rgba(212, 175, 55, 0.45);
-    border-radius: 12px;
-    padding: 8px 16px;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.5);
-    pointer-events: auto;
-  }
-  .island-title {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .island-title h1 {
+  #cinematic-hud h1 {
     font-family: 'Montserrat', sans-serif;
     font-size: 14px;
     font-weight: 800;
     color: #ffde96;
-    letter-spacing: 0.8px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
   }
-  .island-title span {
+  #cinematic-hud span {
     font-size: 11px;
     color: #94a3b8;
   }
 
-  .player-status-group {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-  .hp-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    font-weight: 700;
-  }
-  .hp-bar-outer {
-    width: 90px;
-    height: 12px;
-    background: rgba(30, 10, 10, 0.85);
-    border: 1px solid rgba(239, 68, 68, 0.4);
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  .hp-bar-inner {
-    height: 100%;
-    width: 100%;
-    background: #ef4444;
-    transition: width 0.15s ease;
-  }
-  .cargo-chip {
-    background: rgba(14, 116, 144, 0.35);
-    border: 1px solid #06b6d4;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 700;
-    color: #67e8f9;
-  }
-
-  .stockpile-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .res-badge {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    background: rgba(15, 23, 42, 0.65);
-    padding: 3px 8px;
-    border-radius: 6px;
-    border: 1px solid rgba(255,255,255,0.08);
-    font-size: 11px;
-    font-weight: 600;
-  }
-  .res-badge .val {
-    color: #38bdf8;
-    font-weight: 700;
-  }
-
-  /* DAMAGE FLASH */
-  #damage-flash {
+  /* BOTTOM NAVIGATION & CONTROLS */
+  .bottom-info {
     position: absolute;
-    inset: 0;
-    background: rgba(220, 38, 38, 0.25);
-    pointer-events: none;
-    z-index: 15;
-    opacity: 0;
-    transition: opacity 0.1s ease-out;
-  }
-  #damage-flash.flash {
-    opacity: 1;
-  }
-
-  /* IN-GAME TOAST NOTIFICATION (REPLACES BLOCKING ALERTS) */
-  #toast-container {
-    position: absolute;
-    top: 75px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 25;
-    pointer-events: none;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    align-items: center;
-  }
-  .toast-item {
-    background: rgba(15, 23, 42, 0.94);
-    border: 1.5px solid #38bdf8;
-    color: #f1f5f9;
-    padding: 8px 18px;
+    bottom: 18px;
+    left: 20px;
+    z-index: 10;
+    background: rgba(3, 8, 16, 0.7);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px;
-    font-size: 13px;
-    font-weight: 700;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-    opacity: 0;
-    transform: translateY(-8px);
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .toast-item.show {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  /* INTERACTION PROMPT */
-  #interaction-prompt {
-    align-self: center;
-    margin-bottom: 20px;
-    background: rgba(7, 21, 38, 0.94);
-    border: 1.5px solid #eab308;
-    border-radius: 10px;
-    padding: 10px 22px;
-    font-size: 14px;
-    font-weight: 700;
-    color: #fef08a;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.6);
-    opacity: 0;
-    transform: translateY(10px);
-    transition: all 0.15s ease;
+    padding: 8px 14px;
+    font-size: 11px;
+    color: #cbd5e1;
     pointer-events: auto;
   }
-  #interaction-prompt.show {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  .keycap {
-    display: inline-block;
-    background: #eab308;
-    color: #1e1b4b;
-    padding: 2px 7px;
-    border-radius: 4px;
-    font-weight: 800;
-    margin-right: 5px;
-    font-size: 12px;
-  }
+  .bottom-info b { color: #f8fafc; }
 
-  /* DIALOGUE MODAL */
-  #dialogue-modal {
+  .view-controls {
     position: absolute;
-    bottom: 80px;
-    left: 50%;
-    transform: translateX(-50%) translateY(15px);
-    width: min(92%, 520px);
-    background: rgba(6, 16, 30, 0.96);
-    border: 1.5px solid rgba(56, 189, 248, 0.5);
-    border-radius: 14px;
-    padding: 16px 20px;
-    box-shadow: 0 12px 36px rgba(0,0,0,0.8);
-    opacity: 0;
-    pointer-events: none;
-    transition: all 0.2s ease;
-    z-index: 20;
-  }
-  #dialogue-modal.active {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-    pointer-events: auto;
-  }
-  .speaker-meta {
+    bottom: 18px;
+    right: 20px;
+    z-index: 10;
     display: flex;
-    align-items: baseline;
     gap: 8px;
-    margin-bottom: 6px;
-  }
-  .speaker-name {
-    font-family: 'Montserrat', sans-serif;
-    font-size: 15px;
-    font-weight: 800;
-    color: #38bdf8;
-  }
-  .speaker-role {
-    font-size: 11px;
-    color: #94a3b8;
-    background: rgba(56, 189, 248, 0.15);
-    padding: 2px 6px;
-    border-radius: 4px;
-  }
-  .dialogue-content {
-    font-size: 13px;
-    line-height: 1.5;
-    color: #f8fafc;
-    margin-bottom: 10px;
-  }
-  .dialogue-close-hint {
-    font-size: 11px;
-    color: #64748b;
-    text-align: right;
-  }
-
-  /* CONTROLS HINT & SWITCHER */
-  .bottom-bar-wrapper {
-    position: absolute;
-    bottom: 16px;
-    left: 16px;
-    right: 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    pointer-events: none;
-    z-index: 12;
-  }
-  .controls-card {
-    background: rgba(15, 23, 42, 0.85);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 11px;
-    color: #94a3b8;
-    line-height: 1.4;
     pointer-events: auto;
   }
-  .controls-card b {
-    color: #f1f5f9;
-  }
-  .back-btn {
-    background: rgba(15, 23, 42, 0.9);
+  .hud-btn {
+    background: rgba(3, 8, 16, 0.85);
     border: 1px solid rgba(56, 189, 248, 0.4);
     color: #38bdf8;
     padding: 8px 14px;
     border-radius: 8px;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
+    cursor: pointer;
     text-decoration: none;
-    pointer-events: auto;
-    transition: background 0.15s;
+    transition: all 0.15s;
   }
-  .back-btn:hover {
+  .hud-btn:hover {
     background: rgba(56, 189, 248, 0.2);
   }
 
-  /* CENTER MODALS */
-  .center-modal {
+  /* CONTEXT PROMPT */
+  #context-prompt {
     position: absolute;
-    inset: 0;
-    background: rgba(2, 6, 12, 0.85);
-    z-index: 30;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease;
-  }
-  .center-modal.active {
-    opacity: 1;
-    pointer-events: auto;
-  }
-  .modal-card {
-    background: #091929;
-    border: 1.5px solid #38bdf8;
-    border-radius: 16px;
-    padding: 24px;
-    max-width: 440px;
-    width: 90%;
-    text-align: center;
-    box-shadow: 0 16px 40px rgba(0,0,0,0.8);
-  }
-  .modal-card h2 {
-    font-family: 'Montserrat', sans-serif;
-    color: #ffde96;
-    margin-bottom: 6px;
-    font-size: 20px;
-  }
-  .modal-card p {
-    color: #94a3b8;
-    font-size: 13px;
-    margin-bottom: 18px;
-    line-height: 1.5;
-  }
-  .btn-primary-action {
-    background: linear-gradient(180deg, #38bdf8, #0284c7);
-    color: #041424;
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 800;
-    font-size: 14px;
-    border: none;
+    bottom: 85px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    z-index: 12;
+    background: rgba(7, 21, 38, 0.92);
+    border: 1.5px solid #eab308;
+    color: #fef08a;
     padding: 10px 24px;
-    border-radius: 8px;
-    cursor: pointer;
-    margin: 4px;
-  }
-  .btn-secondary-action {
-    background: transparent;
-    color: #94a3b8;
-    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 10px;
     font-size: 13px;
-    padding: 10px 18px;
-    border-radius: 8px;
-    cursor: pointer;
-    margin: 4px;
-  }
-
-  /* VOYAGE TRANSITION OVERLAY */
-  #voyage-screen {
-    position: absolute;
-    inset: 0;
-    background: #02070e;
-    z-index: 45;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
+    font-weight: 700;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.35s ease;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  #voyage-screen.active {
+  #context-prompt.show {
     opacity: 1;
-    pointer-events: auto;
-  }
-  .voyage-icon {
-    font-size: 38px;
-  }
-  .voyage-text {
-    font-family: 'Montserrat', sans-serif;
-    font-size: 16px;
-    color: #ffde96;
-    letter-spacing: 1.5px;
+    transform: translateX(-50%) translateY(0);
   }
 
   /* LOADING SCREEN */
   #loading-screen {
     position: absolute;
     inset: 0;
-    background: #03080e;
+    background: #02070e;
     z-index: 50;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 14px;
-    transition: opacity 0.3s ease;
+    gap: 16px;
+    transition: opacity 0.4s ease;
   }
   #loading-screen.done {
     opacity: 0;
     pointer-events: none;
   }
   .spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid rgba(56, 189, 248, 0.2);
+    width: 44px;
+    height: 44px;
+    border: 3.5px solid rgba(56, 189, 248, 0.2);
     border-top-color: #38bdf8;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
@@ -417,8 +153,8 @@
   .load-text {
     font-size: 13px;
     color: #94a3b8;
-    font-weight: 500;
-    letter-spacing: 1px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
   }
 </style>
 </head>
@@ -426,169 +162,51 @@
 
 <div id="loading-screen">
   <div class="spinner"></div>
-  <p class="load-text">MEMUAT VERTICAL SLICE (OPTIMIZED PREVIEW)...</p>
-</div>
-
-<div id="damage-flash"></div>
-
-<div id="toast-container"></div>
-
-<div id="voyage-screen">
-  <div class="voyage-icon">⛵</div>
-  <p class="voyage-text" id="voyage-caption">BERLAYAR MENEMBUS KABUT LAUT...</p>
+  <p class="load-text">MEMBANGUN WORLD REALISTIS (3D TERRAIN & ASSETS)...</p>
 </div>
 
 <canvas id="webgl-canvas"></canvas>
 
-<div id="hud-layer">
-  <!-- TOP BAR -->
-  <div class="top-bar">
-    <div class="island-title">
-      <h1 id="hud-island-name">SAFE ISLAND · PULAU AMAN</h1>
-      <span id="hud-island-sub">Desa → Jalan → Dermaga → Perahu</span>
-    </div>
-
-    <div class="player-status-group">
-      <div class="hp-wrapper">
-        <span>❤️ HP</span>
-        <div class="hp-bar-outer"><div class="hp-bar-inner" id="hp-bar-fill"></div></div>
-      </div>
-      <div class="cargo-chip" id="hud-cargo">📦 Palka: 0/12</div>
-    </div>
-
-    <div class="stockpile-group">
-      <div class="res-badge"><span>🌾</span> <span class="val" id="val-food">18</span></div>
-      <div class="res-badge"><span>🪵</span> <span class="val" id="val-wood">14</span></div>
-      <div class="res-badge"><span>🔩</span> <span class="val" id="val-metal">6</span></div>
-      <div class="res-badge"><span>💊</span> <span class="val" id="val-med">4</span></div>
-    </div>
-  </div>
-
-  <!-- INTERACTION PROMPT -->
-  <div id="interaction-prompt">
-    <span class="keycap">E</span> <span id="prompt-text">Bicara dengan Penyintas</span>
-  </div>
+<div id="cinematic-hud">
+  <h1>Safe Island · Pemukiman Nelayan</h1>
+  <span>Elevasi Alamiah · Hutan Pesisir · Rombongan Kabin · Dermaga Kayu</span>
 </div>
 
-<!-- SURVIVOR DIALOGUE MODAL -->
-<div id="dialogue-modal">
-  <div class="speaker-meta">
-    <span class="speaker-name" id="diag-name">Paman Jamil</span>
-    <span class="speaker-role" id="diag-role">Pengelola Gudang</span>
-  </div>
-  <p class="dialogue-content" id="diag-text">Persediaan obat dan makanan kita kian menipis. Tolong cari perbekalan di pulau luar sebelum pasang malam datang!</p>
-  <div class="dialogue-close-hint">Tekan [E] atau [Spasi] untuk menutup</div>
+<div class="bottom-info">
+  <b>Kontrol Karakter:</b> <b>W A S D</b> Bergerak &nbsp;|&nbsp; <b>Shift</b> Lari &nbsp;|&nbsp; <b>Spasi</b> Pukul Tempur
 </div>
 
-<!-- BOTTOM BAR: CONTROLS & EXIT -->
-<div class="bottom-bar-wrapper">
-  <div class="controls-card">
-    <b>Kontrol 2.5D:</b><br>
-    • Gerak: <b>W A S D</b> / Panah<br>
-    • Lari: <b>Shift</b><br>
-    • Pukul: <b>Spasi</b> / <b>J</b> / Klik<br>
-    • Aksi: <b>E</b> (Panen / Bicara / Berlayar)
-  </div>
-  <a href="index.html" class="back-btn">← MENU UTAMA</a>
+<div class="view-controls">
+  <button class="hud-btn" id="btn-cam-toggle">Kamera: Cinematic 3/4</button>
+  <a href="index.html" class="hud-btn">← Menu Utama</a>
 </div>
 
-<!-- EXPEDITION MODAL -->
-<div id="expedition-modal" class="center-modal">
-  <div class="modal-card">
-    <h2>⚓ DERMAGA & PERAHU</h2>
-    <p>Perahu Ekspedisi siap berlayar menuju <b>Pulau Zombie Pertama</b>.<br>
-    Kapasitas Palka: <b>0 / 12 slot</b>.<br>
-    Kumpulkan Makanan, Obat, dan Material sebelum air pasang naik!</p>
-    <button class="btn-primary-action" id="btn-start-sail">BERLAYAR SEKARANG</button>
-    <button class="btn-secondary-action" id="btn-cancel-sail">KEMBALI KE DESA</button>
-  </div>
-</div>
-
-<!-- RETURN MODAL -->
-<div id="return-modal" class="center-modal">
-  <div class="modal-card">
-    <h2>⛵ DERMAGA PULAU ZOMBIE</h2>
-    <p>Kembali ke perahu untuk berlayar pulang ke <b>Safe Island</b>?<br>
-    Muatan di palka: <b id="return-cargo-summary">0 unit</b> akan disetor aman ke gudang komunitas desa.</p>
-    <button class="btn-primary-action" id="btn-confirm-return">PULANG KE SAFE ISLAND</button>
-    <button class="btn-secondary-action" id="btn-cancel-return">LANJUTKAN EKSPLORASI</button>
-  </div>
-</div>
-
-<!-- DEBRIEF MODAL -->
-<div id="debrief-modal" class="center-modal">
-  <div class="modal-card">
-    <h2>⚓ LAPORAN KEPULANGAN EKSPEDISI</h2>
-    <p id="debrief-content">Hasil jarahan berhasil disetor ke gudang komunitas desa.</p>
-    <button class="btn-primary-action" id="btn-close-debrief">SELESAI</button>
-  </div>
+<div id="context-prompt">
+  <span style="background:#eab308;color:#0f172a;padding:2px 6px;border-radius:4px;margin-right:6px">E</span>
+  <span id="prompt-label">Interaksi</span>
 </div>
 
 <script>
 // ==============================================================================
-// ULTRA-OPTIMIZED 2.5D REBUILD ENGINE
-// 1. Gouraud / Lambert fast shading (0% expensive shadowmap overhead)
-// 2. Contact Shadows for 60 FPS on any browser
-// 3. Frame-based delta transitions (No blocking alerts, zero setInterval leaks)
-// 4. Memory-cached GLB Model instance
+// REDESIGNED FROM THE GROUND UP: REAL 3D SURVIVAL GAME PRESENTATION
+// - Procedural Realistic 3D Terrain with Height Curves, Cliffs & Organic Coastline
+// - Real Ocean Depth Gradient & Animated Foam Waves
+// - Realistic 3D Foliage: Curved Palm Trees, Coastal Pines, Leafy Undergrowth
+// - Realistic Apocalypse Survivor Cabins: Stilt Foundations, Timber Siding, Corrugated Roofs, Porches
+// - Realistic Weathered Boardwalk Dock extending into deep water
+// - True Environmental Human Scaling (Human = 1.75m reference)
+// - Cinematic 3/4 Third-Person Camera with Real Depth
 // ==============================================================================
 
 const canvas = document.getElementById('webgl-canvas');
-const promptEl = document.getElementById('interaction-prompt');
-const promptTextEl = document.getElementById('prompt-text');
-const diagModal = document.getElementById('dialogue-modal');
-const diagNameEl = document.getElementById('diag-name');
-const diagRoleEl = document.getElementById('diag-role');
-const diagTextEl = document.getElementById('diag-text');
-const expModal = document.getElementById('expedition-modal');
-const retModal = document.getElementById('return-modal');
-const debriefModal = document.getElementById('debrief-modal');
-const debriefTextEl = document.getElementById('debrief-content');
-const voyageScreen = document.getElementById('voyage-screen');
-const voyageCaption = document.getElementById('voyage-caption');
 const loadingScreen = document.getElementById('loading-screen');
-const damageFlash = document.getElementById('damage-flash');
-const toastContainer = document.getElementById('toast-container');
-
-const hpBarFill = document.getElementById('hp-bar-fill');
-const hudCargo = document.getElementById('hud-cargo');
-const hudIslandName = document.getElementById('hud-island-name');
-const hudIslandSub = document.getElementById('hud-island-sub');
-const valFood = document.getElementById('val-food');
-const valWood = document.getElementById('val-wood');
-const valMetal = document.getElementById('val-metal');
-const valMed = document.getElementById('val-med');
+const contextPrompt = document.getElementById('context-prompt');
+const promptLabel = document.getElementById('prompt-label');
 
 let renderer, scene, camera;
 let clock = new THREE.Clock();
 
-// Game World State
-let currentWorld = 'safe_island';
-let dayCount = 1;
-
-// Community Stockpile
-const stockpile = {
-  food: 18,
-  wood: 14,
-  metal: 6,
-  medicine: 4,
-};
-
-// Carried Cargo
-const BOAT_CAPACITY = 12;
-const carriedCargo = {
-  food: 0,
-  wood: 0,
-  metal: 0,
-  medicine: 0,
-};
-
-// Player Stats
-let playerMaxHp = 100;
-let playerHp = 100;
-let invulnerableTimer = 0;
-
-// Character Model & Animations
+// Character State
 let playerGroup = new THREE.Group();
 let characterModel = null;
 let mixer = null;
@@ -596,686 +214,856 @@ let actions = {};
 let currentAction = null;
 let currentActionKey = 'idle';
 
-let playerPos = new THREE.Vector3(0, 2.5, -12);
+let playerPos = new THREE.Vector3(0, 1.8, -4); // Starts on main village path
 let playerFacing = -Math.PI / 2;
 let isAttacking = false;
 let attackTimer = 0;
 let attackDuration = 0.45;
-let hasHitInSwing = false;
 
-// Camera
-const CAM_PITCH = 38 * Math.PI / 180;
-const CAM_YAW = 18 * Math.PI / 180;
-let CAM_DIST = 14.5;
-let targetCamDist = 14.5;
-let cameraTarget = new THREE.Vector3(0, 2.5, -12);
+// Camera System (Cinematic Third-Person 3/4)
+let camPitch = 38 * Math.PI / 180;
+let camYaw = 16 * Math.PI / 180;
+let camDist = 13.5;
+let targetCamDist = 13.5;
+let cameraTarget = new THREE.Vector3(0, 1.8, -4);
+let isCinematicView = false;
 
-// Island environments & cached props
-let islandGroup = new THREE.Group();
-let boatMesh = null;
+// Procedural World Elements
+let terrainMesh = null;
+let terrainGeo = null;
+let oceanMesh = null;
+let waterTime = 0;
+let boatGroup = null;
 let boatBobTime = 0;
 
-// Entities & Tweens
-let interactables = [];
-let activeInteractable = null;
-let enemies = [];
-let activeTweens = []; // Frame-driven tweens (No setInterval!)
-
-// Shared Materials for High-Performance Rendering
-const matOcean = new THREE.MeshLambertMaterial({ color: 0x061e33 });
-const matGrass = new THREE.MeshLambertMaterial({ color: 0x27432b });
-const matPath = new THREE.MeshLambertMaterial({ color: 0x5a452e });
-const matSand = new THREE.MeshLambertMaterial({ color: 0x8a7752 });
-const matWood = new THREE.MeshLambertMaterial({ color: 0x48321e });
-const matRuins = new THREE.MeshLambertMaterial({ color: 0x3d414a });
-const matTreeTrunk = new THREE.MeshLambertMaterial({ color: 0x2c1f17 });
-const matTreeFoliage = new THREE.MeshLambertMaterial({ color: 0x18301c });
-const matNpcBody = new THREE.MeshLambertMaterial({ color: 0x3b5066 });
-const matNpcHead = new THREE.MeshLambertMaterial({ color: 0xd4a373 });
-const matZombieWalker = new THREE.MeshLambertMaterial({ color: 0x3d5440 });
-const matZombieRunner = new THREE.MeshLambertMaterial({ color: 0x6b2d24 });
-
-// Toast Banner helper
-function showToast(msg) {
-  const t = document.createElement('div');
-  t.className = 'toast-item';
-  t.textContent = msg;
-  toastContainer.appendChild(t);
-  requestAnimationFrame(() => t.classList.add('show'));
-  setTimeout(() => {
-    t.classList.remove('show');
-    setTimeout(() => { if (t.parentNode) t.parentNode.removeChild(t); }, 250);
-  }, 2200);
-}
-
-// Input Keys
-const keys = {};
-window.addEventListener('keydown', (e) => {
-  keys[e.code] = true;
-  if (e.code === 'KeyE') {
-    handleInteraction();
-  }
-  if (e.code === 'Space') {
-    if (diagModal.classList.contains('active')) {
-      closeDialogue();
-    } else if (debriefModal.classList.contains('active')) {
-      debriefModal.classList.remove('active');
-    } else {
-      triggerAttack();
-    }
-  }
-});
-window.addEventListener('keyup', (e) => {
-  keys[e.code] = false;
-});
-window.addEventListener('click', (e) => {
-  if (e.target.closest('#hud-layer') || e.target.closest('.center-modal') || e.target.closest('#dialogue-modal') || e.target.closest('.bottom-bar-wrapper')) return;
-  triggerAttack();
-});
-
-// Modal button listeners
-document.getElementById('btn-start-sail').addEventListener('click', () => {
-  expModal.classList.remove('active');
-  startVoyageToZombieIsland();
-});
-document.getElementById('btn-cancel-sail').addEventListener('click', () => {
-  expModal.classList.remove('active');
-});
-document.getElementById('btn-confirm-return').addEventListener('click', () => {
-  retModal.classList.remove('active');
-  startVoyageToSafeIsland();
-});
-document.getElementById('btn-cancel-return').addEventListener('click', () => {
-  retModal.classList.remove('active');
-});
-document.getElementById('btn-close-debrief').addEventListener('click', () => {
-  debriefModal.classList.remove('active');
-});
-
-function initThree() {
-  renderer = new THREE.WebGLRenderer({
-    canvas,
-    antialias: false, // Hemat GPU
-    powerPreference: 'high-performance',
-    precision: 'mediump'
-  });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25)); // Resolusi optimal
-  renderer.toneMapping = THREE.NoToneMapping; // Zero shader post-process overhead
-
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x061525);
-  scene.fog = new THREE.FogExp2(0x0a1d30, 0.016);
-
-  camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.5, 120);
-  updateCameraTransform(playerPos, 0);
-
-  // Balanced lightweight lighting
-  const hemiLight = new THREE.HemisphereLight(0xbde0fe, 0x1b2838, 0.85);
-  scene.add(hemiLight);
-
-  const sunLight = new THREE.DirectionalLight(0xffecd1, 1.2);
-  sunLight.position.set(12, 24, 10);
-  scene.add(sunLight);
-
-  scene.add(islandGroup);
-
-  buildSafeIsland();
-  loadCharacter();
-
-  window.addEventListener('resize', onResize);
-}
-
-function updateCameraTransform(targetPos, delta) {
-  cameraTarget.lerp(targetPos, delta ? 6.0 * delta : 1.0);
-  CAM_DIST = THREE.MathUtils.lerp(CAM_DIST, targetCamDist, delta ? 8.0 * delta : 1.0);
-  const offset = new THREE.Vector3(
-    Math.sin(CAM_YAW) * Math.cos(CAM_PITCH) * CAM_DIST,
-    Math.sin(CAM_PITCH) * CAM_DIST,
-    Math.cos(CAM_YAW) * Math.cos(CAM_PITCH) * CAM_DIST
-  );
-  camera.position.copy(cameraTarget).add(offset);
-  camera.lookAt(cameraTarget.x, cameraTarget.y + 0.8, cameraTarget.z);
-}
-
-function onResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-}
+// Interactive zones
+const interactables = [];
 
 // ==============================================================================
-// SAFE ISLAND WORLD
+// TEXTURE GENERATION FOR REALISTIC MATERIAL RESPONSE
 // ==============================================================================
-function buildSafeIsland() {
-  clearCurrentWorld();
-  currentWorld = 'safe_island';
+function createProceduralTexture(type) {
+  const c = document.createElement('canvas');
+  c.width = 512;
+  c.height = 512;
+  const ctx = c.getContext('2d');
 
-  hudIslandName.textContent = "SAFE ISLAND · PULAU AMAN";
-  hudIslandSub.textContent = "Desa → Jalan → Dermaga → Perahu";
-
-  playerPos.set(0, 2.5, -12);
-  playerFacing = -Math.PI / 2;
-
-  // Ocean
-  const ocean = new THREE.Mesh(new THREE.PlaneGeometry(160, 160), matOcean);
-  ocean.rotation.x = -Math.PI / 2;
-  ocean.position.y = -0.2;
-  islandGroup.add(ocean);
-
-  // Village Plateau
-  const plateau = new THREE.Mesh(new THREE.CylinderGeometry(15, 16, 2.6, 20), matGrass);
-  plateau.position.set(0, 1.3, -16);
-  islandGroup.add(plateau);
-
-  // Bonfire
-  const bonfire = new THREE.Mesh(new THREE.ConeGeometry(0.6, 0.8, 8), new THREE.MeshBasicMaterial({ color: 0xff6b1a }));
-  bonfire.position.set(0, 2.9, -16);
-  islandGroup.add(bonfire);
-  const fireLight = new THREE.PointLight(0xff8c38, 2.4, 16, 1.4);
-  fireLight.position.set(0, 3.2, -16);
-  islandGroup.add(fireLight);
-
-  // Cabins
-  function addCabin(x, y, z, rot) {
-    const c = new THREE.Mesh(new THREE.BoxGeometry(4.2, 2.6, 4.2), matWood);
-    c.position.set(x, y + 1.3, z);
-    c.rotation.y = rot;
-    islandGroup.add(c);
-  }
-  addCabin(-6.5, 2.5, -17, 0.3);
-  addCabin(6.8, 2.5, -16, -0.4);
-
-  // Sloping Path
-  const pathRamp = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.8, 12), matPath);
-  pathRamp.position.set(0, 1.25, -6.5);
-  pathRamp.rotation.x = 0.22;
-  islandGroup.add(pathRamp);
-
-  // Beach
-  const beach = new THREE.Mesh(new THREE.CylinderGeometry(9, 11, 0.6, 20), matSand);
-  beach.position.set(0, 0.1, 0);
-  islandGroup.add(beach);
-
-  // Dock Pier
-  const dockPier = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.35, 7.5), matWood);
-  dockPier.position.set(0, 0.35, 4.5);
-  islandGroup.add(dockPier);
-
-  // Dock Lantern
-  const dockLight = new THREE.PointLight(0xffb042, 2.0, 12, 1.4);
-  dockLight.position.set(1.4, 2.2, 5.0);
-  islandGroup.add(dockLight);
-
-  // Boat
-  createBoatMesh(2.6, 0.1, 5.8);
-
-  interactables.push({
-    type: 'boat',
-    pos: new THREE.Vector3(1.8, 0.35, 5.8),
-    radius: 2.8,
-    prompt: 'Naik Perahu & Buka Peta Ekspedisi',
-    onInteract: () => {
-      expModal.classList.add('active');
+  if (type === 'sand') {
+    // Warm natural coastal sand with fine pebble grain
+    ctx.fillStyle = '#bfa77b';
+    ctx.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 18000; i++) {
+      const x = Math.random() * 512;
+      const y = Math.random() * 512;
+      const gray = Math.floor(160 + Math.random() * 60);
+      ctx.fillStyle = `rgba(${gray}, ${gray - 20}, ${gray - 45}, 0.18)`;
+      ctx.fillRect(x, y, 1.5, 1.5);
     }
-  });
-
-  // NPCs
-  spawnNPC("Paman Jamil", "Pengelola Gudang Komunitas", "Selamat kembali. Persediaan makanan kita tersisa " + stockpile.food + " unit. Tolong berlayar dan bawa persediaan dari pulau luar!", 2.4, 2.5, -14.2);
-  spawnNPC("Pak Hasan", "Nelayan Tua", "Saat kabut naik, zombie pulau luar sangat agresif. Pukul mereka dengan Spasi, lalu segera bawa muatanmu pulang!", -3.8, 2.5, -15.0);
-  spawnNPC("Dokter Sari", "Tenaga Medis", "Obat di kabin hampir habis. Bila kau menemukan klinik reruntuhan di pulau zombie, ambil kotak obat sebanyaknya!", -2.8, 2.5, -18.2);
-}
-
-// ==============================================================================
-// ZOMBIE ISLAND 1 WORLD (Vertical Slice First)
-// ==============================================================================
-function buildZombieIsland() {
-  clearCurrentWorld();
-  currentWorld = 'zombie_island';
-
-  hudIslandName.textContent = "ZOMBIE ISLAND #1 · PULAU EKSPEDISI";
-  hudIslandSub.textContent = "Pantai Pendaratan → Hutan Pesisir → Reruntuhan Klinik";
-
-  playerPos.set(0, 0.5, 14);
-  playerFacing = Math.PI;
-
-  // Ocean
-  const ocean = new THREE.Mesh(new THREE.PlaneGeometry(160, 160), matOcean);
-  ocean.rotation.x = -Math.PI / 2;
-  ocean.position.y = -0.2;
-  islandGroup.add(ocean);
-
-  // 1. Landing Beach & Pier
-  const beach = new THREE.Mesh(new THREE.CylinderGeometry(11, 13, 0.6, 20), matSand);
-  beach.position.set(0, 0.2, 12);
-  islandGroup.add(beach);
-
-  const pier = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.35, 6.5), matWood);
-  pier.position.set(0, 0.35, 17);
-  islandGroup.add(pier);
-
-  // Moored Boat on Beach
-  createBoatMesh(2.4, 0.1, 17.5);
-
-  interactables.push({
-    type: 'boat_return',
-    pos: new THREE.Vector3(1.6, 0.35, 17.5),
-    radius: 3.0,
-    prompt: 'Naik Perahu & Berlayar Pulang ke Safe Island',
-    onInteract: () => {
-      document.getElementById('return-cargo-summary').textContent = getTotalCargo() + " unit";
-      retModal.classList.add('active');
-    }
-  });
-
-  // 2. Coastal Forest
-  const forestFloor = new THREE.Mesh(new THREE.BoxGeometry(18, 1.8, 14), matGrass);
-  forestFloor.position.set(0, 1.0, 1);
-  islandGroup.add(forestFloor);
-
-  function addTree(x, z) {
-    const t = new THREE.Group();
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.28, 2.4, 6), matTreeTrunk);
-    trunk.position.y = 1.2;
-    t.add(trunk);
-    const cone = new THREE.Mesh(new THREE.ConeGeometry(1.4, 2.2, 6), matTreeFoliage);
-    cone.position.y = 2.8;
-    t.add(cone);
-    t.position.set(x, 1.9, z);
-    islandGroup.add(t);
-  }
-  addTree(-5, 3);
-  addTree(5.5, -2);
-  addTree(-6, -4);
-  addTree(6.2, 4);
-
-  // 3. Clinic & Warehouse Ruins
-  const ruinsFloor = new THREE.Mesh(new THREE.BoxGeometry(20, 3.2, 16), matRuins);
-  ruinsFloor.position.set(0, 2.0, -14);
-  islandGroup.add(ruinsFloor);
-
-  function addRuinsWall(x, y, z, sx, sy, sz) {
-    const w = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), matRuins);
-    w.position.set(x, y, z);
-    islandGroup.add(w);
-  }
-  addRuinsWall(-6, 4.8, -17, 1.0, 2.4, 6.0);
-  addRuinsWall(5, 4.8, -12, 5.0, 2.4, 1.0);
-  addRuinsWall(0, 4.8, -21, 8.0, 2.4, 1.0);
-
-  // 4. Resource Nodes
-  spawnResourceNode("medicine", 2, -4.5, 3.6, -18);
-  spawnResourceNode("medicine", 1, 2.8, 3.6, -13);
-  spawnResourceNode("food", 2, -3.5, 3.6, -12);
-  spawnResourceNode("food", 2, 4.2, 3.6, -16);
-  spawnResourceNode("metal", 2, 6.0, 3.6, -11);
-  spawnResourceNode("wood", 2, -3.0, 1.9, 2.5);
-
-  // 5. Zombie Enemies
-  spawnZombie("walker", 1.5, 3.6, -14);
-  spawnZombie("walker", -5.5, 3.6, -15);
-  spawnZombie("runner", 3.2, 1.9, 0.5);
-}
-
-function clearCurrentWorld() {
-  while (islandGroup.children.length > 0) {
-    const obj = islandGroup.children[0];
-    islandGroup.remove(obj);
-  }
-  interactables = [];
-  enemies = [];
-  activeTweens = [];
-  activeInteractable = null;
-}
-
-function createBoatMesh(x, y, z) {
-  boatMesh = new THREE.Group();
-  const hull = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.9, 4.6), matWood);
-  hull.position.y = 0.2;
-  boatMesh.add(hull);
-
-  const floor = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.1, 4.0), matPath);
-  floor.position.y = 0.45;
-  boatMesh.add(floor);
-
-  const lantern = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffd175 }));
-  lantern.position.set(0, 1.4, 1.8);
-  boatMesh.add(lantern);
-
-  boatMesh.position.set(x, y, z);
-  islandGroup.add(boatMesh);
-}
-
-function spawnNPC(name, role, dialogue, x, y, z) {
-  const group = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 1.1, 8), matNpcBody);
-  body.position.y = 0.65;
-  group.add(body);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), matNpcHead);
-  head.position.y = 1.35;
-  group.add(head);
-
-  group.position.set(x, y, z);
-  islandGroup.add(group);
-
-  interactables.push({
-    type: 'npc',
-    name: name,
-    role: role,
-    dialogue: dialogue,
-    pos: new THREE.Vector3(x, y, z),
-    radius: 2.4,
-    prompt: 'Bicara dengan ' + name + ' (' + role + ')',
-    onInteract: () => {
-      diagNameEl.textContent = name;
-      diagRoleEl.textContent = role;
-      diagTextEl.textContent = dialogue;
-      diagModal.classList.add('active');
-    }
-  });
-}
-
-function spawnResourceNode(type, amount, x, y, z) {
-  const group = new THREE.Group();
-  let color = 0x684b2e;
-  let label = "🌾 Bahan";
-  if (type === 'medicine') { color = 0xdbeafe; label = "💊 Kotak Obat (+" + amount + ")"; }
-  else if (type === 'food') { color = 0xca8a04; label = "🌾 Peti Ransum (+" + amount + ")"; }
-  else if (type === 'metal') { color = 0x64748b; label = "🔩 Rongsokan Besi (+" + amount + ")"; }
-  else if (type === 'wood') { color = 0x78350f; label = "🪵 Kayu Glondong (+" + amount + ")"; }
-
-  const box = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.8, 0.85), new THREE.MeshLambertMaterial({ color: color }));
-  box.position.y = 0.4;
-  group.add(box);
-
-  group.position.set(x, y, z);
-  islandGroup.add(group);
-
-  const nodeObj = {
-    type: 'resource',
-    resType: type,
-    amount: amount,
-    pos: new THREE.Vector3(x, y, z),
-    radius: 2.2,
-    mesh: group,
-    harvested: false,
-    prompt: 'Tekan E untuk Panen ' + label,
-    onInteract: () => {
-      if (nodeObj.harvested) return;
-      if (getTotalCargo() + amount > BOAT_CAPACITY) {
-        showToast("⚠️ Palka Perahu Penuh! (12/12). Bawa hasil panen ke perahu.");
-        return;
-      }
-      carriedCargo[type] += amount;
-      nodeObj.harvested = true;
-      updateCargoHUD();
-      showToast("Berhasil mengambil " + label + "!");
-
-      // Frame-driven harvest tween (No setInterval leak)
-      activeTweens.push({
-        duration: 0.25,
-        elapsed: 0,
-        update: (p) => {
-          const s = Math.max(0.01, 1.0 - p);
-          group.scale.set(s, s, s);
-        },
-        complete: () => {
-          islandGroup.remove(group);
-        }
-      });
-    }
-  };
-
-  interactables.push(nodeObj);
-}
-
-// ==============================================================================
-// ZOMBIE AI & COMBAT (OPTIMIZED)
-// ==============================================================================
-function spawnZombie(type, x, y, z) {
-  const group = new THREE.Group();
-  const isRunner = (type === 'runner');
-  const maxHp = isRunner ? 35 : 60;
-  const speed = isRunner ? 3.8 : 2.0;
-  const dmg = isRunner ? 14 : 22;
-
-  const mat = isRunner ? matZombieRunner : matZombieWalker;
-  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.75, 0.32), mat);
-  torso.position.y = 0.75;
-  group.add(torso);
-
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), mat);
-  head.position.y = 1.35;
-  group.add(head);
-
-  // HP Bar mesh
-  const hpBg = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.12), new THREE.MeshBasicMaterial({ color: 0x331111 }));
-  hpBg.position.set(0, 1.8, 0);
-  group.add(hpBg);
-  const hpFill = new THREE.Mesh(new THREE.PlaneGeometry(0.78, 0.1), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
-  hpFill.position.set(0, 1.8, 0.01);
-  group.add(hpFill);
-
-  group.position.set(x, y, z);
-  islandGroup.add(group);
-
-  const zombieObj = {
-    type: type,
-    maxHp: maxHp,
-    hp: maxHp,
-    speed: speed,
-    damage: dmg,
-    mesh: group,
-    hpFill: hpFill,
-    hpBg: hpBg,
-    state: 'idle',
-    wanderTimer: Math.random() * 2,
-    wanderDir: new THREE.Vector3(),
-    attackCooldown: 0,
-    takeDamage: (amount) => {
-      if (zombieObj.state === 'dead') return;
-      zombieObj.hp -= amount;
-      zombieObj.state = 'chase';
-
-      // Quick hit flash using color scale
-      torso.material = new THREE.MeshBasicMaterial({ color: 0xff3333 });
-      setTimeout(() => { torso.material = mat; }, 120);
-
-      // Knockback
-      const knock = group.position.clone().sub(playerPos).normalize().multiplyScalar(1.2);
-      group.position.add(knock);
-
-      const pct = Math.max(0, zombieObj.hp / zombieObj.maxHp);
-      hpFill.scale.x = pct;
-
-      if (zombieObj.hp <= 0) {
-        zombieObj.state = 'dead';
-        hpBg.visible = false;
-        hpFill.visible = false;
-
-        // Drop lootable metal scrap
-        spawnResourceNode("metal", 1, group.position.x, group.position.y, group.position.z);
-        showToast("Zombie tumbang! Menjatuhkan rongsokan besi.");
-
-        // Frame-driven death fall (No setInterval leak)
-        activeTweens.push({
-          duration: 0.35,
-          elapsed: 0,
-          update: (p) => {
-            group.rotation.x = -p * 1.4;
-            const s = Math.max(0.01, 1.0 - p * 0.8);
-            group.scale.set(s, s, s);
-          },
-          complete: () => {
-            islandGroup.remove(group);
-          }
-        });
-      }
-    }
-  };
-
-  enemies.push(zombieObj);
-}
-
-function updateZombies(delta) {
-  for (let z of enemies) {
-    if (z.state === 'dead') continue;
-
-    z.hpBg.quaternion.copy(camera.quaternion);
-    z.hpFill.quaternion.copy(camera.quaternion);
-
-    if (z.attackCooldown > 0) z.attackCooldown -= delta;
-
-    const distSq = z.mesh.position.distanceToSquared(playerPos);
-
-    if (z.state === 'idle') {
-      z.wanderTimer -= delta;
-      if (z.wanderTimer <= 0) {
-        z.wanderTimer = 2.0 + Math.random() * 3.0;
-        z.wanderDir.set(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
-      }
-      z.mesh.position.addScaledVector(z.wanderDir, z.speed * 0.4 * delta);
-      if (distSq < 100.0) { // 10m detection
-        z.state = 'chase';
-        for (let other of enemies) {
-          if (other.mesh.position.distanceToSquared(z.mesh.position) < 64.0) other.state = 'chase';
-        }
-      }
-    } else if (z.state === 'chase') {
-      const toPlayer = playerPos.clone().sub(z.mesh.position);
-      toPlayer.y = 0;
-      if (toPlayer.lengthSq() > 1.44) {
-        toPlayer.normalize();
-        z.mesh.position.addScaledVector(toPlayer, z.speed * delta);
-        z.mesh.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
+  } else if (type === 'dirt_grass') {
+    // Rich coastal loam with moss & dead pine needles
+    ctx.fillStyle = '#423628';
+    ctx.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 22000; i++) {
+      const x = Math.random() * 512;
+      const y = Math.random() * 512;
+      const isGreen = Math.random() > 0.45;
+      if (isGreen) {
+        ctx.fillStyle = `rgba(${30 + Math.random()*25}, ${60 + Math.random()*35}, ${25 + Math.random()*20}, 0.28)`;
+        ctx.fillRect(x, y, 3, 2);
       } else {
-        if (z.attackCooldown <= 0) {
-          z.attackCooldown = 1.4;
-          playerTakeDamage(z.damage);
-        }
+        ctx.fillStyle = `rgba(${75 + Math.random()*30}, ${50 + Math.random()*25}, ${30 + Math.random()*15}, 0.25)`;
+        ctx.fillRect(x, y, 2, 2);
       }
     }
-  }
-}
-
-function playerTakeDamage(amount) {
-  if (invulnerableTimer > 0) return;
-  invulnerableTimer = 0.5;
-  playerHp = Math.max(0, playerHp - amount);
-  updateHPBar();
-
-  damageFlash.classList.add('flash');
-  setTimeout(() => damageFlash.classList.remove('flash'), 120);
-
-  if (playerHp <= 0) {
-    showToast("⚠️ Karakter tumbang! Diselamatkan ke Safe Island.");
-    for (let k in carriedCargo) carriedCargo[k] = 0;
-    updateCargoHUD();
-    playerHp = playerMaxHp;
-    updateHPBar();
-    buildSafeIsland();
-  }
-}
-
-function updateHPBar() {
-  const pct = (playerHp / playerMaxHp) * 100;
-  hpBarFill.style.width = pct + '%';
-}
-
-function getTotalCargo() {
-  return carriedCargo.food + carriedCargo.wood + carriedCargo.metal + carriedCargo.medicine;
-}
-
-function updateCargoHUD() {
-  hudCargo.textContent = "📦 Palka: " + getTotalCargo() + "/" + BOAT_CAPACITY;
-}
-
-function updateStockpileHUD() {
-  valFood.textContent = stockpile.food;
-  valWood.textContent = stockpile.wood;
-  valMetal.textContent = stockpile.metal;
-  valMed.textContent = stockpile.medicine;
-}
-
-// ==============================================================================
-// VOYAGE TRANSITIONS
-// ==============================================================================
-function startVoyageToZombieIsland() {
-  voyageCaption.textContent = "BERLAYAR MENUJU PULAU ZOMBIE PERTAMA...";
-  voyageScreen.classList.add('active');
-
-  setTimeout(() => {
-    buildZombieIsland();
-    setTimeout(() => {
-      voyageScreen.classList.remove('active');
-      showToast("Mendarat di Zombie Island! Cari obat di reruntuhan.");
-    }, 400);
-  }, 750);
-}
-
-function startVoyageToSafeIsland() {
-  voyageCaption.textContent = "BERLAYAR PULANG MEMBAWA JARAHAN KE SAFE ISLAND...";
-  voyageScreen.classList.add('active');
-
-  setTimeout(() => {
-    const rescued = { ...carriedCargo };
-    for (let k in carriedCargo) {
-      stockpile[k] = (stockpile[k] || 0) + carriedCargo[k];
-      carriedCargo[k] = 0;
+  } else if (type === 'wood_plank') {
+    // Weathered maritime timber with visible grain and nail holes
+    ctx.fillStyle = '#4e3b2b';
+    ctx.fillRect(0, 0, 512, 512);
+    // Draw horizontal planks
+    const plankH = 64;
+    for (let y = 0; y < 512; y += plankH) {
+      ctx.fillStyle = 'rgba(20, 12, 8, 0.45)';
+      ctx.fillRect(0, y, 512, 3); // gap line
+      // Wood grain lines
+      for (let j = 0; j < 30; j++) {
+        const gy = y + Math.random() * plankH;
+        ctx.fillStyle = `rgba(${65 + Math.random()*30}, ${48 + Math.random()*25}, ${32 + Math.random()*20}, 0.35)`;
+        ctx.fillRect(0, gy, 512, 1.5);
+      }
+      // Weathered nails
+      ctx.fillStyle = '#1c1510';
+      ctx.fillRect(24, y + 28, 4, 4);
+      ctx.fillRect(488, y + 28, 4, 4);
     }
-    dayCount++;
-    stockpile.food = Math.max(0, stockpile.food - 3);
-    stockpile.wood = Math.max(0, stockpile.wood - 1);
+  } else if (type === 'cliff_rock') {
+    // Weathered coastal granite with dark fissures
+    ctx.fillStyle = '#525459';
+    ctx.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 15000; i++) {
+      const x = Math.random() * 512;
+      const y = Math.random() * 512;
+      const shade = Math.floor(60 + Math.random() * 45);
+      ctx.fillStyle = `rgba(${shade}, ${shade + 4}, ${shade + 6}, 0.22)`;
+      ctx.fillRect(x, y, 4, 2);
+    }
+  } else if (type === 'rusty_roof') {
+    // Corrugated iron sheet with red-brown rust patches
+    ctx.fillStyle = '#6e7075';
+    ctx.fillRect(0, 0, 512, 512);
+    // Corrugation ridges
+    for (let x = 0; x < 512; x += 16) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.fillRect(x, 0, 8, 512);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+      ctx.fillRect(x + 8, 0, 8, 512);
+    }
+    // Rust specks
+    for (let i = 0; i < 400; i++) {
+      const rx = Math.random() * 512;
+      const ry = Math.random() * 512;
+      const s = 10 + Math.random() * 30;
+      ctx.fillStyle = 'rgba(150, 60, 25, 0.35)';
+      ctx.beginPath();
+      ctx.arc(rx, ry, s, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (type === 'water_foam') {
+    // Ocean normal/caustics pattern
+    ctx.fillStyle = '#083248';
+    ctx.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 120; i++) {
+      ctx.strokeStyle = 'rgba(180, 235, 255, 0.18)';
+      ctx.lineWidth = 3 + Math.random() * 5;
+      ctx.beginPath();
+      ctx.arc(Math.random() * 512, Math.random() * 512, 20 + Math.random() * 60, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
 
-    updateCargoHUD();
-    updateStockpileHUD();
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  return tex;
+}
 
-    buildSafeIsland();
+// Global PBR-stylized Materials
+let texSand, texDirt, texWood, texRock, texRoof, texWater;
+let matTerrain, matWaterOcean, matTimberPlanks, matCorrugatedRoof, matRockCliff;
 
-    setTimeout(() => {
-      voyageScreen.classList.remove('active');
-      let txt = "Ekspedisi Berhasil! Perahu bersandar aman di dermaga desa.<br><br><b>Bahan Dibongkar ke Gudang Komunitas:</b><br>";
-      txt += "🌾 Makanan: +" + rescued.food + "<br>";
-      txt += "🪵 Kayu: +" + rescued.wood + "<br>";
-      txt += "🔩 Besi: +" + rescued.metal + "<br>";
-      txt += "💊 Obat: +" + rescued.medicine + "<br><br>";
-      txt += "<i>Konsumsi harian warga: -3 Makanan, -1 Kayu. Komunitas bertahan di Hari ke-" + dayCount + "!</i>";
-      debriefTextEl.innerHTML = txt;
-      debriefModal.classList.add('active');
-    }, 400);
-  }, 750);
+function initMaterials() {
+  texSand = createProceduralTexture('sand');
+  texSand.repeat.set(12, 12);
+
+  texDirt = createProceduralTexture('dirt_grass');
+  texDirt.repeat.set(16, 16);
+
+  texWood = createProceduralTexture('wood_plank');
+  texWood.repeat.set(4, 4);
+
+  texRock = createProceduralTexture('cliff_rock');
+  texRock.repeat.set(8, 8);
+
+  texRoof = createProceduralTexture('rusty_roof');
+  texRoof.repeat.set(3, 3);
+
+  texWater = createProceduralTexture('water_foam');
+  texWater.repeat.set(6, 6);
+
+  matTerrain = new THREE.MeshStandardMaterial({
+    map: texDirt,
+    roughness: 0.88,
+    metalness: 0.05,
+    flatShading: false,
+  });
+
+  matWaterOcean = new THREE.MeshStandardMaterial({
+    color: 0x094868,
+    map: texWater,
+    roughness: 0.15,
+    metalness: 0.35,
+    transparent: true,
+    opacity: 0.92,
+  });
+
+  matTimberPlanks = new THREE.MeshStandardMaterial({
+    map: texWood,
+    roughness: 0.82,
+    metalness: 0.08,
+  });
+
+  matCorrugatedRoof = new THREE.MeshStandardMaterial({
+    map: texRoof,
+    roughness: 0.65,
+    metalness: 0.45,
+  });
+
+  matRockCliff = new THREE.MeshStandardMaterial({
+    map: texRock,
+    roughness: 0.92,
+    metalness: 0.05,
+  });
 }
 
 // ==============================================================================
-// LOCKED 3D CHARACTER (CACHED SINGLETON)
+// 1. PROCEDURAL 3D NATURAL TERRAIN & COASTLINE
 // ==============================================================================
-function loadCharacter() {
-  if (characterModel) {
-    loadingScreen.classList.add('done');
-    return;
+function getIslandElevation(x, z) {
+  // Center: (0, -6) -> Village terrace
+  // South: (0, 6) -> Beach & Dock
+  // North / NW: (0, -28) -> High forested hills & cliffs
+
+  // Distance from island core
+  const distCore = Math.hypot(x * 0.95, z + 8);
+  if (distCore > 38) {
+    return -1.5; // Deep ocean
   }
 
+  // Base natural slope from North (+6.5m) down to South shoreline (0.0m)
+  let h = 0.0;
+
+  // South Beach Cove:
+  if (z > 2) {
+    // Gentle sandy beach slope down to water
+    const tBeach = (z - 2) / 10.0;
+    h = THREE.MathUtils.lerp(1.2, -0.4, tBeach);
+  } else if (z <= 2 && z > -16) {
+    // Village Terrace (Main settlement plateau)
+    const tPlateau = (z - 2) / (-18);
+    h = 1.2 + tPlateau * 1.6; // from 1.2m to 2.8m
+  } else {
+    // Back Hills & Rocky Cliffs (North)
+    const tHill = (-16 - z) / 16.0;
+    h = 2.8 + tHill * 4.2; // Rises up to 7.0m!
+  }
+
+  // Add natural undulating organic noise
+  const noise1 = Math.sin(x * 0.14) * Math.cos(z * 0.12) * 0.75;
+  const noise2 = Math.sin(x * 0.28 + 1.2) * Math.cos(z * 0.25) * 0.35;
+  h += (noise1 + noise2);
+
+  // Carve out a distinct walking path from Village down to Dock
+  const pathDist = Math.abs(x - Math.sin(z * 0.2) * 1.2);
+  if (pathDist < 3.0 && z > -14 && z < 7) {
+    const pathSmooth = (1.0 - pathDist / 3.0);
+    // Smooth walking grade
+    const targetPathY = THREE.MathUtils.lerp(2.2, 0.4, (z + 14) / 21.0);
+    h = THREE.MathUtils.lerp(h, targetPathY, pathSmooth * 0.65);
+  }
+
+  return h;
+}
+
+function buildNaturalTerrain() {
+  const sizeX = 96;
+  const sizeZ = 96;
+  const segs = 80;
+
+  terrainGeo = new THREE.PlaneGeometry(sizeX, sizeZ, segs, segs);
+  terrainGeo.rotateX(-Math.PI / 2);
+
+  const pos = terrainGeo.attributes.position;
+  const colors = [];
+
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const z = pos.getZ(i);
+    const y = getIslandElevation(x, z);
+    pos.setY(i, y);
+
+    // Natural vertex color biome tinting:
+    // Shallow water / Wet Sand: Dark sand (#6b5a3e)
+    // Dry Sand: Warm yellow-tan (#cbb287)
+    // Grass / Forest: Deep mossy green (#3e5634)
+    // High Rock Cliffs: Slate gray (#5a5e66)
+    if (y < 0.2) {
+      colors.push(0.42, 0.36, 0.26); // Wet shore sand
+    } else if (y < 1.1) {
+      colors.push(0.78, 0.68, 0.48); // Dry sand dune
+    } else if (y > 4.2) {
+      colors.push(0.40, 0.42, 0.45); // Cliff stone
+    } else {
+      colors.push(0.28, 0.38, 0.22); // Coastal vegetation grass
+    }
+  }
+
+  terrainGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  terrainGeo.computeVertexNormals();
+
+  matTerrain.vertexColors = true;
+  terrainMesh = new THREE.Mesh(terrainGeo, matTerrain);
+  scene.add(terrainMesh);
+}
+
+// ==============================================================================
+// 2. OCEAN SHADER SURFACE WITH DEPTH GRADIENT & ANIMATED FOAM
+// ==============================================================================
+function buildOcean() {
+  const oceanGeo = new THREE.PlaneGeometry(180, 180, 40, 40);
+  oceanGeo.rotateX(-Math.PI / 2);
+
+  oceanMesh = new THREE.Mesh(oceanGeo, matWaterOcean);
+  oceanMesh.position.y = 0.05;
+  scene.add(oceanMesh);
+
+  // Shoreline foam wave ring
+  const foamGeo = new THREE.RingGeometry(8, 14, 32);
+  foamGeo.rotateX(-Math.PI / 2);
+  const matFoam = new THREE.MeshBasicMaterial({
+    color: 0xdbf4ff,
+    transparent: true,
+    opacity: 0.45,
+    depthWrite: false,
+  });
+  const foamMesh = new THREE.Mesh(foamGeo, matFoam);
+  foamMesh.position.set(0, 0.08, 7.5);
+  foamMesh.scale.set(1.5, 1, 0.8);
+  scene.add(foamMesh);
+}
+
+// ==============================================================================
+// 3. REALISTIC 3D VEGETATION: CURVED PALM TREES & LAYERED PINES
+// ==============================================================================
+function createRealisticPalmTree(x, z, scale = 1.0, rotY = 0) {
+  const group = new THREE.Group();
+  const yBase = getIslandElevation(x, z);
+  if (yBase < 0.2) return; // Don't spawn submerged in ocean
+
+  // Organic curved trunk (6 segments leaning toward the sun)
+  const segments = 7;
+  const totalHeight = 5.8 * scale;
+  const curveFactor = 0.9 * scale;
+
+  let prevPos = new THREE.Vector3(0, 0, 0);
+  const trunkMat = new THREE.MeshStandardMaterial({
+    color: 0x58432f,
+    map: texWood,
+    roughness: 0.9,
+  });
+
+  for (let i = 0; i < segments; i++) {
+    const t0 = i / segments;
+    const t1 = (i + 1) / segments;
+    const r0 = THREE.MathUtils.lerp(0.32, 0.18, t0) * scale;
+    const r1 = THREE.MathUtils.lerp(0.32, 0.18, t1) * scale;
+    const h = (totalHeight / segments);
+
+    const segGeo = new THREE.CylinderGeometry(r1, r0, h, 7);
+    const segMesh = new THREE.Mesh(segGeo, trunkMat);
+
+    const currX = Math.sin(t1 * 1.4) * curveFactor;
+    const currY = t1 * totalHeight;
+    const currZ = Math.cos(t1 * 1.4) * (curveFactor * 0.4);
+
+    segMesh.position.set((prevPos.x + currX) / 2, (prevPos.y + currY) / 2, (prevPos.z + currZ) / 2);
+    // Align angle
+    segMesh.rotation.z = -(currX - prevPos.x) / h * 0.9;
+    group.add(segMesh);
+
+    prevPos.set(currX, currY, currZ);
+  }
+
+  // Crown of 7 drooping palm fronds
+  const frondMat = new THREE.MeshStandardMaterial({
+    color: 0x225528,
+    roughness: 0.75,
+    side: THREE.DoubleSide,
+  });
+
+  const numFronds = 8;
+  for (let f = 0; f < numFronds; f++) {
+    const angle = (f / numFronds) * Math.PI * 2;
+    const frondGroup = new THREE.Group();
+    frondGroup.position.copy(prevPos);
+
+    // Arched frond stem with leaflets
+    const frondLen = 2.8 * scale;
+    const bladeGeo = new THREE.ConeGeometry(0.55 * scale, frondLen, 5);
+    bladeGeo.rotateX(Math.PI / 2);
+    bladeGeo.scale(1, 0.12, 1);
+    const blade = new THREE.Mesh(bladeGeo, frondMat);
+    blade.position.z = frondLen * 0.45;
+
+    frondGroup.rotation.y = angle;
+    frondGroup.rotation.x = 0.45; // Droop down
+    frondGroup.add(blade);
+    group.add(frondGroup);
+  }
+
+  // Base root flair
+  const rootGeo = new THREE.CylinderGeometry(0.42 * scale, 0.55 * scale, 0.5 * scale, 8);
+  const roots = new THREE.Mesh(rootGeo, trunkMat);
+  roots.position.y = 0.25 * scale;
+  group.add(roots);
+
+  group.position.set(x, yBase, z);
+  group.rotation.y = rotY;
+  scene.add(group);
+}
+
+function createRealisticPineTree(x, z, scale = 1.0, rotY = 0) {
+  const group = new THREE.Group();
+  const yBase = getIslandElevation(x, z);
+  if (yBase < 0.3) return;
+
+  const trunkH = 8.5 * scale;
+  const trunkGeo = new THREE.CylinderGeometry(0.18 * scale, 0.38 * scale, trunkH, 7);
+  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2d22, map: texWood, roughness: 0.95 });
+  const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+  trunk.position.y = trunkH * 0.5;
+  group.add(trunk);
+
+  // 4 tiered drooping needle foliage boughs
+  const foliageMat = new THREE.MeshStandardMaterial({
+    color: 0x1b3c22,
+    roughness: 0.88,
+    flatShading: true,
+  });
+
+  const tiers = 4;
+  for (let t = 0; t < tiers; t++) {
+    const tierR = THREE.MathUtils.lerp(2.2, 0.8, t / tiers) * scale;
+    const tierH = 2.4 * scale;
+    const boughGeo = new THREE.ConeGeometry(tierR, tierH, 7);
+    const bough = new THREE.Mesh(boughGeo, foliageMat);
+    bough.position.y = (3.5 + t * 1.5) * scale;
+    group.add(bough);
+  }
+
+  group.position.set(x, yBase, z);
+  group.rotation.y = rotY;
+  scene.add(group);
+}
+
+function createBush(x, z, scale = 1.0) {
+  const yBase = getIslandElevation(x, z);
+  if (yBase < 0.3) return;
+  const group = new THREE.Group();
+
+  const bushMat = new THREE.MeshStandardMaterial({
+    color: 0x2e5229,
+    roughness: 0.85,
+    flatShading: true,
+  });
+
+  const count = 3;
+  for (let i = 0; i < count; i++) {
+    const sGeo = new THREE.DodecahedronGeometry(0.65 * scale, 1);
+    const sMesh = new THREE.Mesh(sGeo, bushMat);
+    sMesh.position.set(
+      (Math.random() - 0.5) * 0.5 * scale,
+      (0.35 + Math.random() * 0.3) * scale,
+      (Math.random() - 0.5) * 0.5 * scale
+    );
+    group.add(sMesh);
+  }
+
+  group.position.set(x, yBase, z);
+  scene.add(group);
+}
+
+function createCoastalRock(x, z, scale = 1.0, rot = 0) {
+  const yBase = getIslandElevation(x, z);
+  const rockGeo = new THREE.DodecahedronGeometry(1.4 * scale, 1);
+  // Deform for natural ruggedness
+  const pos = rockGeo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    pos.setX(i, pos.getX(i) * (0.8 + Math.sin(i) * 0.25));
+    pos.setY(i, pos.getY(i) * (0.55 + Math.cos(i) * 0.15));
+    pos.setZ(i, pos.getZ(i) * (0.85 + Math.sin(i * 1.5) * 0.2));
+  }
+  rockGeo.computeVertexNormals();
+
+  const rockMesh = new THREE.Mesh(rockGeo, matRockCliff);
+  rockMesh.position.set(x, yBase + 0.3 * scale, z);
+  rockMesh.rotation.set(0.2, rot, -0.15);
+  scene.add(rockMesh);
+}
+
+// ==============================================================================
+// 4. REALISTIC SURVIVOR BUILDINGS (BELIEVABLE APOCALYPSE ARCHITECTURE)
+// ==============================================================================
+function createDetailedSurvivorCabin(x, z, rotY = 0) {
+  const group = new THREE.Group();
+  const yBase = getIslandElevation(x, z);
+
+  // Reference scale: Human height ~ 1.75m
+  // Cabin Floor: 4.8m x 4.0m, Height to roof peak: 4.2m (~2.4x human height)
+  const floorW = 4.8;
+  const floorD = 4.2;
+  const stiltH = 0.6; // elevated off damp earth
+
+  // Stilt Foundation (6 round tree-trunk pillars)
+  const stiltMat = matTimberPlanks;
+  for (let sx = -floorW/2 + 0.3; sx <= floorW/2 - 0.3; sx += (floorW - 0.6)/2) {
+    for (let sz = -floorD/2 + 0.3; sz <= floorD/2 - 0.3; sz += (floorD - 0.6)) {
+      const stilt = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, stiltH + 0.4, 6), stiltMat);
+      stilt.position.set(sx, (stiltH + 0.4)/2 - 0.2, sz);
+      group.add(stilt);
+    }
+  }
+
+  // Wooden deck / floor
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(floorW + 0.3, 0.18, floorD + 1.2), matTimberPlanks);
+  deck.position.set(0, stiltH, 0.4); // extends forward for porch
+  group.add(deck);
+
+  // Porch Steps (2 weathered wooden steps)
+  const step1 = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.15, 0.4), matTimberPlanks);
+  step1.position.set(0, stiltH * 0.65, floorD/2 + 0.8);
+  group.add(step1);
+  const step2 = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.15, 0.4), matTimberPlanks);
+  step2.position.set(0, stiltH * 0.3, floorD/2 + 1.15);
+  group.add(step2);
+
+  // Timber Walls with horizontal siding
+  const wallH = 2.4;
+  const wallMat = matTimberPlanks;
+
+  // Back Wall
+  const backWall = new THREE.Mesh(new THREE.BoxGeometry(floorW, wallH, 0.15), wallMat);
+  backWall.position.set(0, stiltH + wallH/2, -floorD/2);
+  group.add(backWall);
+
+  // Left & Right Walls
+  const wallL = new THREE.Mesh(new THREE.BoxGeometry(0.15, wallH, floorD), wallMat);
+  wallL.position.set(-floorW/2, stiltH + wallH/2, 0);
+  group.add(wallL);
+
+  const wallR = new THREE.Mesh(new THREE.BoxGeometry(0.15, wallH, floorD), wallMat);
+  wallR.position.set(floorW/2, stiltH + wallH/2, 0);
+  group.add(wallR);
+
+  // Front Wall with Doorway cutout
+  const frontWallL = new THREE.Mesh(new THREE.BoxGeometry(1.7, wallH, 0.15), wallMat);
+  frontWallL.position.set(-1.45, stiltH + wallH/2, floorD/2);
+  group.add(frontWallL);
+
+  const frontWallR = new THREE.Mesh(new THREE.BoxGeometry(1.7, wallH, 0.15), wallMat);
+  frontWallR.position.set(1.45, stiltH + wallH/2, floorD/2);
+  group.add(frontWallR);
+
+  const frontHeader = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.45, 0.15), wallMat);
+  frontHeader.position.set(0, stiltH + wallH - 0.22, floorD/2);
+  group.add(frontHeader);
+
+  // A-Frame Gabled Roof with Corrugated Iron Panels & Tarpaulin Patch
+  const roofW = floorW + 0.6;
+  const roofSlopeL = new THREE.Mesh(new THREE.BoxGeometry(roofW, 0.08, 2.8), matCorrugatedRoof);
+  roofSlopeL.position.set(0, stiltH + wallH + 0.8, -1.0);
+  roofSlopeL.rotation.x = 0.55;
+  group.add(roofSlopeL);
+
+  const roofSlopeR = new THREE.Mesh(new THREE.BoxGeometry(roofW, 0.08, 2.8), matCorrugatedRoof);
+  roofSlopeR.position.set(0, stiltH + wallH + 0.8, 1.0);
+  roofSlopeR.rotation.x = -0.55;
+  group.add(roofSlopeR);
+
+  // Makeshift blue tarpaulin repair patch tied with ropes
+  const tarpMat = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.6 });
+  const tarp = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.04, 1.8), tarpMat);
+  tarp.position.set(-0.8, stiltH + wallH + 0.86, -0.8);
+  tarp.rotation.x = 0.55;
+  group.add(tarp);
+
+  // Front Porch support posts & hanging lantern
+  const porchPostL = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, wallH, 6), matTimberPlanks);
+  porchPostL.position.set(-floorW/2 + 0.2, stiltH + wallH/2, floorD/2 + 0.8);
+  group.add(porchPostL);
+
+  const porchPostR = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, wallH, 6), matTimberPlanks);
+  porchPostR.position.set(floorW/2 - 0.2, stiltH + wallH/2, floorD/2 + 0.8);
+  group.add(porchPostR);
+
+  // Hanging porch lantern with warm light
+  const lanternBulb = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffb84d }));
+  lanternBulb.position.set(0.8, stiltH + wallH - 0.2, floorD/2 + 0.6);
+  group.add(lanternBulb);
+
+  const lanternLight = new THREE.PointLight(0xff9933, 1.6, 7.0, 1.6);
+  lanternLight.position.copy(lanternBulb.position);
+  group.add(lanternLight);
+
+  // Environmental Props around cabin (Crates, Barrels, Scrap)
+  createDetailedCrate(group, -floorW/2 - 0.6, stiltH, 0.4, 0.8);
+  createDetailedCrate(group, -floorW/2 - 0.5, stiltH + 0.7, 0.5, 0.65);
+  createOilDrum(group, floorW/2 + 0.6, stiltH, -0.4);
+
+  group.position.set(x, yBase, z);
+  group.rotation.y = rotY;
+  scene.add(group);
+}
+
+function createDetailedCrate(parent, lx, ly, lz, size = 0.8) {
+  const crate = new THREE.Mesh(new THREE.BoxGeometry(size, size, size), matTimberPlanks);
+  crate.position.set(lx, ly + size/2, lz);
+  parent.add(crate);
+}
+
+function createOilDrum(parent, lx, ly, lz) {
+  const drumMat = new THREE.MeshStandardMaterial({ color: 0x2e4053, roughness: 0.5, metalness: 0.6 });
+  const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.95, 12), drumMat);
+  drum.position.set(lx, ly + 0.48, lz);
+  parent.add(drum);
+}
+
+// ==============================================================================
+// 5. WEATHERED BOARDWALK DOCK (EMERGES FROM BEACH INTO OCEAN)
+// ==============================================================================
+function buildDetailedDock() {
+  const group = new THREE.Group();
+
+  // Dock starts from beach sand at z = 2.0 and extends into deep ocean at z = 11.0
+  const startZ = 2.0;
+  const endZ = 11.2;
+  const dockW = 3.0; // 3m wide (~1.7x human height)
+  const dockY = 0.55; // slightly above water level (0.05m)
+
+  // 1. Heavy Wooden Pilings driven into seabed (Pairs every 2.2m)
+  const pilingMat = matTimberPlanks;
+  for (let z = startZ + 0.8; z <= endZ; z += 2.2) {
+    const leftPiling = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 2.4, 8), pilingMat);
+    leftPiling.position.set(-dockW/2 + 0.2, dockY - 0.9, z);
+    group.add(leftPiling);
+
+    const rightPiling = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 2.4, 8), pilingMat);
+    rightPiling.position.set(dockW/2 - 0.2, dockY - 0.9, z);
+    group.add(rightPiling);
+
+    // Cross-beam support under planks
+    const crossBeam = new THREE.Mesh(new THREE.BoxGeometry(dockW + 0.1, 0.18, 0.22), pilingMat);
+    crossBeam.position.set(0, dockY - 0.12, z);
+    group.add(crossBeam);
+  }
+
+  // 2. Individual Weathered Wooden Planks (36 planks with micro height/angle jitter)
+  const numPlanks = 36;
+  const plankSpacing = (endZ - startZ) / numPlanks;
+  for (let i = 0; i < numPlanks; i++) {
+    const pZ = startZ + i * plankSpacing;
+    const pLen = dockW + (Math.sin(i * 3) * 0.12);
+    const plank = new THREE.Mesh(new THREE.BoxGeometry(pLen, 0.08, plankSpacing * 0.88), matTimberPlanks);
+    // Slight authentic irregularity
+    plank.position.set(0, dockY + (Math.sin(i * 5) * 0.015), pZ);
+    plank.rotation.y = (Math.sin(i * 7) * 0.02);
+    group.add(plank);
+  }
+
+  // 3. Mooring Cleats & Coiled Ropes
+  const cleatMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, metalness: 0.7, roughness: 0.4 });
+  function addCleat(side, pz) {
+    const cleat = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.25, 6), cleatMat);
+    cleat.position.set(side * (dockW/2 - 0.15), dockY + 0.12, pz);
+    group.add(cleat);
+
+    const ropeTorus = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.035, 6, 12), new THREE.MeshLambertMaterial({ color: 0xc4a46a }));
+    ropeTorus.rotation.x = Math.PI / 2;
+    ropeTorus.position.set(side * (dockW/2 - 0.15), dockY + 0.04, pz);
+    group.add(ropeTorus);
+  }
+  addCleat(1, 4.5);
+  addCleat(1, 8.5);
+  addCleat(-1, 6.5);
+  addCleat(-1, 10.5);
+
+  // 4. Sturdy Dock Lamp Post
+  const lampPost = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 2.6, 6), matTimberPlanks);
+  lampPost.position.set(dockW/2 - 0.2, dockY + 1.3, 7.5);
+  group.add(lampPost);
+
+  const dockBulb = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffcc66 }));
+  dockBulb.position.set(dockW/2 - 0.2, dockY + 2.5, 7.5);
+  group.add(dockBulb);
+
+  const dockLight = new THREE.PointLight(0xffaa33, 2.2, 11.0, 1.5);
+  dockLight.position.copy(dockBulb.position);
+  group.add(dockLight);
+
+  scene.add(group);
+}
+
+// ==============================================================================
+// 6. REALISTIC MOORED EXPEDITION BOAT
+// ==============================================================================
+function buildDetailedBoat() {
+  boatGroup = new THREE.Group();
+
+  // Boat Hull: Length 4.6m, Width 1.8m (~2.6x human height)
+  const boatWoodMat = new THREE.MeshStandardMaterial({
+    map: texWood,
+    color: 0x543c29,
+    roughness: 0.75,
+  });
+
+  // Curved Hull Base
+  const hullBase = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 4.4), boatWoodMat);
+  hullBase.position.y = 0.35;
+  boatGroup.add(hullBase);
+
+  // Pointed Bow (Triangle Wedge)
+  const bowGeo = new THREE.ConeGeometry(0.95, 1.4, 4);
+  bowGeo.rotateX(Math.PI / 2);
+  bowGeo.scale(1, 0.55, 1);
+  const bow = new THREE.Mesh(bowGeo, boatWoodMat);
+  bow.position.set(0, 0.42, 2.7);
+  boatGroup.add(bow);
+
+  // Deck Seats / Thwarts
+  const bench1 = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.08, 0.4), boatWoodMat);
+  bench1.position.set(0, 0.65, 0.8);
+  boatGroup.add(bench1);
+
+  const bench2 = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.08, 0.4), boatWoodMat);
+  bench2.position.set(0, 0.65, -1.0);
+  boatGroup.add(bench2);
+
+  // Cargo crates stowed in hull
+  createDetailedCrate(boatGroup, 0.2, 0.35, -0.2, 0.55);
+  createDetailedCrate(boatGroup, -0.3, 0.35, 0.1, 0.5);
+
+  // Mooring rope tied from bow to dock cleat
+  const bowCleat = new THREE.Mesh(new THREE.SphereGeometry(0.08), new THREE.MeshBasicMaterial({ color: 0x222222 }));
+  bowCleat.position.set(0, 0.7, 2.4);
+  boatGroup.add(bowCleat);
+
+  // Moored on the starboard side of the dock at (2.6, 0.0, 8.0)
+  boatGroup.position.set(2.8, 0.0, 8.2);
+  scene.add(boatGroup);
+
+  interactables.push({
+    pos: new THREE.Vector3(1.8, 0.6, 8.2),
+    radius: 2.8,
+    label: "Naik Perahu & Siapkan Pelayaran",
+    action: () => {
+      alert("⚓ Perahu siap! Meluncurkan ekspedisi ke Pulau Luar.");
+    }
+  });
+}
+
+// ==============================================================================
+// 7. SURVIVOR CAMPFIRE & STORYTELLING PROPS
+// ==============================================================================
+function buildCampfire(x, z) {
+  const group = new THREE.Group();
+  const yBase = getIslandElevation(x, z);
+
+  // Ring of 8 river stones
+  const stoneMat = matRockCliff;
+  const numStones = 9;
+  for (let i = 0; i < numStones; i++) {
+    const angle = (i / numStones) * Math.PI * 2;
+    const stone = new THREE.Mesh(new THREE.DodecahedronGeometry(0.22, 1), stoneMat);
+    stone.position.set(Math.cos(angle) * 0.75, 0.12, Math.sin(angle) * 0.75);
+    group.add(stone);
+  }
+
+  // Charred wood logs
+  const logMat = new THREE.MeshStandardMaterial({ color: 0x1a1512, roughness: 0.95 });
+  for (let j = 0; j < 4; j++) {
+    const log = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 0.85, 5), logMat);
+    log.rotation.z = Math.PI / 3;
+    log.rotation.y = j * Math.PI / 2;
+    log.position.y = 0.14;
+    group.add(log);
+  }
+
+  // Glowing embers & flame core
+  const flameMesh = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.65, 6), new THREE.MeshBasicMaterial({ color: 0xff6210 }));
+  flameMesh.position.y = 0.45;
+  group.add(flameMesh);
+
+  const fireLight = new THREE.PointLight(0xff7722, 2.8, 14.0, 1.4);
+  fireLight.position.set(0, 0.8, 0);
+  group.add(fireLight);
+
+  // Survivor seating log benches
+  const benchLog = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 2.2, 7), matTimberPlanks);
+  benchLog.rotation.z = Math.PI / 2;
+  benchLog.position.set(0, 0.2, 1.6);
+  group.add(benchLog);
+
+  group.position.set(x, yBase, z);
+  scene.add(group);
+}
+
+// ==============================================================================
+// 8. SCENE COMPOSITION & ENVIRONMENT POPULATION
+// ==============================================================================
+function populateSafeIslandScene() {
+  buildNaturalTerrain();
+  buildOcean();
+
+  // Village Center: (0, -10)
+  buildCampfire(0, -9.5);
+
+  // 3 Major Believable Survivor Cabins
+  createDetailedSurvivorCabin(-6.8, -12.5, 0.35); // West Cabin (Doctor / Clinic)
+  createDetailedSurvivorCabin(6.5, -11.0, -0.4);  // East Cabin (Workshop & Scavenger)
+  createDetailedSurvivorCabin(-1.5, -20.0, 0.05); // North Lookout Cabin (Elder / Food)
+
+  // Boardwalk Dock & Moored Boat
+  buildDetailedDock();
+  buildDetailedBoat();
+
+  // Natural Coastal Palm Trees (Along beach dunes and shore)
+  createRealisticPalmTree(-7.5, 3.5, 1.1, 0.4);
+  createRealisticPalmTree(-9.2, 0.5, 0.95, 1.2);
+  createRealisticPalmTree(7.8, 2.2, 1.15, -0.6);
+  createRealisticPalmTree(9.5, -1.0, 0.9, 0.8);
+  createRealisticPalmTree(-5.0, -3.0, 1.05, 0.2);
+  createRealisticPalmTree(5.5, -4.5, 1.0, -0.5);
+
+  // Dense Forest of Pines in Background Hills (North & Cliffs)
+  createRealisticPineTree(-14.0, -18.0, 1.2, 0.3);
+  createRealisticPineTree(-10.5, -24.0, 1.35, 0.8);
+  createRealisticPineTree(-4.0, -28.0, 1.4, -0.2);
+  createRealisticPineTree(3.5, -29.0, 1.45, 0.6);
+  createRealisticPineTree(11.0, -25.0, 1.3, -0.5);
+  createRealisticPineTree(14.5, -19.0, 1.15, 0.2);
+  createRealisticPineTree(8.5, -22.0, 1.25, 0.9);
+
+  // Coastal Rocks & Headlands
+  createCoastalRock(-11.5, 5.0, 1.4, 0.4);
+  createCoastalRock(-13.0, 2.0, 1.6, 1.1);
+  createCoastalRock(11.8, 6.0, 1.5, -0.8);
+  createCoastalRock(13.2, 2.5, 1.7, 0.5);
+  createCoastalRock(-8.0, -7.0, 1.1, 0.2);
+  createCoastalRock(8.5, -8.0, 1.2, -0.4);
+
+  // Shrubbery & Bush Clusters along paths
+  createBush(-2.8, -2.5, 1.1);
+  createBush(2.6, -1.5, 0.9);
+  createBush(-3.5, -8.0, 1.2);
+  createBush(3.2, -6.5, 1.0);
+  createBush(-4.5, -15.0, 1.3);
+  createBush(4.0, -16.0, 1.2);
+}
+
+// ==============================================================================
+// 9. LOCKED 3D CHARACTER INTEGRATION & CONTACT SHADOW
+// ==============================================================================
+function loadPlayerCharacter() {
   const loader = new THREE.GLTFLoader();
   loader.load('character_glb_idle_box_03_run_walk_7.glb', (gltf) => {
     characterModel = gltf.scene;
 
-    // Fast Lambert-based material configuration
+    // Strict lock: no geometry or proportion changes
     characterModel.traverse((child) => {
       if (child.isMesh && child.material) {
-        child.material.metalness = 0.0;
-        child.material.roughness = 0.9;
+        child.material.metalness = 0.05;
+        child.material.roughness = 0.85;
       }
     });
 
-    characterModel.scale.set(0.9, 0.9, 0.9);
+    // Reference scale: human ~ 1.75m tall
+    characterModel.scale.set(0.95, 0.95, 0.95);
     playerGroup.add(characterModel);
 
-    // High-performance Contact Shadow (Plane)
-    const shadowGeo = new THREE.PlaneGeometry(0.75, 0.75);
+    // Realistic Contact Shadow beneath boots
+    const shadowGeo = new THREE.PlaneGeometry(0.85, 0.85);
     const shadowMat = new THREE.MeshBasicMaterial({
-      color: 0x000000,
+      color: 0x050c14,
       transparent: true,
-      opacity: 0.45,
+      opacity: 0.55,
       depthWrite: false,
     });
     const contactShadow = new THREE.Mesh(shadowGeo, shadowMat);
@@ -1315,7 +1103,7 @@ function loadCharacter() {
   });
 }
 
-function switchAnimation(newKey, fadeDuration = 0.12) {
+function switchAnimation(newKey, fadeDuration = 0.14) {
   if (currentActionKey === newKey || !actions[newKey]) return;
   const prevAction = currentAction;
   const nextAction = actions[newKey];
@@ -1331,7 +1119,6 @@ function switchAnimation(newKey, fadeDuration = 0.12) {
 function triggerAttack() {
   if (isAttacking || !actions.attack) return;
   isAttacking = true;
-  hasHitInSwing = false;
   attackTimer = attackDuration;
 
   const prevAction = currentAction;
@@ -1341,156 +1128,137 @@ function triggerAttack() {
   actions.attack.fadeIn(0.06).play();
   if (prevAction) prevAction.fadeOut(0.06);
 
-  targetCamDist = 12.8; // Combat zoom
+  targetCamDist = 11.5; // Cinematic punch zoom
 }
 
-function checkAttackHitbox() {
-  if (hasHitInSwing) return;
-  const strikePos = playerPos.clone().add(new THREE.Vector3(Math.sin(playerFacing), 0, Math.cos(playerFacing)).multiplyScalar(1.2));
-  for (let z of enemies) {
-    if (z.state === 'dead') continue;
-    if (z.mesh.position.distanceToSquared(strikePos) < 2.56) {
-      z.takeDamage(25);
-      hasHitInSwing = true;
+// ==============================================================================
+// 10. CINEMATIC CAMERA SYSTEM
+// ==============================================================================
+function updateCameraTransform(targetPos, delta) {
+  cameraTarget.lerp(targetPos, delta ? 6.0 * delta : 1.0);
+  camDist = THREE.MathUtils.lerp(camDist, targetCamDist, delta ? 8.0 * delta : 1.0);
+
+  const pitch = isCinematicView ? (26 * Math.PI / 180) : camPitch; // Lower angle for cinematic horizon
+  const dist = isCinematicView ? 16.0 : camDist;
+
+  const offset = new THREE.Vector3(
+    Math.sin(camYaw) * Math.cos(pitch) * dist,
+    Math.sin(pitch) * dist,
+    Math.cos(camYaw) * Math.cos(pitch) * dist
+  );
+  camera.position.copy(cameraTarget).add(offset);
+  camera.lookAt(cameraTarget.x, cameraTarget.y + 0.9, cameraTarget.z);
+}
+
+document.getElementById('btn-cam-toggle').addEventListener('click', () => {
+  isCinematicView = !isCinematicView;
+  document.getElementById('btn-cam-toggle').textContent = isCinematicView ? "Kamera: Low Horizon 26°" : "Kamera: Cinematic 3/4 (38°)";
+});
+
+// ==============================================================================
+// 11. INPUT & GAME LOOP
+// ==============================================================================
+const keys = {};
+window.addEventListener('keydown', (e) => {
+  keys[e.code] = true;
+  if (e.code === 'Space') {
+    triggerAttack();
+  }
+  if (e.code === 'KeyE') {
+    if (activeInteractable && activeInteractable.action) {
+      activeInteractable.action();
     }
   }
-}
+});
+window.addEventListener('keyup', (e) => {
+  keys[e.code] = false;
+});
 
-function handleInteraction() {
-  if (diagModal.classList.contains('active')) {
-    closeDialogue();
-    return;
-  }
-  if (debriefModal.classList.contains('active')) {
-    debriefModal.classList.remove('active');
-    return;
-  }
-  if (activeInteractable && activeInteractable.onInteract) {
-    activeInteractable.onInteract();
-  }
-}
+let activeInteractable = null;
 
-function closeDialogue() {
-  diagModal.classList.remove('active');
-}
-
-// ==============================================================================
-// TERRAIN HEIGHT
-// ==============================================================================
-function getTerrainHeight(x, z) {
-  if (currentWorld === 'safe_island') {
-    if (z <= -10) return 2.5;
-    if (z >= 1.0 && Math.abs(x) <= 1.4) return 0.5;
-    if (z > -10 && z < 1.0) {
-      const t = (z - (-10)) / (1.0 - (-10));
-      return THREE.MathUtils.lerp(2.5, 0.4, t);
-    }
-    return 0.35;
-  } else {
-    if (z <= -6) return 3.6;
-    if (z > -6 && z < 7) return 1.9;
-    if (z >= 14 && Math.abs(x) <= 1.4) return 0.5;
-    return 0.4;
-  }
-}
-
-// ==============================================================================
-// MAIN GAME LOOP (BUTTERY SMOOTH 60 FPS)
-// ==============================================================================
 function animate() {
   requestAnimationFrame(animate);
 
   const delta = Math.min(clock.getDelta(), 0.05);
 
-  if (invulnerableTimer > 0) invulnerableTimer -= delta;
-
-  // Update active tweens (harvest shrinks, death animations)
-  for (let i = activeTweens.length - 1; i >= 0; i--) {
-    const tw = activeTweens[i];
-    tw.elapsed += delta;
-    const progress = Math.min(1.0, tw.elapsed / tw.duration);
-    tw.update(progress);
-    if (progress >= 1.0) {
-      tw.complete();
-      activeTweens.splice(i, 1);
-    }
+  // Ocean wave surface animation
+  waterTime += delta * 1.2;
+  if (matWaterOcean.map) {
+    matWaterOcean.map.offset.y = waterTime * 0.02;
+    matWaterOcean.map.offset.x = Math.sin(waterTime * 0.5) * 0.01;
   }
 
-  // Water bobbing for moored boat
-  if (boatMesh) {
-    boatBobTime += delta * 1.8;
-    boatMesh.position.y = 0.1 + Math.sin(boatBobTime) * 0.05;
-    boatMesh.rotation.z = Math.sin(boatBobTime * 0.8) * 0.02;
+  // Moored boat gentle wave bobbing
+  if (boatGroup) {
+    boatBobTime += delta * 1.5;
+    boatGroup.position.y = Math.sin(boatBobTime) * 0.06;
+    boatGroup.rotation.z = Math.sin(boatBobTime * 0.7) * 0.025;
+    boatGroup.rotation.x = Math.cos(boatBobTime * 0.6) * 0.015;
   }
 
-  // Zombie AI
-  if (currentWorld === 'zombie_island') {
-    updateZombies(delta);
-  }
-
-  // Attack timer handling in main loop (No setTimeout!)
+  // Attack timer handling
   if (isAttacking) {
     attackTimer -= delta;
-    if (!hasHitInSwing && attackTimer <= attackDuration * 0.7 && attackTimer >= attackDuration * 0.2) {
-      checkAttackHitbox();
-    }
     if (attackTimer <= 0) {
       isAttacking = false;
-      targetCamDist = 14.5;
-      if (actions.attack) actions.attack.fadeOut(0.1);
+      targetCamDist = 13.5;
+      if (actions.attack) actions.attack.fadeOut(0.12);
       if (actions[currentActionKey]) {
-        actions[currentActionKey].reset().fadeIn(0.1).play();
+        actions[currentActionKey].reset().fadeIn(0.12).play();
         currentAction = actions[currentActionKey];
       }
     }
   }
 
-  // Player input & movement
+  // Movement input
   let moveX = 0;
   let moveZ = 0;
-  const isModalOpen = diagModal.classList.contains('active') || expModal.classList.contains('active') || retModal.classList.contains('active') || debriefModal.classList.contains('active') || voyageScreen.classList.contains('active');
-
-  if (!isModalOpen) {
-    if (keys['KeyW'] || keys['ArrowUp']) moveZ -= 1;
-    if (keys['KeyS'] || keys['ArrowDown']) moveZ += 1;
-    if (keys['KeyA'] || keys['ArrowLeft']) moveX -= 1;
-    if (keys['KeyD'] || keys['ArrowRight']) moveX += 1;
-  }
+  if (keys['KeyW'] || keys['ArrowUp']) moveZ -= 1;
+  if (keys['KeyS'] || keys['ArrowDown']) moveZ += 1;
+  if (keys['KeyA'] || keys['ArrowLeft']) moveX -= 1;
+  if (keys['KeyD'] || keys['ArrowRight']) moveX += 1;
 
   const isMoving = (moveX !== 0 || moveZ !== 0) && !isAttacking;
   const isSprinting = keys['ShiftLeft'] || keys['ShiftRight'];
 
   if (isMoving) {
     const inputDir = new THREE.Vector2(moveX, moveZ).normalize();
-    const angle = CAM_YAW;
+    const angle = camYaw;
     const rotatedX = inputDir.x * Math.cos(angle) - inputDir.y * Math.sin(angle);
     const rotatedZ = inputDir.x * Math.sin(angle) + inputDir.y * Math.cos(angle);
 
-    const speed = isSprinting ? 6.2 : 3.4;
+    const speed = isSprinting ? 5.8 : 3.2;
     playerPos.x += rotatedX * speed * delta;
     playerPos.z += rotatedZ * speed * delta;
 
-    if (currentWorld === 'safe_island') {
-      playerPos.x = THREE.MathUtils.clamp(playerPos.x, -14, 14);
-      playerPos.z = THREE.MathUtils.clamp(playerPos.z, -24, 7.8);
-    } else {
-      playerPos.x = THREE.MathUtils.clamp(playerPos.x, -12, 12);
-      playerPos.z = THREE.MathUtils.clamp(playerPos.z, -22, 18.5);
-    }
+    // Constrain within island boundaries
+    playerPos.x = THREE.MathUtils.clamp(playerPos.x, -24, 24);
+    playerPos.z = THREE.MathUtils.clamp(playerPos.z, -32, 11);
 
-    playerPos.y = getTerrainHeight(playerPos.x, playerPos.z);
+    // Dynamic terrain height resolution
+    // If on wooden dock (z > 2.0 and |x| < 1.5), maintain dock boardwalk height (0.55m)
+    if (playerPos.z >= 2.0 && Math.abs(playerPos.x) <= 1.5) {
+      playerPos.y = 0.55;
+    } else {
+      playerPos.y = getIslandElevation(playerPos.x, playerPos.z);
+    }
 
     const targetAngle = Math.atan2(rotatedX, rotatedZ);
     let diff = targetAngle - playerFacing;
     while (diff > Math.PI) diff -= Math.PI * 2;
     while (diff < -Math.PI) diff += Math.PI * 2;
-    playerFacing += diff * 14.0 * delta;
+    playerFacing += diff * 12.0 * delta;
 
     if (!isAttacking) {
       switchAnimation(isSprinting ? 'run' : 'walk');
     }
   } else {
-    playerPos.y = getTerrainHeight(playerPos.x, playerPos.z);
+    if (playerPos.z >= 2.0 && Math.abs(playerPos.x) <= 1.5) {
+      playerPos.y = 0.55;
+    } else {
+      playerPos.y = getIslandElevation(playerPos.x, playerPos.z);
+    }
+
     if (!isAttacking) {
       switchAnimation('idle');
     }
@@ -1501,25 +1269,22 @@ function animate() {
     characterModel.rotation.y = playerFacing;
   }
 
-  // Interactables check
+  // Check interactables
   activeInteractable = null;
   for (let obj of interactables) {
-    if (obj.harvested) continue;
-    const dSq = playerPos.distanceToSquared(obj.pos);
-    if (dSq < obj.radius * obj.radius) {
+    if (playerPos.distanceTo(obj.pos) < obj.radius) {
       activeInteractable = obj;
       break;
     }
   }
 
-  if (activeInteractable && !isModalOpen) {
-    promptTextEl.textContent = activeInteractable.prompt;
-    promptEl.classList.add('show');
+  if (activeInteractable) {
+    promptLabel.textContent = activeInteractable.label;
+    contextPrompt.classList.add('show');
   } else {
-    promptEl.classList.remove('show');
+    contextPrompt.classList.remove('show');
   }
 
-  // Camera follow
   updateCameraTransform(playerPos, delta);
 
   if (mixer) {
@@ -1529,11 +1294,41 @@ function animate() {
   renderer.render(scene, camera);
 }
 
+// Initialization
 window.addEventListener('DOMContentLoaded', () => {
-  initThree();
-  updateHPBar();
-  updateCargoHUD();
-  updateStockpileHUD();
+  renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: false,
+    powerPreference: 'high-performance',
+    precision: 'mediump'
+  });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0c1e30);
+  scene.fog = new THREE.FogExp2(0x0e2438, 0.014);
+
+  camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.5, 160);
+
+  // Warm Cinematic Sunlight with atmospheric blue sky ambient
+  const hemi = new THREE.HemisphereLight(0xaad3f5, 0x1a2e38, 0.85);
+  scene.add(hemi);
+
+  const sun = new THREE.DirectionalLight(0xffecd0, 1.35);
+  sun.position.set(22, 38, 16);
+  scene.add(sun);
+
+  // Soft horizon rim light
+  const rim = new THREE.DirectionalLight(0xd97736, 0.45);
+  rim.position.set(-20, 12, -25);
+  scene.add(rim);
+
+  initMaterials();
+  populateSafeIslandScene();
+  loadPlayerCharacter();
+
+  window.addEventListener('resize', onResize);
   animate();
 });
 </script>
