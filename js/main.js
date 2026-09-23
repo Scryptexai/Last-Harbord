@@ -633,8 +633,17 @@ if (typeof window !== 'undefined') {
 
 async function boot() {
   resize();
-  await loadAssets();
-  initCharacter3D();
+  // Tunggu aset 2D DAN model 3D benar-benar siap sebelum masuk ke dalam game
+  await Promise.all([
+    loadAssets(),
+    initCharacter3D((pct) => {
+      const loader = document.getElementById('boot-loader');
+      if (loader) {
+        const txt = loader.querySelector('.loader-text');
+        if (txt && pct > 0) txt.innerHTML = `MEMUAT KARAKTER ${pct}%<span>.</span><span>.</span>`;
+      }
+    }),
+  ]);
   resetTide();                 // default; loadGame() boleh menimpa jam malam ini
   const loaded = loadGame();
   if (!G.worldSeed) G.worldSeed = (Math.random() * 1e9) >>> 0;

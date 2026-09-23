@@ -1537,6 +1537,12 @@ function drawPlayer(ctx, L) {
   const p = L.player;
   const img = ASSETS.player;
 
+  // Dual-layer grounded contact shadow di tanah/pasir pulau
+  ctx.fillStyle = 'rgba(8, 14, 10, 0.42)';
+  ctx.beginPath(); ctx.ellipse(p.x, p.y + 1, 14, 5.5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(2, 4, 6, 0.72)';
+  ctx.beginPath(); ctx.ellipse(p.x, p.y + 0.5, 9.5, 3.2, 0, 0, Math.PI * 2); ctx.fill();
+
   // cincin "kau di sini" — rata di tanah, jadi ikut miring bersama tanah
   ctx.strokeStyle = 'rgba(255,255,255,0.12)';
   ctx.lineWidth = 1.5;

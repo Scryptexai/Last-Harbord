@@ -13,6 +13,7 @@ import { ASSETS } from './assets.js';
 let isInitializing = false;
 let isInitialized = false;
 let isReady = false;
+let initPromise = null;
 let offCanvas = null;
 let renderer = null;
 let scene = null;
@@ -33,189 +34,182 @@ export function isCharacter3DReady() {
   return isReady;
 }
 
-// Optimasi tekstur PBR in-memory: perkecil tekstur 4K/2K ke 512px
-// Menghemat VRAM dari 100MB+ menjadi ~3MB tanpa menyentuh file GLB di disk
-function optimizeMaterialTextures(mat, maxDim = 512) {
-  if (!mat || typeof document === 'undefined') return;
-  const texKeys = ['map', 'normalMap', 'metalnessMap', 'roughnessMap'];
-
-  for (const key of texKeys) {
-    const tex = mat[key];
-    if (!tex || !tex.image) continue;
-
-    try {
-      const img = tex.image;
-      const w = img.width || img.naturalWidth || 0;
-      const h = img.height || img.naturalHeight || 0;
-      if (w > maxDim || h > maxDim) {
-        const scale = maxDim / Math.max(w, h);
-        const nw = Math.max(16, Math.round(w * scale));
-        const nh = Math.max(16, Math.round(h * scale));
-        const c = document.createElement('canvas');
-        c.width = nw;
-        c.height = nh;
-        const ctx = c.getContext('2d');
-        ctx.drawImage(img, 0, 0, nw, nh);
-        tex.image = c;
-        tex.needsUpdate = true;
-      }
-    } catch (e) {
-      // Pertahankan tekstur asli bila canvas tainted
-    }
+export function initCharacter3D(onProgress, retryCount = 0) {
+  if (isReady) return Promise.resolve(true);
+  if (initPromise) return initPromise;
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return Promise.resolve(false);
   }
-}
-
-export function initCharacter3D() {
-  if (isInitialized || isInitializing) return;
-  if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
   const THREE = window.THREE;
   const LoaderClass = THREE && (THREE.GLTFLoader || window.GLTFLoader);
 
   if (!THREE || !LoaderClass) {
-    // Retry otomatis hingga script Three.js & GLTFLoader lokal selesai dimuat
-    setTimeout(() => initCharacter3D(), 40);
-    return;
+    // Di lingkungan headless / testing (Node.js), batasi retry agar tidak menggantung test runner
+    if (retryCount >= 3) {
+      return Promise.resolve(false);
+    }
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        initCharacter3D(onProgress, retryCount + 1).then(resolve);
+      }, 30);
+    });
   }
 
   isInitializing = true;
 
-  try {
-    offCanvas = document.createElement('canvas');
-    offCanvas.width = 256;
-    offCanvas.height = 256;
+  initPromise = new Promise((resolve) => {
+    try {
+      offCanvas = document.createElement('canvas');
+      offCanvas.width = 256;
+      offCanvas.height = 256;
 
-    renderer = new THREE.WebGLRenderer({
-      canvas: offCanvas,
-      alpha: true,
-      antialias: false, // Performa tinggi & hemat GPU di perangkat mobile
-      preserveDrawingBuffer: true,
-      powerPreference: 'high-performance',
-    });
-    renderer.setPixelRatio(1);
-    renderer.setSize(256, 256);
-    renderer.setClearColor(0x000000, 0);
-    if (THREE.sRGBEncoding) renderer.outputEncoding = THREE.sRGBEncoding;
+      renderer = new THREE.WebGLRenderer({
+        canvas: offCanvas,
+        alpha: true,
+        antialias: false, // Performa tinggi & hemat GPU di perangkat mobile
+        preserveDrawingBuffer: true,
+        powerPreference: 'high-performance',
+      });
+      renderer.setPixelRatio(1);
+      renderer.setSize(256, 256);
+      renderer.setClearColor(0x000000, 0);
+      if (THREE.sRGBEncoding) renderer.outputEncoding = THREE.sRGBEncoding;
 
-    scene = new THREE.Scene();
+      scene = new THREE.Scene();
 
-    // Kamera 3/4 isometrik top-down ~30° matching perspektif game
-    camera = new THREE.PerspectiveCamera(34, 1, 0.1, 50);
-    camera.position.set(0, 1.42, 2.12);
-    camera.lookAt(0, 0.48, 0);
+      // Kamera top-down ~35° mencocokkan kemiringan kamera 2D (CFG.CAM.TILT = 0.40)
+      camera = new THREE.PerspectiveCamera(34, 1, 0.1, 50);
+      camera.position.set(0, 1.62, 2.15);
+      camera.lookAt(0, 0.50, 0);
 
-    // Pencahayaan 3-point agar tekstur dan lekuk pakaian karakter terlihat jelas & hidup
-    const hemi = new THREE.HemisphereLight(0xffeedd, 0x334455, 1.6);
-    scene.add(hemi);
+      // Pencahayaan harmonis dengan palet maritim malam Last Harbor:
+      // Cahaya langit hangat lembut + pantulan air laut gelap dari bawah
+      const hemi = new THREE.HemisphereLight(0xffeedd, 0x14222e, 1.2);
+      scene.add(hemi);
 
-    const dirKey = new THREE.DirectionalLight(0xfff5ea, 2.0);
-    dirKey.position.set(2, 4, 3);
-    scene.add(dirKey);
+      // Key light hangat dari depan atas (mewakili lentera kapal & pelita dermaga)
+      const dirKey = new THREE.DirectionalLight(0xffecd0, 1.5);
+      dirKey.position.set(1.8, 3.8, 2.6);
+      scene.add(dirKey);
 
-    const dirFill = new THREE.DirectionalLight(0xffffff, 1.2);
-    dirFill.position.set(0, 1.2, 3);
-    scene.add(dirFill);
+      // Fill light lembut dari samping kiri
+      const dirFill = new THREE.DirectionalLight(0x7fb0d0, 0.7);
+      dirFill.position.set(-1.8, 1.8, 2.2);
+      scene.add(dirFill);
 
-    const dirRim = new THREE.DirectionalLight(0x77bbee, 1.3);
-    dirRim.position.set(-2, 2, -2);
-    scene.add(dirRim);
+      // Rim light hangat untuk mempertegas siluet jubah terhadap latar malam
+      const dirRim = new THREE.DirectionalLight(0xe8a860, 0.8);
+      dirRim.position.set(0, 2.4, -2.5);
+      scene.add(dirRim);
 
-    // Muat langsung model GLB karakter
-    const loader = new LoaderClass();
-    const modelUrl = 'character_glb_idle_box_03_run_walk_7.glb';
+      // Muat langsung model GLB karakter
+      const loader = new LoaderClass();
+      const modelUrl = 'character_glb_idle_box_03_run_walk_7.glb';
 
-    loader.load(
-      modelUrl,
-      (gltf) => {
-        characterModel = gltf.scene;
-        characterModel.position.set(0, 0, 0);
-        characterModel.scale.set(1, 1, 1);
+      loader.load(
+        modelUrl,
+        (gltf) => {
+          characterModel = gltf.scene;
+          characterModel.position.set(0, 0, 0);
+          characterModel.scale.set(1, 1, 1);
 
-        characterModel.traverse((child) => {
-          if (child.isMesh) {
-            child.frustumCulled = false; // Mencegah culling mesh saat tulang skeletal bergerak
-            if (child.material) {
-              child.material.metalness = 0.15;
-              child.material.roughness = 0.82;
-              child.material.depthWrite = true;
-              optimizeMaterialTextures(child.material, 512);
+          characterModel.traverse((child) => {
+            if (child.isMesh) {
+              child.frustumCulled = false; // Mencegah culling mesh saat tulang skeletal bergerak
+              if (child.material) {
+                // Toning bahan kain/kulit jubah agar menyatu dengan latar 2D (tanpa kilap plastik)
+                child.material.metalness = 0.04;
+                child.material.roughness = 0.88;
+                child.material.depthWrite = true;
+              }
             }
-          }
-        });
+          });
 
-        scene.add(characterModel);
+          scene.add(characterModel);
 
-        mixer = new THREE.AnimationMixer(characterModel);
+          mixer = new THREE.AnimationMixer(characterModel);
 
-        // Petakan 4 animasi bawaan model (loop repeat mulus tanpa clamp)
-        for (const clip of gltf.animations) {
-          const name = (clip.name || '').toLowerCase();
+          // Petakan 4 animasi bawaan model (loop repeat mulus tanpa clamp)
+          for (const clip of gltf.animations) {
+            const name = (clip.name || '').toLowerCase();
 
-          // Pastikan track hips in-place agar looping tidak jumping / keluar layar
-          if (name.includes('walk') || name.includes('run')) {
-            for (const track of clip.tracks) {
-              if (track.name.toLowerCase().includes('hips.position')) {
-                const len = track.values.length / 3;
-                const tMax = track.times[track.times.length - 1];
-                const baseZ = -0.0134;
-                const baseX = 0.0019;
-                const z0 = track.values[2];
-                const zEnd = track.values[(len - 1) * 3 + 2];
-                const x0 = track.values[0];
-                const xEnd = track.values[(len - 1) * 3 + 0];
-                for (let i = 0; i < len; i++) {
-                  const prog = tMax > 0 ? track.times[i] / tMax : 0;
-                  const linZ = z0 + (zEnd - z0) * prog;
-                  const linX = x0 + (xEnd - x0) * prog;
-                  track.values[i * 3 + 2] = baseZ + (track.values[i * 3 + 2] - linZ);
-                  track.values[i * 3 + 0] = baseX + (track.values[i * 3 + 0] - linX);
+            // Pastikan track hips in-place agar looping tidak jumping / keluar layar
+            if (name.includes('walk') || name.includes('run')) {
+              for (const track of clip.tracks) {
+                if (track.name.toLowerCase().includes('hips.position')) {
+                  const len = track.values.length / 3;
+                  const tMax = track.times[track.times.length - 1];
+                  const baseZ = -0.0134;
+                  const baseX = 0.0019;
+                  const z0 = track.values[2];
+                  const zEnd = track.values[(len - 1) * 3 + 2];
+                  const x0 = track.values[0];
+                  const xEnd = track.values[(len - 1) * 3 + 0];
+                  for (let i = 0; i < len; i++) {
+                    const prog = tMax > 0 ? track.times[i] / tMax : 0;
+                    const linZ = z0 + (zEnd - z0) * prog;
+                    const linX = x0 + (xEnd - x0) * prog;
+                    track.values[i * 3 + 2] = baseZ + (track.values[i * 3 + 2] - linZ);
+                    track.values[i * 3 + 0] = baseX + (track.values[i * 3 + 0] - linX);
+                  }
                 }
               }
             }
+
+            const action = mixer.clipAction(clip);
+            action.setLoop(THREE.LoopRepeat, Infinity);
+            action.clampWhenFinished = false;
+            if (name.includes('idle')) actions.idle = action;
+            else if (name.includes('box') || name.includes('atk') || name.includes('attack')) actions.attack = action;
+            else if (name.includes('run')) actions.run = action;
+            else if (name.includes('walk')) actions.walk = action;
           }
 
-          const action = mixer.clipAction(clip);
-          action.setLoop(THREE.LoopRepeat, Infinity);
-          action.clampWhenFinished = false;
-          if (name.includes('idle')) actions.idle = action;
-          else if (name.includes('box') || name.includes('atk') || name.includes('attack')) actions.attack = action;
-          else if (name.includes('run')) actions.run = action;
-          else if (name.includes('walk')) actions.walk = action;
-        }
+          // Putar idle secara default
+          if (actions.idle) {
+            currentAction = actions.idle;
+            currentAction.play();
+            currentActionKey = 'idle';
+          } else if (gltf.animations.length > 0) {
+            currentAction = mixer.clipAction(gltf.animations[0]);
+            currentAction.play();
+          }
 
-        // Putar idle secara default
-        if (actions.idle) {
-          currentAction = actions.idle;
-          currentAction.play();
-          currentActionKey = 'idle';
-        } else if (gltf.animations.length > 0) {
-          currentAction = mixer.clipAction(gltf.animations[0]);
-          currentAction.play();
-        }
+          // Render satu frame pemanasan (pre-warm shader & WebGL buffer)
+          try {
+            mixer.update(0.016);
+            renderer.render(scene, camera);
+          } catch (e) {
+            // Abaikan kesalahan pre-warm bila ada
+          }
 
-        // Render satu frame pemanasan (pre-warm shader & buffer)
-        try {
-          mixer.update(0.016);
-          renderer.render(scene, camera);
-        } catch (e) {
-          // Abaikan kesalahan pre-warm bila ada
+          isReady = true;
+          isInitialized = true;
+          isInitializing = false;
+          console.log('[3D Character] Model GLB & animasi berhasil diinisialisasi dan siap render.');
+          resolve(true);
+        },
+        (xhr) => {
+          if (xhr && xhr.lengthComputable && onProgress) {
+            const pct = Math.min(99, Math.round((xhr.loaded / xhr.total) * 100));
+            onProgress(pct);
+          }
+        },
+        (err) => {
+          console.error('[3D Character] Gagal memuat GLB model karakter:', err);
+          isInitializing = false;
+          resolve(false);
         }
+      );
+    } catch (e) {
+      console.error('[3D Character] Inisialisasi 3D karakter gagal:', e);
+      isInitializing = false;
+      resolve(false);
+    }
+  });
 
-        isReady = true;
-        isInitialized = true;
-        isInitializing = false;
-        console.log('[3D Character] Model GLB & animasi berhasil diinisialisasi.');
-      },
-      undefined,
-      (err) => {
-        console.error('Gagal memuat GLB model karakter:', err);
-        isInitializing = false;
-      }
-    );
-  } catch (e) {
-    console.error('Inisialisasi 3D karakter gagal:', e);
-    isInitializing = false;
-  }
+  return initPromise;
 }
 
 // Inisialisasi otomatis segera begitu script dimuat
@@ -308,13 +302,12 @@ export function drawCharacter3D(ctx, p, sz = 72) {
   // Dalam denah 2D playzone (denah dermaga & pulau), tinggi karakter asli adalah 40-45px
   // (sz * 0.625). Di offCanvas 3D (256x256), tinggi model adalah 194px, telapak kaki di y = 226px,
   // dan sumbu tengah x di 129px.
-  // Rumus ini menempatkan telapak kaki tepat di (0,0) titik jangkar tanah dengan tinggi 42-45px,
-  // tersinkronisasi presisi dengan denah dermaga, zombie (34px-62px), dan collision circle (r=13).
+  // drawY diturunkan ke -223*s (+2.5s) agar telapak sepatu bot menancap mantap ke lantai/shadow.
   const s = (sz * 0.625) / 194;
   const drawW = 256 * s;
   const drawH = drawW;
   const drawX = -129 * s;
-  const drawY = -226 * s;
+  const drawY = -223 * s;
 
   if (isReady && offCanvas) {
     ctx.drawImage(offCanvas, drawX, drawY, drawW, drawH);

@@ -666,9 +666,11 @@ function drawCargo(ctx) {
 }
 
 function drawPlayer(ctx, p) {
-  // bayangan rata di dek
-  ctx.fillStyle = 'rgba(0,0,0,0.32)';
-  ctx.beginPath(); ctx.ellipse(p.x, p.y + 3, 11, 4.5, 0, 0, Math.PI * 2); ctx.fill();
+  // Dual-layer grounded contact shadow di dek kayu dermaga
+  ctx.fillStyle = 'rgba(10, 6, 4, 0.40)';
+  ctx.beginPath(); ctx.ellipse(p.x, p.y + 1, 14, 5.5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(2, 4, 8, 0.70)';
+  ctx.beginPath(); ctx.ellipse(p.x, p.y + 0.5, 9.5, 3.2, 0, 0, Math.PI * 2); ctx.fill();
   atUpright(ctx, p.x, p.y, () => {
     drawCharacter3D(ctx, p, 68);
   });

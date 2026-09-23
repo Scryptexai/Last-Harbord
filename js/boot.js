@@ -15,6 +15,7 @@ import { setMuted, sfx, haptic } from './audio.js';
 import { sessionStart, summary as analyticsSummary } from './analytics.js';
 import { applyCosmetics } from './cosmetics.js';
 import { allNotes, hasNote } from './notes.js';
+import { initCharacter3D } from './character3d.js';
 
 // Tandai SEBELUM main.js dievaluasi: main.js menunda auto-boot bila flag ini ada.
 // (Test headless yang mengimpor main.js langsung tidak menyetel flag ini, jadi
@@ -331,6 +332,7 @@ function setup() {
 
   try { sessionStart(); } catch (e) { /* noop */ }
   try { applyCosmetics(); } catch (e) { /* noop */ }  // aksen HUD pemain ikut tiap boot
+  try { initCharacter3D(); } catch (e) { /* noop */ } // Preload model 3D di background saat di layar judul
 
   fillDashboard();
   applyPrefs();
