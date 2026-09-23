@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Safe Island Rebuild — 2.5D Godot 4 Architecture Preview</title>
+<link rel="icon" type="image/png" href="assets/branding/appicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+<script src="js/vendor/three.min.js"></script>
+<script src="js/vendor/GLTFLoader.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #03080e;
+    font-family: 'Inter', system-ui, sans-serif;
+    color: #f1f5f9;
+  }
+  #webgl-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    z-index: 1;
+  }
+
+  /* HUD OVERLAY */
+  #hud-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 16px 20px;
+  }
+
+  /* TOP BAR */
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(4, 12, 22, 0.88);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: 12px;
+    padding: 10px 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    pointer-events: auto;
+  }
+  .island-title {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .island-title h1 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    color: #ffde96;
+    letter-spacing: 1px;
+  }
+  .island-title span {
+    font-size: 12px;
+    color: #94a3b8;
+  }
+  .stockpile-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .res-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(15, 23, 42, 0.6);
+    padding: 5px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.08);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .res-badge .val {
+    color: #38bdf8;
+    font-weight: 700;
+  }
+
+  /* INTERACTION PROMPT */
+  #interaction-prompt {
+    align-self: center;
+    margin-bottom: 24px;
+    background: rgba(7, 21, 38, 0.92);
+    border: 1.5px solid #eab308;
+    border-radius: 12px;
+    padding: 12px 28px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fef08a;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.7), 0 0 15px rgba(234, 179, 8, 0.3);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: auto;
+  }
+  #interaction-prompt.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .keycap {
+    display: inline-block;
+    background: #eab308;
+    color: #1e1b4b;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-weight: 800;
+    margin-right: 6px;
+  }
+
+  /* DIALOGUE MODAL */
+  #dialogue-modal {
+    position: absolute;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    width: min(92%, 580px);
+    background: rgba(6, 16, 30, 0.95);
+    border: 1.5px solid rgba(56, 189, 248, 0.5);
+    border-radius: 16px;
+    padding: 20px 24px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.8);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.25s ease;
+    z-index: 20;
+  }
+  #dialogue-modal.active {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+  }
+  .speaker-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .speaker-name {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 17px;
+    font-weight: 800;
+    color: #38bdf8;
+  }
+  .speaker-role {
+    font-size: 12px;
+    color: #94a3b8;
+    background: rgba(56, 189, 248, 0.15);
+    padding: 2px 8px;
+    border-radius: 6px;
+  }
+  .dialogue-content {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #f8fafc;
+    margin-bottom: 14px;
+  }
+  .dialogue-close-hint {
+    font-size: 11px;
+    color: #64748b;
+    text-align: right;
+  }
+
+  /* CONTROLS HINT */
+  .controls-card {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.5;
+    pointer-events: auto;
+  }
+  .controls-card b {
+    color: #f1f5f9;
+  }
+
+  /* BOAT MODAL */
+  #expedition-modal {
+    position: absolute;
+    inset: 0;
+    background: rgba(2, 6, 12, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  #expedition-modal.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .exp-card {
+    background: #091929;
+    border: 1.5px solid #38bdf8;
+    border-radius: 18px;
+    padding: 28px;
+    max-width: 440px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+  }
+  .exp-card h2 {
+    font-family: 'Montserrat', sans-serif;
+    color: #ffde96;
+    margin-bottom: 8px;
+    font-size: 22px;
+  }
+  .exp-card p {
+    color: #94a3b8;
+    font-size: 14px;
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+  .btn-exp {
+    background: linear-gradient(180deg, #38bdf8, #0284c7);
+    color: #041424;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 800;
+    font-size: 15px;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(2, 132, 199, 0.4);
+    margin-right: 10px;
+  }
+  .btn-exp-back {
+    background: transparent;
+    color: #94a3b8;
+    border: 1px solid rgba(255,255,255,0.2);
+    font-size: 14px;
+    padding: 12px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+
+  /* LOADING SCREEN */
+  #loading-screen {
+    position: absolute;
+    inset: 0;
+    background: #03080e;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    transition: opacity 0.4s ease;
+  }
+  #loading-screen.done {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(56, 189, 248, 0.2);
+    border-top-color: #38bdf8;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .load-text {
+    font-size: 14px;
+    color: #94a3b8;
+    font-weight: 500;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <p class="load-text">MEMUAT SAFE ISLAND (GODOT 4 ARCHITECTURE)...</p>
+</div>
+
+<canvas id="webgl-canvas"></canvas>
+
+<div id="hud-layer">
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="island-title">
+      <h1>SAFE ISLAND · PULAU AMAN</h1>
+      <span>Geografi Terpadu: Desa → Jalan → Dermaga → Perahu</span>
+    </div>
+    <div class="stockpile-group">
+      <div class="res-badge"><span>🌾</span> Makanan: <span class="val" id="val-food">18</span></div>
+      <div class="res-badge"><span>🪵</span> Kayu: <span class="val" id="val-wood">14</span></div>
+      <div class="res-badge"><span>🔩</span> Besi: <span class="val" id="val-metal">6</span></div>
+      <div class="res-badge"><span>💊</span> Obat: <span class="val" id="val-med">4</span></div>
+      <div class="res-badge"><span>⛽</span> Bahan Bakar: <span class="val" id="val-fuel">5</span></div>
+    </div>
+  </div>
+
+  <!-- INTERACTION PROMPT -->
+  <div id="interaction-prompt">
+    <span class="keycap">E</span> <span id="prompt-text">Bicara dengan Penyintas</span>
+  </div>
+</div>
+
+<!-- SURVIVOR DIALOGUE MODAL -->
+<div id="dialogue-modal">
+  <div class="speaker-meta">
+    <span class="speaker-name" id="diag-name">Paman Jamil</span>
+    <span class="speaker-role" id="diag-role">Pengelola Gudang</span>
+  </div>
+  <p class="dialogue-content" id="diag-text">Persediaan obat dan makanan kita kian menipis. Tolong cari perbekalan di pulau luar sebelum pasang malam datang!</p>
+  <div class="dialogue-close-hint">Tekan [E] atau [Spasi] untuk menutup</div>
+</div>
+
+<!-- CONTROLS HINT -->
+<div class="controls-card">
+  <b>Kontrol Safe Island:</b><br>
+  • Gerak: <b>W A S D</b> / Tombol Panah<br>
+  • Sprint: Tahan <b>Shift</b> (Animasi Run)<br>
+  • Tempur/Pukul: <b>Spasi</b> / <b>J</b> / Klik (Animasi Box_03)<br>
+  • Interaksi: <b>E</b> (Bicara / Naik Perahu)
+</div>
+
+<!-- EXPEDITION MODAL -->
+<div id="expedition-modal">
+  <div class="exp-card">
+    <h2>⚓ DERMAGA & PERAHU</h2>
+    <p>Perahu Ekspedisi siap berlayar menuju <b>Pulau Zombie Pertama</b> (Vertical Slice).<br>
+    Palka Perahu: <b>0 / 12 slot</b>.<br>
+    Bawa kembali Makanan, Obat, dan Material sebelum air pasang menenggelamkan pulau!</p>
+    <button class="btn-exp" id="btn-sail">BERLAYAR SEKARANG</button>
+    <button class="btn-exp-back" id="btn-cancel-sail">KEMBALI KE DESA</button>
+  </div>
+</div>
+
+<script>
+// ==============================================================================
+// Safe Island 2.5D Rebuild Controller & Environment
+// Mengikuti cetak biru arsitektur Godot 4:
+// 1. Locked 3D GLB Character & Animations (idle, walk, run, box_03)
+// 2. 3/4 Perspective Camera (38° pitch, 18° yaw, smooth lerp follow)
+// 3. Integrated Island Geography: Village -> Sloping Path -> Dock Pier -> Moored Boat
+// 4. Survivor Community System & Resource Stockpile
+// ==============================================================================
+
+const canvas = document.getElementById('webgl-canvas');
+const promptEl = document.getElementById('interaction-prompt');
+const promptTextEl = document.getElementById('prompt-text');
+const diagModal = document.getElementById('dialogue-modal');
+const diagNameEl = document.getElementById('diag-name');
+const diagRoleEl = document.getElementById('diag-role');
+const diagTextEl = document.getElementById('diag-text');
+const expModal = document.getElementById('expedition-modal');
+const loadingScreen = document.getElementById('loading-screen');
+
+let renderer, scene, camera;
+let clock = new THREE.Clock();
+
+// Character state
+let playerGroup = new THREE.Group();
+let characterModel = null;
+let mixer = null;
+let actions = {};
+let currentAction = null;
+let currentActionKey = 'idle';
+
+let playerPos = new THREE.Vector3(0, 2.5, -12); // Start on village path
+let playerVel = new THREE.Vector3();
+let playerFacing = -Math.PI / 2; // facing towards dock (south)
+let isAttacking = false;
+let attackTimer = 0;
+
+// Camera configuration (Godot 4 3/4 Perspective specification)
+const CAM_PITCH = 38 * Math.PI / 180;
+const CAM_YAW = 18 * Math.PI / 180;
+const CAM_DIST = 14.5;
+let cameraTarget = new THREE.Vector3(0, 2.5, -12);
+
+// Interactive objects
+const interactables = [];
+let activeInteractable = null;
+
+// Keys
+const keys = {};
+window.addEventListener('keydown', (e) => {
+  keys[e.code] = true;
+  if (e.code === 'KeyE') {
+    handleInteraction();
+  }
+  if (e.code === 'Space' && !diagModal.classList.contains('active')) {
+    triggerAttack();
+  } else if (e.code === 'Space' && diagModal.classList.contains('active')) {
+    closeDialogue();
+  }
+});
+window.addEventListener('keyup', (e) => {
+  keys[e.code] = false;
+});
+window.addEventListener('click', (e) => {
+  if (e.target.closest('#hud-layer') || e.target.closest('#dialogue-modal') || e.target.closest('#expedition-modal') || e.target.closest('.controls-card')) return;
+  triggerAttack();
+});
+
+// Setup Boat Modal buttons
+document.getElementById('btn-sail').addEventListener('click', () => {
+  expModal.classList.remove('active');
+  alert("Transisi Ekspedisi: Membuka Pelayaran Menuju Pulau Zombie Pertama!");
+});
+document.getElementById('btn-cancel-sail').addEventListener('click', () => {
+  expModal.classList.remove('active');
+});
+
+function initThree() {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x061525);
+  scene.fog = new THREE.FogExp2(0x0a1d30, 0.016);
+
+  // 3/4 Perspective Camera
+  camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.2, 200);
+  updateCameraTransform(playerPos, 0);
+
+  // Lighting
+  const hemiLight = new THREE.HemisphereLight(0xbde0fe, 0x1b2838, 0.65);
+  scene.add(hemiLight);
+
+  const sunLight = new THREE.DirectionalLight(0xffecd1, 1.4);
+  sunLight.position.set(16, 28, 12);
+  sunLight.castShadow = true;
+  sunLight.shadow.mapSize.width = 2048;
+  sunLight.shadow.mapSize.height = 2048;
+  sunLight.shadow.camera.near = 1;
+  sunLight.shadow.camera.far = 80;
+  const d = 22;
+  sunLight.shadow.camera.left = -d;
+  sunLight.shadow.camera.right = d;
+  sunLight.shadow.camera.top = d;
+  sunLight.shadow.camera.bottom = -d;
+  sunLight.shadow.bias = -0.0005;
+  scene.add(sunLight);
+
+  // Warm village ambiance light
+  const villagePoint = new THREE.PointLight(0xff8c38, 2.8, 18, 1.2);
+  villagePoint.position.set(0, 3.2, -16);
+  scene.add(villagePoint);
+
+  // Dock lantern
+  const dockPoint = new THREE.PointLight(0xffb042, 2.2, 14, 1.2);
+  dockPoint.position.set(1.4, 2.2, 5.0);
+  scene.add(dockPoint);
+
+  buildEnvironment();
+  loadCharacter();
+
+  window.addEventListener('resize', onResize);
+}
+
+function updateCameraTransform(targetPos, delta) {
+  cameraTarget.lerp(targetPos, delta ? 6.0 * delta : 1.0);
+  const offset = new THREE.Vector3(
+    Math.sin(CAM_YAW) * Math.cos(CAM_PITCH) * CAM_DIST,
+    Math.sin(CAM_PITCH) * CAM_DIST,
+    Math.cos(CAM_YAW) * Math.cos(CAM_PITCH) * CAM_DIST
+  );
+  camera.position.copy(cameraTarget).add(offset);
+  camera.lookAt(cameraTarget.x, cameraTarget.y + 0.8, cameraTarget.z);
+}
+
+function onResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+// ==============================================================================
+// ENVIRONMENT GENERATION: Village -> Path -> Dock -> Boat
+// ==============================================================================
+let boatMesh = null;
+let boatBobTime = 0;
+
+function buildEnvironment() {
+  // Ocean Water Plane
+  const waterGeo = new THREE.PlaneGeometry(300, 300, 32, 32);
+  const waterMat = new THREE.MeshStandardMaterial({
+    color: 0x07253b,
+    roughness: 0.18,
+    metalness: 0.25,
+  });
+  const ocean = new THREE.Mesh(waterGeo, waterMat);
+  ocean.rotation.x = -Math.PI / 2;
+  ocean.position.y = -0.2;
+  scene.add(ocean);
+
+  // 1. Village Plateau (Dataran Tinggi Desa)
+  const plateauGeo = new THREE.CylinderGeometry(15, 17, 2.6, 32);
+  const grassMat = new THREE.MeshStandardMaterial({
+    color: 0x27432b,
+    roughness: 0.9,
+    metalness: 0.05,
+  });
+  const plateau = new THREE.Mesh(plateauGeo, grassMat);
+  plateau.position.set(0, 1.3, -16);
+  plateau.receiveShadow = true;
+  scene.add(plateau);
+
+  // Village bonfire
+  const fireGeo = new THREE.ConeGeometry(0.6, 0.8, 8);
+  const fireMat = new THREE.MeshBasicMaterial({ color: 0xff6b1a });
+  const bonfire = new THREE.Mesh(fireGeo, fireMat);
+  bonfire.position.set(0, 2.9, -16);
+  scene.add(bonfire);
+
+  // Village Shelters / Cabins
+  const cabinMat = new THREE.MeshStandardMaterial({ color: 0x422f1f, roughness: 0.85 });
+  const roofMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.9 });
+
+  function createCabin(x, y, z, rot) {
+    const group = new THREE.Group();
+    const walls = new THREE.Mesh(new THREE.BoxGeometry(4.2, 2.6, 4.2), cabinMat);
+    walls.position.y = 1.3;
+    walls.castShadow = true;
+    walls.receiveShadow = true;
+    group.add(walls);
+
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(3.5, 1.6, 4), roofMat);
+    roof.position.y = 3.2;
+    roof.rotation.y = Math.PI / 4;
+    roof.castShadow = true;
+    group.add(roof);
+
+    group.position.set(x, y, z);
+    group.rotation.y = rot;
+    scene.add(group);
+  }
+  createCabin(-6.5, 2.5, -17, 0.3);
+  createCabin(6.8, 2.5, -16, -0.4);
+  createCabin(0, 2.5, -22, 0);
+
+  // Community Stockpile Crates
+  const crateMat = new THREE.MeshStandardMaterial({ color: 0x5c4028, roughness: 0.8 });
+  function createCrate(x, y, z, s) {
+    const crate = new THREE.Mesh(new THREE.BoxGeometry(s, s, s), crateMat);
+    crate.position.set(x, y + s/2, z);
+    crate.castShadow = true;
+    crate.receiveShadow = true;
+    scene.add(crate);
+  }
+  createCrate(3.2, 2.5, -14, 1.1);
+  createCrate(4.2, 2.5, -14.2, 0.9);
+  createCrate(3.7, 3.5, -14.1, 0.8);
+
+  // 2. Winding Dirt Path (Desa menuju Dermaga)
+  const pathMat = new THREE.MeshStandardMaterial({ color: 0x5a452e, roughness: 0.95 });
+  const pathRamp = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.8, 12), pathMat);
+  pathRamp.position.set(0, 1.25, -6.5);
+  pathRamp.rotation.x = 0.22; // gentle slope
+  pathRamp.receiveShadow = true;
+  scene.add(pathRamp);
+
+  // 3. Sandy Shore & Coastal Rocks
+  const sandMat = new THREE.MeshStandardMaterial({ color: 0x9b855d, roughness: 0.9 });
+  const beach = new THREE.Mesh(new THREE.CylinderGeometry(9, 11, 0.6, 28), sandMat);
+  beach.position.set(0, 0.1, 0);
+  beach.receiveShadow = true;
+  scene.add(beach);
+
+  const rockMat = new THREE.MeshStandardMaterial({ color: 0x47515a, roughness: 0.85 });
+  function createRock(x, y, z, sx, sy, sz) {
+    const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(1.2), rockMat);
+    rock.scale.set(sx, sy, sz);
+    rock.position.set(x, y, z);
+    rock.castShadow = true;
+    rock.receiveShadow = true;
+    scene.add(rock);
+  }
+  createRock(-4.2, 0.4, 1.5, 1.2, 0.7, 1.1);
+  createRock(4.8, 0.4, 2.0, 1.4, 0.9, 1.3);
+  createRock(-3.5, 0.6, -4.0, 1.0, 0.8, 1.0);
+  createRock(3.8, 0.7, -4.5, 1.1, 0.9, 1.1);
+
+  // 4. Sturdy Dock Pier (Menyatu dari pantai ke laut)
+  const dockWoodMat = new THREE.MeshStandardMaterial({ color: 0x583d25, roughness: 0.85 });
+  const dockPier = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.35, 7.5), dockWoodMat);
+  dockPier.position.set(0, 0.35, 4.5);
+  dockPier.castShadow = true;
+  dockPier.receiveShadow = true;
+  scene.add(dockPier);
+
+  // Dock Pilings
+  const pilingGeo = new THREE.CylinderGeometry(0.12, 0.14, 2.2, 8);
+  function addPiling(x, z) {
+    const p = new THREE.Mesh(pilingGeo, dockWoodMat);
+    p.position.set(x, -0.6, z);
+    p.castShadow = true;
+    scene.add(p);
+  }
+  addPiling(-1.3, 1.8);
+  addPiling(1.3, 1.8);
+  addPiling(-1.3, 5.2);
+  addPiling(1.3, 5.2);
+  addPiling(-1.3, 7.8);
+  addPiling(1.3, 7.8);
+
+  // Dock Lantern Post
+  const lanternPost = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 2.2), dockWoodMat);
+  lanternPost.position.set(1.3, 1.2, 5.0);
+  scene.add(lanternPost);
+  const lanternBulb = new THREE.Mesh(new THREE.SphereGeometry(0.18), new THREE.MeshBasicMaterial({ color: 0xffc266 }));
+  lanternBulb.position.set(1.3, 2.2, 5.0);
+  scene.add(lanternBulb);
+
+  // 5. Moored Boat (Perahu Ekspedisi bersandar di air samping dermaga)
+  boatMesh = new THREE.Group();
+  const hullMat = new THREE.MeshStandardMaterial({ color: 0x48321e, roughness: 0.8 });
+  const hull = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.9, 4.6), hullMat);
+  hull.position.y = 0.2;
+  hull.castShadow = true;
+  hull.receiveShadow = true;
+  boatMesh.add(hull);
+
+  const boatFloor = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.1, 4.0), new THREE.MeshStandardMaterial({ color: 0x6e4e30, roughness: 0.85 }));
+  boatFloor.position.y = 0.45;
+  boatMesh.add(boatFloor);
+
+  // Boat lantern
+  const bLantern = new THREE.Mesh(new THREE.SphereGeometry(0.14), new THREE.MeshBasicMaterial({ color: 0xffd175 }));
+  bLantern.position.set(0, 1.4, 1.8);
+  boatMesh.add(bLantern);
+
+  boatMesh.position.set(2.6, 0.1, 5.8);
+  scene.add(boatMesh);
+
+  // Register Boat interaction
+  interactables.push({
+    type: 'boat',
+    pos: new THREE.Vector3(1.8, 0.35, 5.8),
+    radius: 2.8,
+    prompt: 'Naik Perahu & Buka Peta Ekspedisi',
+    onInteract: () => {
+      expModal.classList.add('active');
+    }
+  });
+
+  // 6. Survivor NPCs
+  buildNPCs();
+}
+
+// ==============================================================================
+// SURVIVOR NPCs
+// ==============================================================================
+function buildNPCs() {
+  const npcMat = new THREE.MeshStandardMaterial({ color: 0x3b5066, roughness: 0.85 });
+  const skinMat = new THREE.MeshStandardMaterial({ color: 0xd4a373, roughness: 0.7 });
+
+  function spawnNPC(name, role, dialogue, x, y, z) {
+    const group = new THREE.Group();
+    // Body
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 1.1, 12), npcMat);
+    body.position.y = 0.65;
+    body.castShadow = true;
+    group.add(body);
+    // Head
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 12), skinMat);
+    head.position.y = 1.35;
+    head.castShadow = true;
+    group.add(head);
+
+    group.position.set(x, y, z);
+    scene.add(group);
+
+    interactables.push({
+      type: 'npc',
+      name: name,
+      role: role,
+      dialogue: dialogue,
+      pos: new THREE.Vector3(x, y, z),
+      radius: 2.4,
+      prompt: 'Bicara dengan ' + name + ' (' + role + ')',
+      onInteract: () => {
+        diagNameEl.textContent = name;
+        diagRoleEl.textContent = role;
+        diagTextEl.textContent = dialogue;
+        diagModal.classList.add('active');
+      }
+    });
+  }
+
+  spawnNPC(
+    "Paman Jamil",
+    "Pengelola Gudang Komunitas",
+    "Selamat datang kembali di desa. Persediaan makanan dan kayu bakar kita menipis drastis. Segera persiapkan pelayaran ke pulau berikutnya sebelum badai pasang tiba!",
+    2.4, 2.5, -14.2
+  );
+
+  spawnNPC(
+    "Pak Hasan",
+    "Nelayan Tua",
+    "Air laut belakangan ini terasa gelisah, anak muda. Saat kabut malam naik, zombie di pantai pulau seberang jadi dua kali lebih buas. Jangan pernah memanen sendirian terlalu lama di luar palka!",
+    -3.8, 2.5, -15.0
+  );
+
+  spawnNPC(
+    "Dokter Sari",
+    "Tenaga Medis",
+    "Ada anak-anak di kabin belakang yang mulai terserang infeksi luka. Kita butuh pasokan obat-obatan dan perban dari reruntuhan apotek pulau luar. Bawakan apa saja yang kau temukan.",
+    -2.8, 2.5, -18.2
+  );
+}
+
+// ==============================================================================
+// LOCKED 3D GLB CHARACTER & ANIMATIONS
+// ==============================================================================
+function loadCharacter() {
+  const loader = new THREE.GLTFLoader();
+  loader.load('character_glb_idle_box_03_run_walk_7.glb', (gltf) => {
+    characterModel = gltf.scene;
+
+    // Strict compliance: Do not redesign or modify character mesh
+    characterModel.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+        if (child.material) {
+          child.material.metalness = 0.0;
+          child.material.roughness = 0.88;
+        }
+      }
+    });
+
+    characterModel.scale.set(0.9, 0.9, 0.9);
+    playerGroup.add(characterModel);
+
+    // Contact Shadows (Calibrated dual-layer)
+    const shadowGeo = new THREE.PlaneGeometry(0.75, 0.75);
+    const shadowMat = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      transparent: true,
+      opacity: 0.45,
+      depthWrite: false,
+    });
+    const contactShadow = new THREE.Mesh(shadowGeo, shadowMat);
+    contactShadow.rotation.x = -Math.PI / 2;
+    contactShadow.position.y = 0.02;
+    playerGroup.add(contactShadow);
+
+    // Animations setup
+    mixer = new THREE.AnimationMixer(characterModel);
+    gltf.animations.forEach((clip) => {
+      const name = clip.name.toLowerCase();
+      const action = mixer.clipAction(clip);
+      if (name.includes('idle')) actions.idle = action;
+      else if (name.includes('walk')) actions.walk = action;
+      else if (name.includes('run')) actions.run = action;
+      else if (name.includes('box_03') || name.includes('attack')) actions.attack = action;
+    });
+
+    // Fallbacks if names differ slightly
+    if (!actions.idle && gltf.animations[0]) actions.idle = mixer.clipAction(gltf.animations[0]);
+    if (!actions.attack && actions.idle) actions.attack = actions.idle;
+    if (!actions.walk && actions.idle) actions.walk = actions.idle;
+    if (!actions.run && actions.walk) actions.run = actions.walk;
+
+    if (actions.idle) {
+      actions.idle.play();
+      currentAction = actions.idle;
+      currentActionKey = 'idle';
+    }
+
+    playerGroup.position.copy(playerPos);
+    scene.add(playerGroup);
+
+    loadingScreen.classList.add('done');
+  }, undefined, (err) => {
+    console.error("Gagal memuat GLB:", err);
+    loadingScreen.classList.add('done');
+  });
+}
+
+function switchAnimation(newKey, fadeDuration = 0.15) {
+  if (currentActionKey === newKey || !actions[newKey]) return;
+  const prevAction = currentAction;
+  const nextAction = actions[newKey];
+
+  if (prevAction) {
+    prevAction.fadeOut(fadeDuration);
+  }
+  nextAction.reset().fadeIn(fadeDuration).play();
+  currentAction = nextAction;
+  currentActionKey = newKey;
+}
+
+function triggerAttack() {
+  if (isAttacking || !actions.attack) return;
+  isAttacking = true;
+  attackTimer = 0.45;
+
+  const prevAction = currentAction;
+  actions.attack.reset();
+  actions.attack.setLoop(THREE.LoopOnce, 1);
+  actions.attack.clampWhenFinished = true;
+  actions.attack.fadeIn(0.08).play();
+  if (prevAction) prevAction.fadeOut(0.08);
+
+  // Combat zoom effect on camera
+  CAM_DIST_OFFSET = -1.5;
+
+  setTimeout(() => {
+    isAttacking = false;
+    CAM_DIST_OFFSET = 0.0;
+    if (actions.attack) actions.attack.fadeOut(0.12);
+    if (actions[currentActionKey]) {
+      actions[currentActionKey].reset().fadeIn(0.12).play();
+      currentAction = actions[currentActionKey];
+    }
+  }, 450);
+}
+
+let CAM_DIST_OFFSET = 0.0;
+
+function handleInteraction() {
+  if (diagModal.classList.contains('active')) {
+    closeDialogue();
+    return;
+  }
+  if (activeInteractable && activeInteractable.onInteract) {
+    activeInteractable.onInteract();
+  }
+}
+
+function closeDialogue() {
+  diagModal.classList.remove('active');
+}
+
+// ==============================================================================
+// GAME LOOP
+// ==============================================================================
+function getTerrainHeight(x, z) {
+  // Village plateau
+  if (z <= -10) return 2.5;
+  // Dock pier
+  if (z >= 1.0 && Math.abs(x) <= 1.4) return 0.5;
+  // Sloping path from village to beach
+  if (z > -10 && z < 1.0) {
+    const t = (z - (-10)) / (1.0 - (-10));
+    return THREE.MathUtils.lerp(2.5, 0.4, t);
+  }
+  // Beach shore
+  return 0.35;
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  const delta = Math.min(clock.getDelta(), 0.1);
+
+  // Water bobbing for moored boat
+  if (boatMesh) {
+    boatBobTime += delta * 1.8;
+    boatMesh.position.y = 0.1 + Math.sin(boatBobTime) * 0.05;
+    boatMesh.rotation.z = Math.sin(boatBobTime * 0.8) * 0.02;
+  }
+
+  // Player input & movement
+  let moveX = 0;
+  let moveZ = 0;
+  if (!diagModal.classList.contains('active') && !expModal.classList.contains('active')) {
+    if (keys['KeyW'] || keys['ArrowUp']) moveZ -= 1;
+    if (keys['KeyS'] || keys['ArrowDown']) moveZ += 1;
+    if (keys['KeyA'] || keys['ArrowLeft']) moveX -= 1;
+    if (keys['KeyD'] || keys['ArrowRight']) moveX += 1;
+  }
+
+  const isMoving = (moveX !== 0 || moveZ !== 0) && !isAttacking;
+  const isSprinting = keys['ShiftLeft'] || keys['ShiftRight'];
+
+  if (isMoving) {
+    const inputDir = new THREE.Vector2(moveX, moveZ).normalize();
+    // Rotate relative to 3/4 camera yaw (18 degrees)
+    const angle = CAM_YAW;
+    const rotatedX = inputDir.x * Math.cos(angle) - inputDir.y * Math.sin(angle);
+    const rotatedZ = inputDir.x * Math.sin(angle) + inputDir.y * Math.cos(angle);
+
+    const speed = isSprinting ? 6.2 : 3.4;
+    playerPos.x += rotatedX * speed * delta;
+    playerPos.z += rotatedZ * speed * delta;
+
+    // Clamp within Safe Island boundaries
+    playerPos.x = THREE.MathUtils.clamp(playerPos.x, -14, 14);
+    playerPos.z = THREE.MathUtils.clamp(playerPos.z, -24, 7.8);
+
+    // Height sync with terrain
+    playerPos.y = getTerrainHeight(playerPos.x, playerPos.z);
+
+    // Smooth character rotation
+    const targetAngle = Math.atan2(rotatedX, rotatedZ);
+    let diff = targetAngle - playerFacing;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    playerFacing += diff * 14.0 * delta;
+
+    // Animation transition
+    if (!isAttacking) {
+      switchAnimation(isSprinting ? 'run' : 'walk');
+    }
+  } else {
+    // Height sync
+    playerPos.y = getTerrainHeight(playerPos.x, playerPos.z);
+    if (!isAttacking) {
+      switchAnimation('idle');
+    }
+  }
+
+  // Sync player group transform
+  playerGroup.position.copy(playerPos);
+  if (characterModel) {
+    characterModel.rotation.y = playerFacing;
+  }
+
+  // Check interactables
+  activeInteractable = null;
+  for (let obj of interactables) {
+    const d = playerPos.distanceTo(obj.pos);
+    if (d < obj.radius) {
+      activeInteractable = obj;
+      break;
+    }
+  }
+
+  if (activeInteractable && !diagModal.classList.contains('active') && !expModal.classList.contains('active')) {
+    promptTextEl.textContent = activeInteractable.prompt;
+    promptEl.classList.add('show');
+  } else {
+    promptEl.classList.remove('show');
+  }
+
+  // Camera follow
+  updateCameraTransform(playerPos, delta);
+
+  if (mixer) {
+    mixer.update(delta);
+  }
+
+  renderer.render(scene, camera);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  initThree();
+  animate();
+});
+</script>
+</body>
+</html>

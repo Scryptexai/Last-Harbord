@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3 uid="uid://c8m4n2p6q9v1"]
+
+[ext_resource type="Script" path="res://scripts/systems/camera_controller.gd" id="1_cam_ctrl"]
+
+[node name="IsometricCamera" type="Node3D"]
+script = ExtResource("1_cam_ctrl")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 9.5)
+current = true
+fov = 44.0
+near = 0.2
+far = 120.0
