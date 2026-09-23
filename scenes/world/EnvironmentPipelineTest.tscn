@@ -1,0 +1,77 @@
+[gd_scene load_steps=10 format=3 uid="uid://b8m3k7v9q2x5"]
+
+[ext_resource type="Environment" uid="uid://c7m9v1p4k8x2" path="res://scenes/world/PipelineTestEnv.tres" id="1_env"]
+[ext_resource type="PackedScene" path="res://assets/models/terrain/pipeline_terrain.glb" id="2_terrain"]
+[ext_resource type="PackedScene" uid="uid://b1m7k9v4q2x8" path="res://scenes/world/SurvivorCabin.tscn" id="3_cabin"]
+[ext_resource type="PackedScene" uid="uid://d2k4m8n1p9x5" path="res://scenes/world/PalmTree.tscn" id="4_palm"]
+[ext_resource type="PackedScene" uid="uid://cb4k7m9v1p2x" path="res://scenes/world/TropicalTree.tscn" id="5_tropical"]
+[ext_resource type="PackedScene" uid="uid://e4k7m8n2p1x9" path="res://scenes/world/RealisticRock.tscn" id="6_rock"]
+[ext_resource type="PackedScene" uid="uid://a8m2k5v9q3x1" path="res://scenes/world/WoodenDock.tscn" id="7_dock"]
+[ext_resource type="PackedScene" uid="uid://b2k8n4p9q7m5" path="res://scenes/world/SurvivorBoat.tscn" id="8_boat"]
+[ext_resource type="PackedScene" path="res://assets/characters/character_glb_idle_box_03_run_walk_7.glb" id="9_player"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ocean"]
+albedo_color = Color(0.02, 0.45, 0.65, 0.88)
+roughness = 0.15
+metallic = 0.25
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ocean"]
+material = SubResource("StandardMaterial3D_ocean")
+size = Vector2(160, 160)
+
+[node name="EnvironmentPipelineTest" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = ExtResource("1_env")
+
+[node name="SunLight" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707107, -0.454519, 0.541675, 0, 0.766044, 0.642788, -0.707107, -0.454519, 0.541675, 25, 40, 22)
+light_color = Color(1, 0.960784, 0.898039, 1)
+light_energy = 1.6
+shadow_enabled = true
+shadow_bias = 0.04
+directional_shadow_mode = 1
+directional_shadow_split_1 = 0.15
+directional_shadow_split_2 = 0.35
+directional_shadow_split_3 = 0.75
+
+[node name="SkyFillLight" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.707107, 0.353553, -0.612372, 0, 0.866025, 0.5, 0.707107, 0.353553, -0.612372, -15, 20, -15)
+light_color = Color(0.682353, 0.835294, 0.968627, 1)
+light_energy = 0.45
+
+[node name="TerrainSystem" parent="." instance=ExtResource("2_terrain")]
+
+[node name="OceanPlane" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+mesh = SubResource("PlaneMesh_ocean")
+
+[node name="SurvivorCabin" parent="." instance=ExtResource("3_cabin")]
+transform = Transform3D(0.939693, 0, 0.34202, 0, 1, 0, -0.34202, 0, 0.939693, -6.5, 1.8, -8)
+
+[node name="PalmTree_Left" parent="." instance=ExtResource("4_palm")]
+transform = Transform3D(0.965926, 0, 0.258819, 0, 1, 0, -0.258819, 0, 0.965926, -5.2, 0.6, 2.5)
+
+[node name="PalmTree_Right" parent="." instance=ExtResource("4_palm")]
+transform = Transform3D(0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866025, 6.2, 0.5, 1.8)
+
+[node name="TropicalTree" parent="." instance=ExtResource("5_tropical")]
+transform = Transform3D(0.984808, 0, -0.173648, 0, 1, 0, 0.173648, 0, 0.984808, 7.8, 2.6, -11.5)
+
+[node name="RealisticRock" parent="." instance=ExtResource("6_rock")]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, -8.5, 0.3, 4.2)
+
+[node name="WoodenDock" parent="." instance=ExtResource("7_dock")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2)
+
+[node name="SurvivorBoat" parent="." instance=ExtResource("8_boat")]
+transform = Transform3D(0.965926, 0, -0.258819, 0, 1, 0, 0.258819, 0, 0.965926, 2.8, 0.1, 7.2)
+
+[node name="PlayerReference" parent="." instance=ExtResource("9_player")]
+transform = Transform3D(0.95, 0, 0, 0, 0.95, 0, 0, 0, 0.95, 0, 1.35, -2.5)
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(0.848048, -0.340248, 0.406187, 0, 0.766044, 0.642788, -0.529919, -0.545116, 0.649642, 8.5, 11.5, 12.5)
+fov = 40.0
+near = 0.5
+far = 160.0

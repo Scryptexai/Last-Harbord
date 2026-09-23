@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3 uid="uid://e4k7m8n2p1x9"]
+
+[ext_resource type="PackedScene" path="res://assets/models/rocks/cliff_rock.glb" id="1_model"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_rock"]
+size = Vector3(2.8, 1.8, 2.2)
+
+[node name="RealisticRock" type="StaticBody3D"]
+
+[node name="Model" parent="." instance=ExtResource("1_model")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("BoxShape3D_rock")

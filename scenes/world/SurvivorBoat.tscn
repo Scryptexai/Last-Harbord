@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3 uid="uid://b2k8n4p9q7m5"]
+
+[ext_resource type="PackedScene" path="res://assets/models/boats/survivor_boat.glb" id="1_model"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_boat"]
+size = Vector3(1.8, 0.9, 4.8)
+
+[node name="SurvivorBoat" type="StaticBody3D"]
+
+[node name="Model" parent="." instance=ExtResource("1_model")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.45, 0)
+shape = SubResource("BoxShape3D_boat")

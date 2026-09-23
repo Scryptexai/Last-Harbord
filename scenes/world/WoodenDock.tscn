@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3 uid="uid://a8m2k5v9q3x1"]
+
+[ext_resource type="PackedScene" path="res://assets/models/architecture/wooden_dock.glb" id="1_model"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_dock"]
+size = Vector3(2.8, 0.6, 10.5)
+
+[node name="WoodenDock" type="StaticBody3D"]
+
+[node name="Model" parent="." instance=ExtResource("1_model")]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 5.25)
+shape = SubResource("BoxShape3D_dock")

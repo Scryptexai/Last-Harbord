@@ -1,84 +1,15 @@
-[gd_scene load_steps=5 format=3 uid="uid://d2k4m8n1p9x5"]
+[gd_scene load_steps=3 format=3 uid="uid://d2k4m8n1p9x5"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_trunk"]
-albedo_color = Color(0.38, 0.28, 0.18, 1)
-roughness = 0.9
+[ext_resource type="PackedScene" path="res://assets/models/vegetation/coconut_palm.glb" id="1_model"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_frond"]
-albedo_color = Color(0.14, 0.35, 0.16, 1)
-roughness = 0.8
-cull_mode = 0
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_trunk"]
+height = 7.0
+radius = 0.4
 
-[sub_resource type="CylinderShape3D" id="CylinderShape3D_trunk_col"]
-height = 5.2
-radius = 0.35
+[node name="PalmTree" type="StaticBody3D"]
 
-[node name="PalmTree" type="Node3D"]
+[node name="Model" parent="." instance=ExtResource("1_model")]
 
-[node name="Trunk" type="Node3D" parent="."]
-
-[node name="Seg1" type="CSGCylinder3D" parent="Trunk"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
-radius = 0.35
-height = 1.0
-sides = 8
-material = SubResource("StandardMaterial3D_trunk")
-
-[node name="Seg2" type="CSGCylinder3D" parent="Trunk"]
-transform = Transform3D(0.996195, -0.0871557, 0, 0.0871557, 0.996195, 0, 0, 0, 1, 0.08, 1.48, 0)
-radius = 0.3
-height = 1.0
-sides = 8
-material = SubResource("StandardMaterial3D_trunk")
-
-[node name="Seg3" type="CSGCylinder3D" parent="Trunk"]
-transform = Transform3D(0.984808, -0.173648, 0, 0.173648, 0.984808, 0, 0, 0, 1, 0.26, 2.44, 0)
-radius = 0.26
-height = 1.0
-sides = 8
-material = SubResource("StandardMaterial3D_trunk")
-
-[node name="Seg4" type="CSGCylinder3D" parent="Trunk"]
-transform = Transform3D(0.965926, -0.258819, 0, 0.258819, 0.965926, 0, 0, 0, 1, 0.54, 3.38, 0)
-radius = 0.22
-height = 1.0
-sides = 8
-material = SubResource("StandardMaterial3D_trunk")
-
-[node name="Seg5" type="CSGCylinder3D" parent="Trunk"]
-transform = Transform3D(0.939693, -0.34202, 0, 0.34202, 0.939693, 0, 0, 0, 1, 0.92, 4.28, 0)
-radius = 0.18
-height = 1.0
-sides = 8
-material = SubResource("StandardMaterial3D_trunk")
-
-[node name="Crown" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.25, 4.8, 0)
-
-[node name="Frond1" type="CSGBox3D" parent="Crown"]
-transform = Transform3D(1, 0, 0, 0, 0.866025, 0.5, 0, -0.5, 0.866025, 0, -0.3, 1.4)
-size = Vector3(0.6, 0.04, 2.8)
-material = SubResource("StandardMaterial3D_frond")
-
-[node name="Frond2" type="CSGBox3D" parent="Crown"]
-transform = Transform3D(1, 0, 0, 0, 0.866025, -0.5, 0, 0.5, 0.866025, 0, -0.3, -1.4)
-size = Vector3(0.6, 0.04, 2.8)
-material = SubResource("StandardMaterial3D_frond")
-
-[node name="Frond3" type="CSGBox3D" parent="Crown"]
-transform = Transform3D(0.866025, 0.5, 0, -0.5, 0.866025, 0, 0, 0, 1, 1.4, -0.3, 0)
-size = Vector3(2.8, 0.04, 0.6)
-material = SubResource("StandardMaterial3D_frond")
-
-[node name="Frond4" type="CSGBox3D" parent="Crown"]
-transform = Transform3D(0.866025, -0.5, 0, 0.5, 0.866025, 0, 0, 0, 1, -1.4, -0.3, 0)
-size = Vector3(2.8, 0.04, 0.6)
-material = SubResource("StandardMaterial3D_frond")
-
-[node name="StaticBody3D" type="StaticBody3D" parent="."]
-collision_layer = 1
-collision_mask = 0
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.4, 2.6, 0)
-shape = SubResource("CylinderShape3D_trunk_col")
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, 0)
+shape = SubResource("CylinderShape3D_trunk")
