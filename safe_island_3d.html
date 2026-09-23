@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Safe Island 3D Rebuild — Realistic 3D Survival Game</title>
+<title>Last Harbor — Realistic 3D Survival Game</title>
 <link rel="icon" type="image/png" href="assets/branding/appicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,7 +28,7 @@
     z-index: 1;
   }
 
-  /* CINEMATIC HUD */
+  /* CINEMATIC HUD (MINIMALIST, WORLD FIRST) */
   #cinematic-hud {
     position: absolute;
     top: 20px;
@@ -132,8 +132,8 @@
 <canvas id="webgl-canvas"></canvas>
 
 <div id="cinematic-hud">
-  <h1>Safe Island · Pemukiman Nelayan 3D</h1>
-  <span>Elevasi Alamiah · Hutan Pinus & Kelapa · Kabin Autentik · Dermaga Pesisir</span>
+  <h1>Safe Island · Realistic 3D Survival</h1>
+  <span>PBR Assets · Organic Terrain & Coastline · Survivor Settlement</span>
 </div>
 
 <div class="bottom-info">
@@ -153,15 +153,7 @@
 <script>
 // ==============================================================================
 // REALISTIC / STYLIZED-REALISTIC 3D SURVIVAL WORLD
-// Bright Daylight Coastal Environment:
-// 1. Procedural Natural 3D Terrain with elevation contours, beach, village terrace, and cliffs
-// 2. Beautiful Turquoise Ocean with depth gradient and shoreline foam
-// 3. Authentic Survivor Cabins on stilts with corrugated tin roofs, porches, crates, and drums
-// 4. Organic Foliage: Curved coastal palms with fanning fronds, towering pines, bushes, and rocks
-// 5. Weathered Boardwalk Dock with round pilings and cleats extending into water
-// 6. Moored Expedition Boat with curved hull and cargo
-// 7. Locked 3D Player Character with Human Scale Reference (~1.75m) & Contact Shadow
-// 8. Cinematic 3/4 Third-Person Perspective (38° angle with Low Horizon toggle)
+// Built with real 3D GLB assets from the autonomous asset production pipeline.
 // ==============================================================================
 
 const canvas = document.getElementById('webgl-canvas');
@@ -199,106 +191,27 @@ let terrainMesh = null;
 let terrainGeo = null;
 let oceanMesh = null;
 let waterTime = 0;
-let boatGroup = null;
+let boatGroup = new THREE.Group();
 let boatBobTime = 0;
 
 // Interactive elements
 const interactables = [];
 let activeInteractable = null;
 
-// Materials
-let matTerrain, matWaterOcean, matTimberPlanks, matCorrugatedRoof, matRockCliff, matPalmFrond, matPineNeedles;
+// GLB Asset Cache
+const gltfLoader = new THREE.GLTFLoader();
+const modelCache = {};
 
-function initMaterials() {
-  const cSand = document.createElement('canvas'); cSand.width = cSand.height = 256;
-  const ctxS = cSand.getContext('2d');
-  ctxS.fillStyle = '#dfc28d'; ctxS.fillRect(0, 0, 256, 256);
-  for (let i = 0; i < 4000; i++) {
-    ctxS.fillStyle = Math.random() > 0.5 ? 'rgba(180, 150, 100, 0.3)' : 'rgba(240, 220, 175, 0.4)';
-    ctxS.fillRect(Math.random()*256, Math.random()*256, 2, 2);
-  }
-  const texSand = new THREE.CanvasTexture(cSand);
-  texSand.wrapS = texSand.wrapT = THREE.RepeatWrapping;
-  texSand.repeat.set(12, 12);
-
-  const cWood = document.createElement('canvas'); cWood.width = cWood.height = 256;
-  const ctxW = cWood.getContext('2d');
-  ctxW.fillStyle = '#6d482f'; ctxW.fillRect(0, 0, 256, 256);
-  for (let y = 0; y < 256; y += 32) {
-    ctxW.fillStyle = 'rgba(25, 14, 8, 0.45)'; ctxW.fillRect(0, y, 256, 2);
-    for (let j = 0; j < 12; j++) {
-      ctxW.fillStyle = 'rgba(95, 65, 40, 0.35)'; ctxW.fillRect(0, y + Math.random()*32, 256, 1.5);
-    }
-  }
-  const texWood = new THREE.CanvasTexture(cWood);
-  texWood.wrapS = texWood.wrapT = THREE.RepeatWrapping;
-  texWood.repeat.set(4, 4);
-
-  const cRoof = document.createElement('canvas'); cRoof.width = cRoof.height = 256;
-  const ctxR = cRoof.getContext('2d');
-  ctxR.fillStyle = '#7a7e85'; ctxR.fillRect(0, 0, 256, 256);
-  for (let x = 0; x < 256; x += 16) {
-    ctxR.fillStyle = 'rgba(255, 255, 255, 0.18)'; ctxR.fillRect(x, 0, 8, 256);
-    ctxR.fillStyle = 'rgba(0, 0, 0, 0.22)'; ctxR.fillRect(x + 8, 0, 8, 256);
-  }
-  for (let i = 0; i < 150; i++) {
-    ctxR.fillStyle = 'rgba(175, 75, 30, 0.4)';
-    ctxR.beginPath(); ctxR.arc(Math.random()*256, Math.random()*256, 8 + Math.random()*15, 0, Math.PI*2); ctxR.fill();
-  }
-  const texRoof = new THREE.CanvasTexture(cRoof);
-  texRoof.wrapS = texRoof.wrapT = THREE.RepeatWrapping;
-  texRoof.repeat.set(3, 3);
-
-  matTerrain = new THREE.MeshLambertMaterial({
-    map: texSand,
-    flatShading: false,
-    vertexColors: true,
-  });
-
-  matWaterOcean = new THREE.MeshLambertMaterial({
-    color: 0x0284c7,
-    transparent: true,
-    opacity: 0.88,
-  });
-
-  matTimberPlanks = new THREE.MeshLambertMaterial({
-    map: texWood,
-    color: 0xffffff,
-  });
-
-  matCorrugatedRoof = new THREE.MeshLambertMaterial({
-    map: texRoof,
-    color: 0xffffff,
-  });
-
-  matRockCliff = new THREE.MeshLambertMaterial({
-    color: 0x6e727a,
-  });
-
-  matPalmFrond = new THREE.MeshLambertMaterial({
-    color: 0x2d6a4f,
-    side: THREE.DoubleSide,
-  });
-
-  matPineNeedles = new THREE.MeshLambertMaterial({
-    color: 0x1b4332,
-    flatShading: true,
-  });
-}
-
-// ==============================================================================
-// 1. NATURAL 3D TERRAIN & COASTLINE
-// ==============================================================================
 function getIslandElevation(x, z) {
   const distCore = Math.hypot(x * 0.95, z + 8);
-  if (distCore > 38) return -1.5;
+  if (distCore > 36) return -1.5;
 
   let h = 0.0;
   if (z > 2) {
     const tBeach = (z - 2) / 10.0;
     h = THREE.MathUtils.lerp(1.2, -0.4, tBeach);
   } else if (z <= 2 && z > -16) {
-    const tPlateau = (z - 2) / (-18);
+    const tPlateau = (z - 2) / (-18.0);
     h = 1.2 + tPlateau * 1.6;
   } else {
     const tHill = (-16 - z) / 16.0;
@@ -318,10 +231,13 @@ function getIslandElevation(x, z) {
   return h;
 }
 
+// ==============================================================================
+// 1. TERRAIN & OCEAN
+// ==============================================================================
 function buildNaturalTerrain() {
   const sizeX = 96;
   const sizeZ = 96;
-  const segs = 80;
+  const segs = 90;
 
   terrainGeo = new THREE.PlaneGeometry(sizeX, sizeZ, segs, segs);
   terrainGeo.rotateX(-Math.PI / 2);
@@ -335,18 +251,35 @@ function buildNaturalTerrain() {
     const y = getIslandElevation(x, z);
     pos.setY(i, y);
 
-    if (y < 0.2) {
-      colors.push(0.72, 0.62, 0.48);
-    } else if (y < 1.1) {
-      colors.push(0.95, 0.88, 0.68);
-    } else if (y > 4.2) {
-      colors.push(0.62, 0.65, 0.68);
+    const noiseBeach = Math.sin(x * 0.45) * Math.cos(z * 0.45) * 0.35;
+    const effY = y + noiseBeach;
+
+    if (effY < 0.2) {
+      // Wet sand
+      colors.push(0.68, 0.58, 0.44);
+    } else if (effY < 1.2) {
+      // Golden beach sand
+      const t = Math.max(0.0, Math.min(1.0, (1.2 - effY) / 1.0));
+      colors.push(
+        THREE.MathUtils.lerp(0.40, 0.93, t),
+        THREE.MathUtils.lerp(0.62, 0.85, t),
+        THREE.MathUtils.lerp(0.31, 0.67, t)
+      );
+    } else if (effY > 4.2) {
+      // High cliff rock
+      colors.push(0.55, 0.58, 0.60);
     } else {
+      // Village grass & survivor dirt trail
       const pathDist = Math.abs(x - Math.sin(z * 0.2) * 1.2);
-      if (pathDist < 2.0 && z > -14 && z < 7) {
-        colors.push(0.78, 0.64, 0.48);
+      if (z > -15 && z < 7) {
+        const pathBlend = Math.max(0.0, Math.min(1.0, 1.0 - pathDist / 2.2));
+        colors.push(
+          THREE.MathUtils.lerp(0.40, 0.74, pathBlend),
+          THREE.MathUtils.lerp(0.62, 0.59, pathBlend),
+          THREE.MathUtils.lerp(0.31, 0.44, pathBlend)
+        );
       } else {
-        colors.push(0.42, 0.65, 0.32);
+        colors.push(0.40, 0.62, 0.31); // Lush coastal grass
       }
     }
   }
@@ -354,327 +287,90 @@ function buildNaturalTerrain() {
   terrainGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   terrainGeo.computeVertexNormals();
 
+  const matTerrain = new THREE.MeshLambertMaterial({
+    vertexColors: true,
+    flatShading: false,
+  });
+
   terrainMesh = new THREE.Mesh(terrainGeo, matTerrain);
   scene.add(terrainMesh);
 }
 
-// ==============================================================================
-// 2. OCEAN DEPTH & SHORELINE FOAM
-// ==============================================================================
 function buildOcean() {
   const oceanGeo = new THREE.PlaneGeometry(200, 200, 32, 32);
   oceanGeo.rotateX(-Math.PI / 2);
+
+  const matWaterOcean = new THREE.MeshLambertMaterial({
+    color: 0x0284c7,
+    transparent: true,
+    opacity: 0.88,
+  });
 
   oceanMesh = new THREE.Mesh(oceanGeo, matWaterOcean);
   oceanMesh.position.y = 0.05;
   scene.add(oceanMesh);
 
-  const foamGeo = new THREE.RingGeometry(8, 14, 32);
+  // Shoreline foam
+  const foamGeo = new THREE.RingGeometry(9.8, 13.5, 36);
   foamGeo.rotateX(-Math.PI / 2);
   const matFoam = new THREE.MeshBasicMaterial({
     color: 0xffffff,
     transparent: true,
-    opacity: 0.6,
+    opacity: 0.65,
     depthWrite: false,
   });
   const foamMesh = new THREE.Mesh(foamGeo, matFoam);
-  foamMesh.position.set(0, 0.08, 7.5);
+  foamMesh.position.set(0, 0.08, 6.5);
   foamMesh.scale.set(1.5, 1, 0.8);
   scene.add(foamMesh);
 }
 
 // ==============================================================================
-// 3. REALISTIC 3D VEGETATION
+// 2. GLB MODEL SPAWNER
 // ==============================================================================
-function createRealisticPalmTree(x, z, scale = 1.0, rotY = 0) {
-  const yBase = getIslandElevation(x, z);
-  if (yBase < 0.2) return;
-  const group = new THREE.Group();
-
-  const segments = 7;
-  const totalHeight = 6.0 * scale;
-  const curveFactor = 0.95 * scale;
-  let prevPos = new THREE.Vector3(0, 0, 0);
-
-  for (let i = 0; i < segments; i++) {
-    const t0 = i / segments;
-    const t1 = (i + 1) / segments;
-    const r0 = THREE.MathUtils.lerp(0.32, 0.18, t0) * scale;
-    const r1 = THREE.MathUtils.lerp(0.32, 0.18, t1) * scale;
-    const h = totalHeight / segments;
-
-    const segGeo = new THREE.CylinderGeometry(r1, r0, h, 7);
-    const segMesh = new THREE.Mesh(segGeo, matTimberPlanks);
-
-    const currX = Math.sin(t1 * 1.4) * curveFactor;
-    const currY = t1 * totalHeight;
-    const currZ = Math.cos(t1 * 1.4) * (curveFactor * 0.4);
-
-    segMesh.position.set((prevPos.x + currX) / 2, (prevPos.y + currY) / 2, (prevPos.z + currZ) / 2);
-    segMesh.rotation.z = -(currX - prevPos.x) / h * 0.9;
-    group.add(segMesh);
-
-    prevPos.set(currX, currY, currZ);
+function spawnModel(path, position, rotationY = 0, scale = 1.0, parent = scene) {
+  if (modelCache[path]) {
+    const clone = modelCache[path].clone();
+    clone.position.copy(position);
+    clone.rotation.y = rotationY;
+    clone.scale.set(scale, scale, scale);
+    parent.add(clone);
+    return clone;
   }
 
-  const numFronds = 8;
-  for (let f = 0; f < numFronds; f++) {
-    const angle = (f / numFronds) * Math.PI * 2;
-    const frondGroup = new THREE.Group();
-    frondGroup.position.copy(prevPos);
+  gltfLoader.load(path, (gltf) => {
+    const model = gltf.scene;
+    model.traverse((child) => {
+      if (child.isMesh && child.material) {
+        child.material.roughness = 0.85;
+        child.material.metalness = 0.05;
+      }
+    });
+    modelCache[path] = model;
 
-    const frondLen = 2.8 * scale;
-    const bladeGeo = new THREE.ConeGeometry(0.55 * scale, frondLen, 5);
-    bladeGeo.rotateX(Math.PI / 2);
-    bladeGeo.scale(1, 0.12, 1);
-    const blade = new THREE.Mesh(bladeGeo, matPalmFrond);
-    blade.position.z = frondLen * 0.45;
-
-    frondGroup.rotation.y = angle;
-    frondGroup.rotation.x = 0.45;
-    frondGroup.add(blade);
-    group.add(frondGroup);
-  }
-
-  group.position.set(x, yBase, z);
-  group.rotation.y = rotY;
-  scene.add(group);
+    const clone = model.clone();
+    clone.position.copy(position);
+    clone.rotation.y = rotationY;
+    clone.scale.set(scale, scale, scale);
+    parent.add(clone);
+  });
 }
 
-function createRealisticPineTree(x, z, scale = 1.0, rotY = 0) {
-  const yBase = getIslandElevation(x, z);
-  if (yBase < 0.3) return;
-  const group = new THREE.Group();
+function populateWorldWithGLBAssets() {
+  buildNaturalTerrain();
+  buildOcean();
 
-  const trunkH = 8.5 * scale;
-  const trunkGeo = new THREE.CylinderGeometry(0.18 * scale, 0.38 * scale, trunkH, 7);
-  const trunk = new THREE.Mesh(trunkGeo, matTimberPlanks);
-  trunk.position.y = trunkH * 0.5;
-  group.add(trunk);
+  // 1. Architecture
+  spawnModel("assets/models/architecture/survivor_cabin.glb", new THREE.Vector3(-7.2, getIslandElevation(-7.2, -12.5), -12.5), 0.35);
+  spawnModel("assets/models/architecture/survivor_cabin.glb", new THREE.Vector3(6.8, getIslandElevation(6.8, -11.0), -11.0), -0.4);
+  spawnModel("assets/models/architecture/survivor_cabin.glb", new THREE.Vector3(-1.5, getIslandElevation(-1.5, -20.0), -20.0), 0.05);
+  spawnModel("assets/models/architecture/fishing_hut.glb", new THREE.Vector3(8.5, getIslandElevation(8.5, -3.5), -3.5), -0.6);
+  spawnModel("assets/models/architecture/storage_shed.glb", new THREE.Vector3(-8.5, getIslandElevation(-8.5, -6.5), -6.5), 0.5);
 
-  const tiers = 4;
-  for (let t = 0; t < tiers; t++) {
-    const tierR = THREE.MathUtils.lerp(2.2, 0.8, t / tiers) * scale;
-    const tierH = 2.4 * scale;
-    const boughGeo = new THREE.ConeGeometry(tierR, tierH, 7);
-    const bough = new THREE.Mesh(boughGeo, matPineNeedles);
-    bough.position.y = (3.5 + t * 1.5) * scale;
-    group.add(bough);
-  }
-
-  group.position.set(x, yBase, z);
-  group.rotation.y = rotY;
-  scene.add(group);
-}
-
-function createBush(x, z, scale = 1.0) {
-  const yBase = getIslandElevation(x, z);
-  if (yBase < 0.3) return;
-  const group = new THREE.Group();
-
-  for (let i = 0; i < 3; i++) {
-    const sGeo = new THREE.DodecahedronGeometry(0.65 * scale, 1);
-    const sMesh = new THREE.Mesh(sGeo, matPalmFrond);
-    sMesh.position.set(
-      (Math.random() - 0.5) * 0.5 * scale,
-      (0.35 + Math.random() * 0.3) * scale,
-      (Math.random() - 0.5) * 0.5 * scale
-    );
-    group.add(sMesh);
-  }
-
-  group.position.set(x, yBase, z);
-  scene.add(group);
-}
-
-function createCoastalRock(x, z, scale = 1.0, rot = 0) {
-  const yBase = getIslandElevation(x, z);
-  const rockGeo = new THREE.DodecahedronGeometry(1.4 * scale, 1);
-  const rockMesh = new THREE.Mesh(rockGeo, matRockCliff);
-  rockMesh.position.set(x, yBase + 0.3 * scale, z);
-  rockMesh.rotation.set(0.2, rot, -0.15);
-  scene.add(rockMesh);
-}
-
-// ==============================================================================
-// 4. REALISTIC SURVIVOR CABINS
-// ==============================================================================
-function createDetailedSurvivorCabin(x, z, rotY = 0) {
-  const group = new THREE.Group();
-  const yBase = getIslandElevation(x, z);
-
-  const floorW = 4.8;
-  const floorD = 4.2;
-  const stiltH = 0.6;
-
-  for (let sx = -floorW/2 + 0.3; sx <= floorW/2 - 0.3; sx += (floorW - 0.6)/2) {
-    for (let sz = -floorD/2 + 0.3; sz <= floorD/2 - 0.3; sz += (floorD - 0.6)) {
-      const stilt = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, stiltH + 0.4, 6), matTimberPlanks);
-      stilt.position.set(sx, (stiltH + 0.4)/2 - 0.2, sz);
-      group.add(stilt);
-    }
-  }
-
-  const deck = new THREE.Mesh(new THREE.BoxGeometry(floorW + 0.3, 0.18, floorD + 1.2), matTimberPlanks);
-  deck.position.set(0, stiltH, 0.4);
-  group.add(deck);
-
-  const step = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.25, 0.6), matTimberPlanks);
-  step.position.set(0, stiltH * 0.4, floorD/2 + 0.9);
-  group.add(step);
-
-  const wallH = 2.4;
-  const backWall = new THREE.Mesh(new THREE.BoxGeometry(floorW, wallH, 0.15), matTimberPlanks);
-  backWall.position.set(0, stiltH + wallH/2, -floorD/2);
-  group.add(backWall);
-
-  const wallL = new THREE.Mesh(new THREE.BoxGeometry(0.15, wallH, floorD), matTimberPlanks);
-  wallL.position.set(-floorW/2, stiltH + wallH/2, 0);
-  group.add(wallL);
-
-  const wallR = new THREE.Mesh(new THREE.BoxGeometry(0.15, wallH, floorD), matTimberPlanks);
-  wallR.position.set(floorW/2, stiltH + wallH/2, 0);
-  group.add(wallR);
-
-  const frontWallL = new THREE.Mesh(new THREE.BoxGeometry(1.6, wallH, 0.15), matTimberPlanks);
-  frontWallL.position.set(-1.45, stiltH + wallH/2, floorD/2);
-  group.add(frontWallL);
-
-  const frontWallR = new THREE.Mesh(new THREE.BoxGeometry(1.6, wallH, 0.15), matTimberPlanks);
-  frontWallR.position.set(1.45, stiltH + wallH/2, floorD/2);
-  group.add(frontWallR);
-
-  const frontHeader = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.5, 0.15), matTimberPlanks);
-  frontHeader.position.set(0, stiltH + wallH - 0.25, floorD/2);
-  group.add(frontHeader);
-
-  const roofW = floorW + 0.6;
-  const roofSlopeL = new THREE.Mesh(new THREE.BoxGeometry(roofW, 0.08, 2.8), matCorrugatedRoof);
-  roofSlopeL.position.set(0, stiltH + wallH + 0.8, -1.0);
-  roofSlopeL.rotation.x = 0.55;
-  group.add(roofSlopeL);
-
-  const roofSlopeR = new THREE.Mesh(new THREE.BoxGeometry(roofW, 0.08, 2.8), matCorrugatedRoof);
-  roofSlopeR.position.set(0, stiltH + wallH + 0.8, 1.0);
-  roofSlopeR.rotation.x = -0.55;
-  group.add(roofSlopeR);
-
-  const matTarp = new THREE.MeshLambertMaterial({ color: 0x2563eb });
-  const tarp = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.04, 1.8), matTarp);
-  tarp.position.set(-0.8, stiltH + wallH + 0.86, -0.8);
-  tarp.rotation.x = 0.55;
-  group.add(tarp);
-
-  const postL = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, wallH, 6), matTimberPlanks);
-  postL.position.set(-floorW/2 + 0.2, stiltH + wallH/2, floorD/2 + 0.8);
-  group.add(postL);
-
-  const postR = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, wallH, 6), matTimberPlanks);
-  postR.position.set(floorW/2 - 0.2, stiltH + wallH/2, floorD/2 + 0.8);
-  group.add(postR);
-
-  const crateA = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.8, 0.85), matTimberPlanks);
-  crateA.position.set(floorW/2 + 0.6, stiltH + 0.4, 0.3);
-  group.add(crateA);
-
-  const matDrum = new THREE.MeshLambertMaterial({ color: 0x334155 });
-  const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.95, 10), matDrum);
-  drum.position.set(floorW/2 + 0.6, stiltH + 0.48, -0.7);
-  group.add(drum);
-
-  group.position.set(x, yBase, z);
-  group.rotation.y = rotY;
-  scene.add(group);
-}
-
-// ==============================================================================
-// 5. WEATHERED BOARDWALK DOCK
-// ==============================================================================
-function buildDetailedDock() {
-  const group = new THREE.Group();
-  const startZ = 2.0;
-  const endZ = 11.2;
-  const dockW = 3.0;
-  const dockY = 0.55;
-
-  for (let z = startZ + 0.8; z <= endZ; z += 2.2) {
-    const pL = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 2.4, 8), matTimberPlanks);
-    pL.position.set(-dockW/2 + 0.2, dockY - 0.9, z);
-    group.add(pL);
-
-    const pR = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 2.4, 8), matTimberPlanks);
-    pR.position.set(dockW/2 - 0.2, dockY - 0.9, z);
-    group.add(pR);
-
-    const beam = new THREE.Mesh(new THREE.BoxGeometry(dockW + 0.1, 0.18, 0.22), matTimberPlanks);
-    beam.position.set(0, dockY - 0.12, z);
-    group.add(beam);
-  }
-
-  const numPlanks = 36;
-  const spacing = (endZ - startZ) / numPlanks;
-  for (let i = 0; i < numPlanks; i++) {
-    const pZ = startZ + i * spacing;
-    const plank = new THREE.Mesh(new THREE.BoxGeometry(dockW + Math.sin(i*3)*0.1, 0.08, spacing * 0.88), matTimberPlanks);
-    plank.position.set(0, dockY + Math.sin(i*5)*0.012, pZ);
-    plank.rotation.y = Math.sin(i*7)*0.02;
-    group.add(plank);
-  }
-
-  const matCleat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
-  const matRope = new THREE.MeshLambertMaterial({ color: 0xd97706 });
-  function addCleat(side, pz) {
-    const cleat = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.25, 6), matCleat);
-    cleat.position.set(side * (dockW/2 - 0.15), dockY + 0.12, pz);
-    group.add(cleat);
-
-    const rope = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.035, 6, 10), matRope);
-    rope.rotation.x = Math.PI / 2;
-    rope.position.set(side * (dockW/2 - 0.15), dockY + 0.04, pz);
-    group.add(rope);
-  }
-  addCleat(1, 4.5);
-  addCleat(1, 8.5);
-  addCleat(-1, 6.5);
-  addCleat(-1, 10.5);
-
-  const lampPost = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 2.6, 6), matTimberPlanks);
-  lampPost.position.set(dockW/2 - 0.2, dockY + 1.3, 7.5);
-  group.add(lampPost);
-
-  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffd175 }));
-  bulb.position.set(dockW/2 - 0.2, dockY + 2.5, 7.5);
-  group.add(bulb);
-
-  const light = new THREE.PointLight(0xffa500, 2.0, 10.0, 1.4);
-  light.position.copy(bulb.position);
-  group.add(light);
-
-  scene.add(group);
-}
-
-// ==============================================================================
-// 6. MOORED EXPEDITION BOAT
-// ==============================================================================
-function buildDetailedBoat() {
-  boatGroup = new THREE.Group();
-
-  const hullBase = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 4.4), matTimberPlanks);
-  hullBase.position.y = 0.35;
-  boatGroup.add(hullBase);
-
-  const bowGeo = new THREE.ConeGeometry(0.95, 1.4, 4);
-  bowGeo.rotateX(Math.PI / 2);
-  bowGeo.scale(1, 0.55, 1);
-  const bow = new THREE.Mesh(bowGeo, matTimberPlanks);
-  bow.position.set(0, 0.42, 2.7);
-  boatGroup.add(bow);
-
-  const bench = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.08, 0.4), matTimberPlanks);
-  bench.position.set(0, 0.65, 0.8);
-  boatGroup.add(bench);
-
-  boatGroup.position.set(2.8, 0.0, 8.2);
+  // 2. Dock & Boat
+  spawnModel("assets/models/architecture/wooden_dock.glb", new THREE.Vector3(0, 0, 5.0), 0.0);
+  spawnModel("assets/models/boats/survivor_boat.glb", new THREE.Vector3(0, 0, 0), 0.15, 1.0, boatGroup);
+  boatGroup.position.set(2.8, 0.0, 8.5);
   scene.add(boatGroup);
 
   interactables.push({
@@ -682,90 +378,65 @@ function buildDetailedBoat() {
     radius: 2.8,
     label: "Naik Perahu & Siapkan Pelayaran",
     action: () => {
-      alert("⚓ Perahu siap! Meluncurkan pelayaran.");
+      alert("⚓ Perahu siap! Meluncurkan ekspedisi ke Pulau Luar.");
     }
   });
-}
 
-// ==============================================================================
-// 7. SURVIVOR CAMPFIRE
-// ==============================================================================
-function buildCampfire(x, z) {
-  const group = new THREE.Group();
-  const yBase = getIslandElevation(x, z);
-
-  const numStones = 9;
-  for (let i = 0; i < numStones; i++) {
-    const angle = (i / numStones) * Math.PI * 2;
-    const stone = new THREE.Mesh(new THREE.DodecahedronGeometry(0.22, 1), matRockCliff);
-    stone.position.set(Math.cos(angle) * 0.75, 0.12, Math.sin(angle) * 0.75);
-    group.add(stone);
+  // 3. Coconut Palms (Organically framing perimeter)
+  const palms = [
+    [-8.5, 4.5, 1.1, 0.4], [-11.0, 1.5, 0.95, 1.2],
+    [12.5, 4.5, 1.15, -0.6], [14.0, -1.0, 0.9, 0.8],
+    [-6.5, -4.0, 1.05, 0.2], [10.5, -5.5, 1.0, -0.5],
+    [-4.0, 6.5, 0.85, 1.4], [5.5, 7.8, 0.95, -1.1]
+  ];
+  for (const [px, pz, pscale, prot] of palms) {
+    spawnModel("assets/models/vegetation/coconut_palm.glb", new THREE.Vector3(px, getIslandElevation(px, pz), pz), prot, pscale);
   }
 
-  const matChar = new THREE.MeshLambertMaterial({ color: 0x1f1915 });
-  for (let j = 0; j < 4; j++) {
-    const log = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 0.85, 5), matChar);
-    log.rotation.z = Math.PI / 3;
-    log.rotation.y = j * Math.PI / 2;
-    log.position.y = 0.14;
-    group.add(log);
+  // 4. Background Forest Trees
+  const trees = [
+    [-14.0, -18.0, 1.2, 0.3], [-10.5, -24.0, 1.35, 0.8],
+    [-4.0, -28.0, 1.4, -0.2], [3.5, -29.0, 1.45, 0.6],
+    [11.0, -25.0, 1.3, -0.5], [14.5, -19.0, 1.15, 0.2]
+  ];
+  for (const [tx, tz, tscale, trot] of trees) {
+    spawnModel("assets/models/vegetation/tropical_tree.glb", new THREE.Vector3(tx, getIslandElevation(tx, tz), tz), trot, tscale);
   }
 
-  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.65, 6), new THREE.MeshBasicMaterial({ color: 0xff6b1a }));
-  flame.position.y = 0.45;
-  group.add(flame);
+  // 5. Bushes & Driftwood
+  const bushes = [[-2.8, -2.5], [2.6, -1.5], [-3.5, -8.0], [3.2, -6.5], [-1.2, -5.0], [1.5, -7.0]];
+  for (const [bx, bz] of bushes) {
+    spawnModel("assets/models/vegetation/tropical_bush.glb", new THREE.Vector3(bx, getIslandElevation(bx, bz), bz));
+  }
+  spawnModel("assets/models/vegetation/fallen_branch.glb", new THREE.Vector3(-4.5, getIslandElevation(-4.5, 3.8), 3.8), 0.7);
+  spawnModel("assets/models/vegetation/fallen_branch.glb", new THREE.Vector3(4.8, getIslandElevation(4.8, 3.5), 3.5), -1.1);
 
-  const fireLight = new THREE.PointLight(0xff7722, 2.6, 12.0, 1.4);
-  fireLight.position.set(0, 0.8, 0);
-  group.add(fireLight);
+  // 6. Coastal Rocks
+  spawnModel("assets/models/rocks/rock_large.glb", new THREE.Vector3(-11.5, getIslandElevation(-11.5, 5.0), 5.0), 0.4, 1.3);
+  spawnModel("assets/models/rocks/rock_large.glb", new THREE.Vector3(11.8, getIslandElevation(11.8, 6.0), 6.0), -0.8, 1.4);
+  spawnModel("assets/models/rocks/rock_medium.glb", new THREE.Vector3(-13.0, getIslandElevation(-13.0, 2.0), 2.0), 1.1);
+  spawnModel("assets/models/rocks/rock_small.glb", new THREE.Vector3(-3.5, getIslandElevation(-3.5, 6.5), 6.5), 0.2);
+  spawnModel("assets/models/rocks/rock_small.glb", new THREE.Vector3(3.8, getIslandElevation(3.8, 6.2), 6.2), -0.5);
 
-  group.position.set(x, yBase, z);
-  scene.add(group);
+  // 7. Props: Campfire, Crates, Barrels, Lantern
+  spawnModel("assets/models/props/campfire.glb", new THREE.Vector3(0, getIslandElevation(0, -9.5), -9.5));
+  spawnModel("assets/models/props/wooden_crate.glb", new THREE.Vector3(-5.2, getIslandElevation(-5.2, -11.5), -11.5), 0.2);
+  spawnModel("assets/models/props/wooden_crate.glb", new THREE.Vector3(-5.0, getIslandElevation(-5.0, -11.0), -11.0), -0.3);
+  spawnModel("assets/models/props/barrel.glb", new THREE.Vector3(5.2, getIslandElevation(5.2, -10.5), -10.5));
+  spawnModel("assets/models/props/barrel.glb", new THREE.Vector3(5.8, getIslandElevation(5.8, -10.2), -10.2));
+  spawnModel("assets/models/props/debris.glb", new THREE.Vector3(-2.5, getIslandElevation(-2.5, 3.2), 3.2), 0.4);
+  spawnModel("assets/models/props/fuel_container.glb", new THREE.Vector3(4.8, getIslandElevation(4.8, -10.8), -10.8), 0.5);
+  spawnModel("assets/models/props/water_container.glb", new THREE.Vector3(-4.6, getIslandElevation(-4.6, -11.8), -11.8), -0.2);
+  spawnModel("assets/models/props/lantern.glb", new THREE.Vector3(0.4, 0.65, 8.2));
+
+  // Campfire dynamic warm light
+  const fireLight = new THREE.PointLight(0xff7722, 2.8, 12.0, 1.4);
+  fireLight.position.set(0, getIslandElevation(0, -9.5) + 0.8, -9.5);
+  scene.add(fireLight);
 }
 
 // ==============================================================================
-// 8. SCENE COMPOSITION
-// ==============================================================================
-function populateSafeIslandScene() {
-  buildNaturalTerrain();
-  buildOcean();
-
-  buildCampfire(0, -9.5);
-
-  createDetailedSurvivorCabin(-6.8, -12.5, 0.35);
-  createDetailedSurvivorCabin(6.5, -11.0, -0.4);
-  createDetailedSurvivorCabin(-1.5, -20.0, 0.05);
-
-  buildDetailedDock();
-  buildDetailedBoat();
-
-  createRealisticPalmTree(-7.5, 3.5, 1.1, 0.4);
-  createRealisticPalmTree(-9.2, 0.5, 0.95, 1.2);
-  createRealisticPalmTree(7.8, 2.2, 1.15, -0.6);
-  createRealisticPalmTree(9.5, -1.0, 0.9, 0.8);
-  createRealisticPalmTree(-5.0, -3.0, 1.05, 0.2);
-  createRealisticPalmTree(5.5, -4.5, 1.0, -0.5);
-
-  createRealisticPineTree(-14.0, -18.0, 1.2, 0.3);
-  createRealisticPineTree(-10.5, -24.0, 1.35, 0.8);
-  createRealisticPineTree(-4.0, -28.0, 1.4, -0.2);
-  createRealisticPineTree(3.5, -29.0, 1.45, 0.6);
-  createRealisticPineTree(11.0, -25.0, 1.3, -0.5);
-  createRealisticPineTree(14.5, -19.0, 1.15, 0.2);
-
-  createCoastalRock(-11.5, 5.0, 1.4, 0.4);
-  createCoastalRock(-13.0, 2.0, 1.6, 1.1);
-  createCoastalRock(11.8, 6.0, 1.5, -0.8);
-  createCoastalRock(13.2, 2.5, 1.7, 0.5);
-
-  createBush(-2.8, -2.5, 1.1);
-  createBush(2.6, -1.5, 0.9);
-  createBush(-3.5, -8.0, 1.2);
-  createBush(3.2, -6.5, 1.0);
-}
-
-// ==============================================================================
-// 9. 3D CHARACTER INTEGRATION & CONTACT SHADOW
+// 3. 3D CHARACTER INTEGRATION
 // ==============================================================================
 function createPlaceholderCharacter() {
   placeholderModel = new THREE.Group();
@@ -801,8 +472,7 @@ function loadPlayerCharacter() {
   playerGroup.position.copy(playerPos);
   scene.add(playerGroup);
 
-  const loader = new THREE.GLTFLoader();
-  loader.load('character_glb_idle_box_03_run_walk_7.glb', (gltf) => {
+  gltfLoader.load('character_glb_idle_box_03_run_walk_7.glb', (gltf) => {
     characterModel = gltf.scene;
 
     if (placeholderModel) {
@@ -874,7 +544,7 @@ function triggerAttack() {
 }
 
 // ==============================================================================
-// 10. CINEMATIC CAMERA SYSTEM
+// 4. CAMERA SYSTEM
 // ==============================================================================
 function updateCameraTransform(targetPos, delta) {
   cameraTarget.lerp(targetPos, delta ? 6.0 * delta : 1.0);
@@ -898,7 +568,7 @@ document.getElementById('btn-cam-toggle').addEventListener('click', () => {
 });
 
 // ==============================================================================
-// 11. INPUT & GAME LOOP
+// 5. INPUT & ANIMATION LOOP
 // ==============================================================================
 const keys = {};
 window.addEventListener('keydown', (e) => {
@@ -1056,8 +726,7 @@ window.addEventListener('DOMContentLoaded', () => {
   fillSun.position.set(-20, 25, -20);
   scene.add(fillSun);
 
-  initMaterials();
-  populateSafeIslandScene();
+  populateWorldWithGLBAssets();
   loadPlayerCharacter();
 
   window.addEventListener('resize', () => {

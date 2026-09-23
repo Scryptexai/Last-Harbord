@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/props/fishing_net.glb" id="1_model"]
+
+[node name="FishingNet" type="StaticBody3D"]
+
+[node name="VisualModel" parent="." instance=ExtResource("1_model")]

@@ -1,0 +1,7 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://assets/models/vegetation/small_plants.glb" id="1_model"]
+
+[node name="SmallPlants" type="StaticBody3D"]
+
+[node name="VisualModel" parent="." instance=ExtResource("1_model")]
