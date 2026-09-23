@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Safe Island Rebuild — 2.5D Godot 4 Architecture Preview</title>
+<title>Last Harbor — Vertical Slice (Safe Island & Zombie Island)</title>
 <link rel="icon" type="image/png" href="assets/branding/appicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -45,11 +45,11 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(4, 12, 22, 0.88);
+    background: rgba(4, 12, 22, 0.9);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(212, 175, 55, 0.4);
     border-radius: 12px;
-    padding: 10px 20px;
+    padding: 10px 18px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.6);
     pointer-events: auto;
   }
@@ -60,29 +60,66 @@
   }
   .island-title h1 {
     font-family: 'Montserrat', sans-serif;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 800;
     color: #ffde96;
     letter-spacing: 1px;
   }
   .island-title span {
-    font-size: 12px;
+    font-size: 11px;
     color: #94a3b8;
   }
-  .stockpile-group {
+
+  .player-status-group {
     display: flex;
     align-items: center;
     gap: 16px;
   }
+  .hp-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .hp-bar-outer {
+    width: 110px;
+    height: 14px;
+    background: rgba(30, 10, 10, 0.85);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .hp-bar-inner {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, #ef4444, #f87171);
+    transition: width 0.2s ease;
+  }
+  .cargo-chip {
+    background: rgba(14, 116, 144, 0.35);
+    border: 1px solid #06b6d4;
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #67e8f9;
+  }
+
+  .stockpile-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
   .res-badge {
     display: flex;
     align-items: center;
-    gap: 6px;
-    background: rgba(15, 23, 42, 0.6);
-    padding: 5px 10px;
+    gap: 5px;
+    background: rgba(15, 23, 42, 0.65);
+    padding: 4px 9px;
     border-radius: 8px;
     border: 1px solid rgba(255,255,255,0.08);
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
   }
   .res-badge .val {
@@ -90,11 +127,25 @@
     font-weight: 700;
   }
 
+  /* DAMAGE FLASH */
+  #damage-flash {
+    position: absolute;
+    inset: 0;
+    background: rgba(220, 38, 38, 0.28);
+    pointer-events: none;
+    z-index: 15;
+    opacity: 0;
+    transition: opacity 0.1s ease-out;
+  }
+  #damage-flash.flash {
+    opacity: 1;
+  }
+
   /* INTERACTION PROMPT */
   #interaction-prompt {
     align-self: center;
     margin-bottom: 24px;
-    background: rgba(7, 21, 38, 0.92);
+    background: rgba(7, 21, 38, 0.94);
     border: 1.5px solid #eab308;
     border-radius: 12px;
     padding: 12px 28px;
@@ -179,9 +230,9 @@
     position: absolute;
     bottom: 20px;
     left: 20px;
-    background: rgba(15, 23, 42, 0.75);
+    background: rgba(15, 23, 42, 0.8);
     backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.12);
     border-radius: 10px;
     padding: 10px 14px;
     font-size: 12px;
@@ -193,12 +244,12 @@
     color: #f1f5f9;
   }
 
-  /* BOAT MODAL */
-  #expedition-modal {
+  /* MODALS (Expedition & Debrief) */
+  .center-modal {
     position: absolute;
     inset: 0;
-    background: rgba(2, 6, 12, 0.85);
-    backdrop-filter: blur(8px);
+    background: rgba(2, 6, 12, 0.88);
+    backdrop-filter: blur(10px);
     z-index: 30;
     display: flex;
     align-items: center;
@@ -207,33 +258,33 @@
     pointer-events: none;
     transition: opacity 0.25s ease;
   }
-  #expedition-modal.active {
+  .center-modal.active {
     opacity: 1;
     pointer-events: auto;
   }
-  .exp-card {
+  .modal-card {
     background: #091929;
     border: 1.5px solid #38bdf8;
     border-radius: 18px;
     padding: 28px;
-    max-width: 440px;
+    max-width: 480px;
     width: 90%;
     text-align: center;
     box-shadow: 0 20px 50px rgba(0,0,0,0.9);
   }
-  .exp-card h2 {
+  .modal-card h2 {
     font-family: 'Montserrat', sans-serif;
     color: #ffde96;
     margin-bottom: 8px;
     font-size: 22px;
   }
-  .exp-card p {
+  .modal-card p {
     color: #94a3b8;
     font-size: 14px;
     margin-bottom: 20px;
-    line-height: 1.5;
+    line-height: 1.6;
   }
-  .btn-exp {
+  .btn-primary-action {
     background: linear-gradient(180deg, #38bdf8, #0284c7);
     color: #041424;
     font-family: 'Montserrat', sans-serif;
@@ -244,9 +295,9 @@
     border-radius: 10px;
     cursor: pointer;
     box-shadow: 0 6px 18px rgba(2, 132, 199, 0.4);
-    margin-right: 10px;
+    margin: 4px;
   }
-  .btn-exp-back {
+  .btn-secondary-action {
     background: transparent;
     color: #94a3b8;
     border: 1px solid rgba(255,255,255,0.2);
@@ -254,6 +305,41 @@
     padding: 12px 20px;
     border-radius: 10px;
     cursor: pointer;
+    margin: 4px;
+  }
+
+  /* VOYAGE TRANSITION OVERLAY */
+  #voyage-screen {
+    position: absolute;
+    inset: 0;
+    background: #02070e;
+    z-index: 45;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.45s ease;
+  }
+  #voyage-screen.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .voyage-icon {
+    font-size: 44px;
+    animation: waveBob 1.8s ease-in-out infinite;
+  }
+  @keyframes waveBob {
+    0%, 100% { transform: translateY(0) rotate(-4deg); }
+    50% { transform: translateY(-12px) rotate(4deg); }
+  }
+  .voyage-text {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 18px;
+    color: #ffde96;
+    letter-spacing: 2px;
   }
 
   /* LOADING SCREEN */
@@ -294,7 +380,14 @@
 
 <div id="loading-screen">
   <div class="spinner"></div>
-  <p class="load-text">MEMUAT SAFE ISLAND (GODOT 4 ARCHITECTURE)...</p>
+  <p class="load-text">MEMUAT VERTICAL SLICE (GODOT 4 ARCHITECTURE)...</p>
+</div>
+
+<div id="damage-flash"></div>
+
+<div id="voyage-screen">
+  <div class="voyage-icon">⛵</div>
+  <p class="voyage-text" id="voyage-caption">BERLAYAR MENEMBUS KABUT LAUT...</p>
 </div>
 
 <canvas id="webgl-canvas"></canvas>
@@ -303,15 +396,23 @@
   <!-- TOP BAR -->
   <div class="top-bar">
     <div class="island-title">
-      <h1>SAFE ISLAND · PULAU AMAN</h1>
-      <span>Geografi Terpadu: Desa → Jalan → Dermaga → Perahu</span>
+      <h1 id="hud-island-name">SAFE ISLAND · PULAU AMAN</h1>
+      <span id="hud-island-sub">Desa → Jalan → Dermaga → Perahu</span>
     </div>
+
+    <div class="player-status-group">
+      <div class="hp-wrapper">
+        <span>❤️ HP</span>
+        <div class="hp-bar-outer"><div class="hp-bar-inner" id="hp-bar-fill"></div></div>
+      </div>
+      <div class="cargo-chip" id="hud-cargo">📦 Palka: 0/12</div>
+    </div>
+
     <div class="stockpile-group">
-      <div class="res-badge"><span>🌾</span> Makanan: <span class="val" id="val-food">18</span></div>
-      <div class="res-badge"><span>🪵</span> Kayu: <span class="val" id="val-wood">14</span></div>
-      <div class="res-badge"><span>🔩</span> Besi: <span class="val" id="val-metal">6</span></div>
-      <div class="res-badge"><span>💊</span> Obat: <span class="val" id="val-med">4</span></div>
-      <div class="res-badge"><span>⛽</span> Bahan Bakar: <span class="val" id="val-fuel">5</span></div>
+      <div class="res-badge"><span>🌾</span> <span class="val" id="val-food">18</span></div>
+      <div class="res-badge"><span>🪵</span> <span class="val" id="val-wood">14</span></div>
+      <div class="res-badge"><span>🔩</span> <span class="val" id="val-metal">6</span></div>
+      <div class="res-badge"><span>💊</span> <span class="val" id="val-med">4</span></div>
     </div>
   </div>
 
@@ -333,33 +434,51 @@
 
 <!-- CONTROLS HINT -->
 <div class="controls-card">
-  <b>Kontrol Safe Island:</b><br>
+  <b>Kontrol Gameplay:</b><br>
   • Gerak: <b>W A S D</b> / Tombol Panah<br>
   • Sprint: Tahan <b>Shift</b> (Animasi Run)<br>
-  • Tempur/Pukul: <b>Spasi</b> / <b>J</b> / Klik (Animasi Box_03)<br>
-  • Interaksi: <b>E</b> (Bicara / Naik Perahu)
+  • Serang/Pukul: <b>Spasi</b> / <b>J</b> / Klik (Animasi Box_03)<br>
+  • Interaksi: <b>E</b> (Panen / Bicara / Berlayar)
 </div>
 
 <!-- EXPEDITION MODAL -->
-<div id="expedition-modal">
-  <div class="exp-card">
+<div id="expedition-modal" class="center-modal">
+  <div class="modal-card">
     <h2>⚓ DERMAGA & PERAHU</h2>
-    <p>Perahu Ekspedisi siap berlayar menuju <b>Pulau Zombie Pertama</b> (Vertical Slice).<br>
-    Palka Perahu: <b>0 / 12 slot</b>.<br>
+    <p>Perahu Ekspedisi siap berlayar menuju <b>Pulau Zombie Pertama</b>.<br>
+    Kapasitas Palka: <b>0 / 12 slot</b>.<br>
     Bawa kembali Makanan, Obat, dan Material sebelum air pasang menenggelamkan pulau!</p>
-    <button class="btn-exp" id="btn-sail">BERLAYAR SEKARANG</button>
-    <button class="btn-exp-back" id="btn-cancel-sail">KEMBALI KE DESA</button>
+    <button class="btn-primary-action" id="btn-start-sail">BERLAYAR SEKARANG</button>
+    <button class="btn-secondary-action" id="btn-cancel-sail">KEMBALI KE DESA</button>
+  </div>
+</div>
+
+<!-- RETURN MODAL -->
+<div id="return-modal" class="center-modal">
+  <div class="modal-card">
+    <h2>⛵ DERMAGA PULAU ZOMBIE</h2>
+    <p>Kembali ke perahu untuk berlayar pulang ke <b>Safe Island</b>?<br>
+    Muatan di palka: <b id="return-cargo-summary">0 unit</b> akan disetor aman ke gudang komunitas desa.</p>
+    <button class="btn-primary-action" id="btn-confirm-return">PULANG KE SAFE ISLAND</button>
+    <button class="btn-secondary-action" id="btn-cancel-return">LANJUTKAN EKSPLORASI</button>
+  </div>
+</div>
+
+<!-- DEBRIEF MODAL -->
+<div id="debrief-modal" class="center-modal">
+  <div class="modal-card">
+    <h2>⚓ LAPORAN KEPULANGAN EKSPEDISI</h2>
+    <p id="debrief-content">Hasil jarahan berhasil disetor ke gudang komunitas desa.</p>
+    <button class="btn-primary-action" id="btn-close-debrief">SELESAI</button>
   </div>
 </div>
 
 <script>
 // ==============================================================================
-// Safe Island 2.5D Rebuild Controller & Environment
-// Mengikuti cetak biru arsitektur Godot 4:
-// 1. Locked 3D GLB Character & Animations (idle, walk, run, box_03)
-// 2. 3/4 Perspective Camera (38° pitch, 18° yaw, smooth lerp follow)
-// 3. Integrated Island Geography: Village -> Sloping Path -> Dock Pier -> Moored Boat
-// 4. Survivor Community System & Resource Stockpile
+// Vertical Slice Gameplay Engine: Safe Island <--> Zombie Island 1
+// 1. Character & Animations (Locked GLB Model: idle, walk, run, box_03)
+// 2. Dynamic 3/4 Camera (Pitch 38°, Yaw 18°, Smooth Lerp Follow & Combat Zoom)
+// 3. Complete Loop: Safe Island Hub -> Voyage -> Zombie Island -> Harvest & Fight -> Extract -> Stockpile
 // ==============================================================================
 
 const canvas = document.getElementById('webgl-canvas');
@@ -370,12 +489,53 @@ const diagNameEl = document.getElementById('diag-name');
 const diagRoleEl = document.getElementById('diag-role');
 const diagTextEl = document.getElementById('diag-text');
 const expModal = document.getElementById('expedition-modal');
+const retModal = document.getElementById('return-modal');
+const debriefModal = document.getElementById('debrief-modal');
+const debriefTextEl = document.getElementById('debrief-content');
+const voyageScreen = document.getElementById('voyage-screen');
+const voyageCaption = document.getElementById('voyage-caption');
 const loadingScreen = document.getElementById('loading-screen');
+const damageFlash = document.getElementById('damage-flash');
+
+const hpBarFill = document.getElementById('hp-bar-fill');
+const hudCargo = document.getElementById('hud-cargo');
+const hudIslandName = document.getElementById('hud-island-name');
+const hudIslandSub = document.getElementById('hud-island-sub');
+const valFood = document.getElementById('val-food');
+const valWood = document.getElementById('val-wood');
+const valMetal = document.getElementById('val-metal');
+const valMed = document.getElementById('val-med');
 
 let renderer, scene, camera;
 let clock = new THREE.Clock();
 
-// Character state
+// Game World State
+let currentWorld = 'safe_island'; // 'safe_island' | 'zombie_island'
+let dayCount = 1;
+
+// Community Stockpile
+const stockpile = {
+  food: 18,
+  wood: 14,
+  metal: 6,
+  medicine: 4,
+};
+
+// Carried Cargo
+const BOAT_CAPACITY = 12;
+const carriedCargo = {
+  food: 0,
+  wood: 0,
+  metal: 0,
+  medicine: 0,
+};
+
+// Player Stats
+let playerMaxHp = 100;
+let playerHp = 100;
+let invulnerableTimer = 0;
+
+// Character Model & Animations
 let playerGroup = new THREE.Group();
 let characterModel = null;
 let mixer = null;
@@ -383,21 +543,29 @@ let actions = {};
 let currentAction = null;
 let currentActionKey = 'idle';
 
-let playerPos = new THREE.Vector3(0, 2.5, -12); // Start on village path
+let playerPos = new THREE.Vector3(0, 2.5, -12);
 let playerVel = new THREE.Vector3();
-let playerFacing = -Math.PI / 2; // facing towards dock (south)
+let playerFacing = -Math.PI / 2;
 let isAttacking = false;
 let attackTimer = 0;
+let hasHitInSwing = false;
 
-// Camera configuration (Godot 4 3/4 Perspective specification)
+// Camera
 const CAM_PITCH = 38 * Math.PI / 180;
 const CAM_YAW = 18 * Math.PI / 180;
-const CAM_DIST = 14.5;
+let CAM_DIST = 14.5;
 let cameraTarget = new THREE.Vector3(0, 2.5, -12);
 
-// Interactive objects
-const interactables = [];
+// Island environments
+let islandGroup = new THREE.Group();
+let boatMesh = null;
+let boatBobTime = 0;
+
+// Entities
+let interactables = [];
 let activeInteractable = null;
+let enemies = [];
+let resourceNodes = [];
 
 // Keys
 const keys = {};
@@ -406,27 +574,41 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyE') {
     handleInteraction();
   }
-  if (e.code === 'Space' && !diagModal.classList.contains('active')) {
-    triggerAttack();
-  } else if (e.code === 'Space' && diagModal.classList.contains('active')) {
-    closeDialogue();
+  if (e.code === 'Space') {
+    if (diagModal.classList.contains('active')) {
+      closeDialogue();
+    } else if (debriefModal.classList.contains('active')) {
+      debriefModal.classList.remove('active');
+    } else {
+      triggerAttack();
+    }
   }
 });
 window.addEventListener('keyup', (e) => {
   keys[e.code] = false;
 });
 window.addEventListener('click', (e) => {
-  if (e.target.closest('#hud-layer') || e.target.closest('#dialogue-modal') || e.target.closest('#expedition-modal') || e.target.closest('.controls-card')) return;
+  if (e.target.closest('#hud-layer') || e.target.closest('.center-modal') || e.target.closest('#dialogue-modal') || e.target.closest('.controls-card')) return;
   triggerAttack();
 });
 
-// Setup Boat Modal buttons
-document.getElementById('btn-sail').addEventListener('click', () => {
+// UI Event Handlers
+document.getElementById('btn-start-sail').addEventListener('click', () => {
   expModal.classList.remove('active');
-  alert("Transisi Ekspedisi: Membuka Pelayaran Menuju Pulau Zombie Pertama!");
+  startVoyageToZombieIsland();
 });
 document.getElementById('btn-cancel-sail').addEventListener('click', () => {
   expModal.classList.remove('active');
+});
+document.getElementById('btn-confirm-return').addEventListener('click', () => {
+  retModal.classList.remove('active');
+  startVoyageToSafeIsland();
+});
+document.getElementById('btn-cancel-return').addEventListener('click', () => {
+  retModal.classList.remove('active');
+});
+document.getElementById('btn-close-debrief').addEventListener('click', () => {
+  debriefModal.classList.remove('active');
 });
 
 function initThree() {
@@ -442,7 +624,6 @@ function initThree() {
   scene.background = new THREE.Color(0x061525);
   scene.fog = new THREE.FogExp2(0x0a1d30, 0.016);
 
-  // 3/4 Perspective Camera
   camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.2, 200);
   updateCameraTransform(playerPos, 0);
 
@@ -457,25 +638,16 @@ function initThree() {
   sunLight.shadow.mapSize.height = 2048;
   sunLight.shadow.camera.near = 1;
   sunLight.shadow.camera.far = 80;
-  const d = 22;
+  const d = 24;
   sunLight.shadow.camera.left = -d;
   sunLight.shadow.camera.right = d;
   sunLight.shadow.camera.top = d;
   sunLight.shadow.camera.bottom = -d;
-  sunLight.shadow.bias = -0.0005;
   scene.add(sunLight);
 
-  // Warm village ambiance light
-  const villagePoint = new THREE.PointLight(0xff8c38, 2.8, 18, 1.2);
-  villagePoint.position.set(0, 3.2, -16);
-  scene.add(villagePoint);
+  scene.add(islandGroup);
 
-  // Dock lantern
-  const dockPoint = new THREE.PointLight(0xffb042, 2.2, 14, 1.2);
-  dockPoint.position.set(1.4, 2.2, 5.0);
-  scene.add(dockPoint);
-
-  buildEnvironment();
+  buildSafeIsland();
   loadCharacter();
 
   window.addEventListener('resize', onResize);
@@ -499,164 +671,81 @@ function onResize() {
 }
 
 // ==============================================================================
-// ENVIRONMENT GENERATION: Village -> Path -> Dock -> Boat
+// SAFE ISLAND WORLD
 // ==============================================================================
-let boatMesh = null;
-let boatBobTime = 0;
+function buildSafeIsland() {
+  clearCurrentWorld();
+  currentWorld = 'safe_island';
 
-function buildEnvironment() {
-  // Ocean Water Plane
-  const waterGeo = new THREE.PlaneGeometry(300, 300, 32, 32);
-  const waterMat = new THREE.MeshStandardMaterial({
-    color: 0x07253b,
-    roughness: 0.18,
-    metalness: 0.25,
-  });
+  hudIslandName.textContent = "SAFE ISLAND · PULAU AMAN";
+  hudIslandSub.textContent = "Desa → Jalan → Dermaga → Perahu";
+
+  playerPos.set(0, 2.5, -12);
+  playerFacing = -Math.PI / 2;
+
+  // Ocean
+  const waterGeo = new THREE.PlaneGeometry(300, 300, 16, 16);
+  const waterMat = new THREE.MeshStandardMaterial({ color: 0x07253b, roughness: 0.18, metalness: 0.25 });
   const ocean = new THREE.Mesh(waterGeo, waterMat);
   ocean.rotation.x = -Math.PI / 2;
   ocean.position.y = -0.2;
-  scene.add(ocean);
+  islandGroup.add(ocean);
 
-  // 1. Village Plateau (Dataran Tinggi Desa)
-  const plateauGeo = new THREE.CylinderGeometry(15, 17, 2.6, 32);
-  const grassMat = new THREE.MeshStandardMaterial({
-    color: 0x27432b,
-    roughness: 0.9,
-    metalness: 0.05,
-  });
-  const plateau = new THREE.Mesh(plateauGeo, grassMat);
+  // Village Plateau
+  const plateau = new THREE.Mesh(new THREE.CylinderGeometry(15, 17, 2.6, 32), new THREE.MeshStandardMaterial({ color: 0x27432b, roughness: 0.9 }));
   plateau.position.set(0, 1.3, -16);
   plateau.receiveShadow = true;
-  scene.add(plateau);
+  islandGroup.add(plateau);
 
-  // Village bonfire
-  const fireGeo = new THREE.ConeGeometry(0.6, 0.8, 8);
-  const fireMat = new THREE.MeshBasicMaterial({ color: 0xff6b1a });
-  const bonfire = new THREE.Mesh(fireGeo, fireMat);
+  // Bonfire
+  const bonfire = new THREE.Mesh(new THREE.ConeGeometry(0.6, 0.8, 8), new THREE.MeshBasicMaterial({ color: 0xff6b1a }));
   bonfire.position.set(0, 2.9, -16);
-  scene.add(bonfire);
+  islandGroup.add(bonfire);
+  const fireLight = new THREE.PointLight(0xff8c38, 2.8, 18, 1.2);
+  fireLight.position.set(0, 3.2, -16);
+  islandGroup.add(fireLight);
 
-  // Village Shelters / Cabins
+  // Cabins
   const cabinMat = new THREE.MeshStandardMaterial({ color: 0x422f1f, roughness: 0.85 });
-  const roofMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.9 });
-
-  function createCabin(x, y, z, rot) {
-    const group = new THREE.Group();
-    const walls = new THREE.Mesh(new THREE.BoxGeometry(4.2, 2.6, 4.2), cabinMat);
-    walls.position.y = 1.3;
-    walls.castShadow = true;
-    walls.receiveShadow = true;
-    group.add(walls);
-
-    const roof = new THREE.Mesh(new THREE.ConeGeometry(3.5, 1.6, 4), roofMat);
-    roof.position.y = 3.2;
-    roof.rotation.y = Math.PI / 4;
-    roof.castShadow = true;
-    group.add(roof);
-
-    group.position.set(x, y, z);
-    group.rotation.y = rot;
-    scene.add(group);
+  function addCabin(x, y, z, rot) {
+    const c = new THREE.Mesh(new THREE.BoxGeometry(4.2, 2.6, 4.2), cabinMat);
+    c.position.set(x, y + 1.3, z);
+    c.rotation.y = rot;
+    c.castShadow = true;
+    c.receiveShadow = true;
+    islandGroup.add(c);
   }
-  createCabin(-6.5, 2.5, -17, 0.3);
-  createCabin(6.8, 2.5, -16, -0.4);
-  createCabin(0, 2.5, -22, 0);
+  addCabin(-6.5, 2.5, -17, 0.3);
+  addCabin(6.8, 2.5, -16, -0.4);
 
-  // Community Stockpile Crates
-  const crateMat = new THREE.MeshStandardMaterial({ color: 0x5c4028, roughness: 0.8 });
-  function createCrate(x, y, z, s) {
-    const crate = new THREE.Mesh(new THREE.BoxGeometry(s, s, s), crateMat);
-    crate.position.set(x, y + s/2, z);
-    crate.castShadow = true;
-    crate.receiveShadow = true;
-    scene.add(crate);
-  }
-  createCrate(3.2, 2.5, -14, 1.1);
-  createCrate(4.2, 2.5, -14.2, 0.9);
-  createCrate(3.7, 3.5, -14.1, 0.8);
-
-  // 2. Winding Dirt Path (Desa menuju Dermaga)
-  const pathMat = new THREE.MeshStandardMaterial({ color: 0x5a452e, roughness: 0.95 });
-  const pathRamp = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.8, 12), pathMat);
+  // Sloping Path
+  const pathRamp = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.8, 12), new THREE.MeshStandardMaterial({ color: 0x5a452e, roughness: 0.95 }));
   pathRamp.position.set(0, 1.25, -6.5);
-  pathRamp.rotation.x = 0.22; // gentle slope
+  pathRamp.rotation.x = 0.22;
   pathRamp.receiveShadow = true;
-  scene.add(pathRamp);
+  islandGroup.add(pathRamp);
 
-  // 3. Sandy Shore & Coastal Rocks
-  const sandMat = new THREE.MeshStandardMaterial({ color: 0x9b855d, roughness: 0.9 });
-  const beach = new THREE.Mesh(new THREE.CylinderGeometry(9, 11, 0.6, 28), sandMat);
+  // Beach
+  const beach = new THREE.Mesh(new THREE.CylinderGeometry(9, 11, 0.6, 28), new THREE.MeshStandardMaterial({ color: 0x9b855d, roughness: 0.9 }));
   beach.position.set(0, 0.1, 0);
   beach.receiveShadow = true;
-  scene.add(beach);
+  islandGroup.add(beach);
 
-  const rockMat = new THREE.MeshStandardMaterial({ color: 0x47515a, roughness: 0.85 });
-  function createRock(x, y, z, sx, sy, sz) {
-    const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(1.2), rockMat);
-    rock.scale.set(sx, sy, sz);
-    rock.position.set(x, y, z);
-    rock.castShadow = true;
-    rock.receiveShadow = true;
-    scene.add(rock);
-  }
-  createRock(-4.2, 0.4, 1.5, 1.2, 0.7, 1.1);
-  createRock(4.8, 0.4, 2.0, 1.4, 0.9, 1.3);
-  createRock(-3.5, 0.6, -4.0, 1.0, 0.8, 1.0);
-  createRock(3.8, 0.7, -4.5, 1.1, 0.9, 1.1);
-
-  // 4. Sturdy Dock Pier (Menyatu dari pantai ke laut)
-  const dockWoodMat = new THREE.MeshStandardMaterial({ color: 0x583d25, roughness: 0.85 });
-  const dockPier = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.35, 7.5), dockWoodMat);
+  // Dock Pier
+  const dockPier = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.35, 7.5), new THREE.MeshStandardMaterial({ color: 0x583d25, roughness: 0.85 }));
   dockPier.position.set(0, 0.35, 4.5);
   dockPier.castShadow = true;
   dockPier.receiveShadow = true;
-  scene.add(dockPier);
+  islandGroup.add(dockPier);
 
-  // Dock Pilings
-  const pilingGeo = new THREE.CylinderGeometry(0.12, 0.14, 2.2, 8);
-  function addPiling(x, z) {
-    const p = new THREE.Mesh(pilingGeo, dockWoodMat);
-    p.position.set(x, -0.6, z);
-    p.castShadow = true;
-    scene.add(p);
-  }
-  addPiling(-1.3, 1.8);
-  addPiling(1.3, 1.8);
-  addPiling(-1.3, 5.2);
-  addPiling(1.3, 5.2);
-  addPiling(-1.3, 7.8);
-  addPiling(1.3, 7.8);
+  // Dock Lantern
+  const dockLight = new THREE.PointLight(0xffb042, 2.2, 14, 1.2);
+  dockLight.position.set(1.4, 2.2, 5.0);
+  islandGroup.add(dockLight);
 
-  // Dock Lantern Post
-  const lanternPost = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 2.2), dockWoodMat);
-  lanternPost.position.set(1.3, 1.2, 5.0);
-  scene.add(lanternPost);
-  const lanternBulb = new THREE.Mesh(new THREE.SphereGeometry(0.18), new THREE.MeshBasicMaterial({ color: 0xffc266 }));
-  lanternBulb.position.set(1.3, 2.2, 5.0);
-  scene.add(lanternBulb);
+  // Boat
+  createBoatMesh(2.6, 0.1, 5.8);
 
-  // 5. Moored Boat (Perahu Ekspedisi bersandar di air samping dermaga)
-  boatMesh = new THREE.Group();
-  const hullMat = new THREE.MeshStandardMaterial({ color: 0x48321e, roughness: 0.8 });
-  const hull = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.9, 4.6), hullMat);
-  hull.position.y = 0.2;
-  hull.castShadow = true;
-  hull.receiveShadow = true;
-  boatMesh.add(hull);
-
-  const boatFloor = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.1, 4.0), new THREE.MeshStandardMaterial({ color: 0x6e4e30, roughness: 0.85 }));
-  boatFloor.position.y = 0.45;
-  boatMesh.add(boatFloor);
-
-  // Boat lantern
-  const bLantern = new THREE.Mesh(new THREE.SphereGeometry(0.14), new THREE.MeshBasicMaterial({ color: 0xffd175 }));
-  bLantern.position.set(0, 1.4, 1.8);
-  boatMesh.add(bLantern);
-
-  boatMesh.position.set(2.6, 0.1, 5.8);
-  scene.add(boatMesh);
-
-  // Register Boat interaction
   interactables.push({
     type: 'boat',
     pos: new THREE.Vector3(1.8, 0.35, 5.8),
@@ -667,74 +756,452 @@ function buildEnvironment() {
     }
   });
 
-  // 6. Survivor NPCs
-  buildNPCs();
+  // NPCs
+  spawnNPC("Paman Jamil", "Pengelola Gudang Komunitas", "Selamat kembali. Persediaan makanan kita tersisa " + stockpile.food + " unit. Tolong berlayar dan bawa persediaan dari pulau luar!", 2.4, 2.5, -14.2);
+  spawnNPC("Pak Hasan", "Nelayan Tua", "Saat kabut naik, zombie pulau luar sangat agresif. Pukul mereka dengan Spasi, lalu segera bawa muatanmu pulang!", -3.8, 2.5, -15.0);
+  spawnNPC("Dokter Sari", "Tenaga Medis", "Obat di kabin hampir habis. Bila kau menemukan klinik reruntuhan di pulau zombie, ambil kotak obat sebanyaknya!", -2.8, 2.5, -18.2);
 }
 
 // ==============================================================================
-// SURVIVOR NPCs
+// ZOMBIE ISLAND 1 WORLD (Vertical Slice First)
 // ==============================================================================
-function buildNPCs() {
-  const npcMat = new THREE.MeshStandardMaterial({ color: 0x3b5066, roughness: 0.85 });
-  const skinMat = new THREE.MeshStandardMaterial({ color: 0xd4a373, roughness: 0.7 });
+function buildZombieIsland() {
+  clearCurrentWorld();
+  currentWorld = 'zombie_island';
 
-  function spawnNPC(name, role, dialogue, x, y, z) {
-    const group = new THREE.Group();
-    // Body
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 1.1, 12), npcMat);
-    body.position.y = 0.65;
-    body.castShadow = true;
-    group.add(body);
-    // Head
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 12), skinMat);
-    head.position.y = 1.35;
-    head.castShadow = true;
-    group.add(head);
+  hudIslandName.textContent = "ZOMBIE ISLAND #1 · PULAU EKSPEDISI";
+  hudIslandSub.textContent = "Pantai Pendaratan → Hutan Pesisir → Reruntuhan Klinik";
 
-    group.position.set(x, y, z);
-    scene.add(group);
+  playerPos.set(0, 0.5, 14);
+  playerFacing = Math.PI; // facing north towards ruins
 
-    interactables.push({
-      type: 'npc',
-      name: name,
-      role: role,
-      dialogue: dialogue,
-      pos: new THREE.Vector3(x, y, z),
-      radius: 2.4,
-      prompt: 'Bicara dengan ' + name + ' (' + role + ')',
-      onInteract: () => {
-        diagNameEl.textContent = name;
-        diagRoleEl.textContent = role;
-        diagTextEl.textContent = dialogue;
-        diagModal.classList.add('active');
-      }
-    });
+  // Ocean
+  const ocean = new THREE.Mesh(new THREE.PlaneGeometry(320, 320), new THREE.MeshStandardMaterial({ color: 0x051a2e, roughness: 0.16, metalness: 0.28 }));
+  ocean.rotation.x = -Math.PI / 2;
+  ocean.position.y = -0.2;
+  islandGroup.add(ocean);
+
+  // 1. Landing Beach & Pier
+  const beach = new THREE.Mesh(new THREE.CylinderGeometry(11, 13, 0.6, 28), new THREE.MeshStandardMaterial({ color: 0x827052, roughness: 0.92 }));
+  beach.position.set(0, 0.2, 12);
+  beach.receiveShadow = true;
+  islandGroup.add(beach);
+
+  const pier = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.35, 6.5), new THREE.MeshStandardMaterial({ color: 0x48321e, roughness: 0.85 }));
+  pier.position.set(0, 0.35, 17);
+  pier.castShadow = true;
+  pier.receiveShadow = true;
+  islandGroup.add(pier);
+
+  // Moored Boat on Beach
+  createBoatMesh(2.4, 0.1, 17.5);
+
+  interactables.push({
+    type: 'boat_return',
+    pos: new THREE.Vector3(1.6, 0.35, 17.5),
+    radius: 3.0,
+    prompt: 'Naik Perahu & Berlayar Pulang ke Safe Island',
+    onInteract: () => {
+      document.getElementById('return-cargo-summary').textContent = getTotalCargo() + " unit";
+      retModal.classList.add('active');
+    }
+  });
+
+  // 2. Coastal Forest
+  const forestFloor = new THREE.Mesh(new THREE.BoxGeometry(18, 1.8, 14), new THREE.MeshStandardMaterial({ color: 0x223624, roughness: 0.9 }));
+  forestFloor.position.set(0, 1.0, 1);
+  forestFloor.receiveShadow = true;
+  islandGroup.add(forestFloor);
+
+  function addTree(x, z) {
+    const t = new THREE.Group();
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.3, 2.4), new THREE.MeshStandardMaterial({ color: 0x2c1f17, roughness: 0.9 }));
+    trunk.position.y = 1.2;
+    trunk.castShadow = true;
+    t.add(trunk);
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(1.4, 2.2, 7), new THREE.MeshStandardMaterial({ color: 0x142b1a, roughness: 0.92 }));
+    cone.position.y = 2.8;
+    cone.castShadow = true;
+    t.add(cone);
+    t.position.set(x, 1.9, z);
+    islandGroup.add(t);
   }
+  addTree(-5, 3);
+  addTree(5.5, -2);
+  addTree(-6, -4);
+  addTree(6.2, 4);
 
-  spawnNPC(
-    "Paman Jamil",
-    "Pengelola Gudang Komunitas",
-    "Selamat datang kembali di desa. Persediaan makanan dan kayu bakar kita menipis drastis. Segera persiapkan pelayaran ke pulau berikutnya sebelum badai pasang tiba!",
-    2.4, 2.5, -14.2
-  );
+  // 3. Clinic & Warehouse Ruins
+  const ruinsFloor = new THREE.Mesh(new THREE.BoxGeometry(20, 3.2, 16), new THREE.MeshStandardMaterial({ color: 0x3a3c42, roughness: 0.88 }));
+  ruinsFloor.position.set(0, 2.0, -14);
+  ruinsFloor.receiveShadow = true;
+  islandGroup.add(ruinsFloor);
 
-  spawnNPC(
-    "Pak Hasan",
-    "Nelayan Tua",
-    "Air laut belakangan ini terasa gelisah, anak muda. Saat kabut malam naik, zombie di pantai pulau seberang jadi dua kali lebih buas. Jangan pernah memanen sendirian terlalu lama di luar palka!",
-    -3.8, 2.5, -15.0
-  );
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0x484b54, roughness: 0.85 });
+  function addRuinsWall(x, y, z, sx, sy, sz) {
+    const w = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), wallMat);
+    w.position.set(x, y, z);
+    w.castShadow = true;
+    w.receiveShadow = true;
+    islandGroup.add(w);
+  }
+  addRuinsWall(-6, 4.8, -17, 1.0, 2.4, 6.0);
+  addRuinsWall(5, 4.8, -12, 5.0, 2.4, 1.0);
+  addRuinsWall(0, 4.8, -21, 8.0, 2.4, 1.0);
 
-  spawnNPC(
-    "Dokter Sari",
-    "Tenaga Medis",
-    "Ada anak-anak di kabin belakang yang mulai terserang infeksi luka. Kita butuh pasokan obat-obatan dan perban dari reruntuhan apotek pulau luar. Bawakan apa saja yang kau temukan.",
-    -2.8, 2.5, -18.2
-  );
+  // 4. Resource Nodes
+  spawnResourceNode("medicine", 2, -4.5, 3.6, -18);
+  spawnResourceNode("medicine", 1, 2.8, 3.6, -13);
+  spawnResourceNode("food", 2, -3.5, 3.6, -12);
+  spawnResourceNode("food", 2, 4.2, 3.6, -16);
+  spawnResourceNode("metal", 2, 6.0, 3.6, -11);
+  spawnResourceNode("wood", 2, -3.0, 1.9, 2.5);
+
+  // 5. Zombie Enemies
+  spawnZombie("walker", 1.5, 3.6, -14);
+  spawnZombie("walker", -5.5, 3.6, -15);
+  spawnZombie("runner", 3.2, 1.9, 0.5);
+}
+
+function clearCurrentWorld() {
+  while (islandGroup.children.length > 0) {
+    const obj = islandGroup.children[0];
+    islandGroup.remove(obj);
+  }
+  interactables = [];
+  enemies = [];
+  resourceNodes = [];
+  activeInteractable = null;
+}
+
+function createBoatMesh(x, y, z) {
+  boatMesh = new THREE.Group();
+  const hull = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.9, 4.6), new THREE.MeshStandardMaterial({ color: 0x48321e, roughness: 0.8 }));
+  hull.position.y = 0.2;
+  hull.castShadow = true;
+  boatMesh.add(hull);
+
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.1, 4.0), new THREE.MeshStandardMaterial({ color: 0x6e4e30, roughness: 0.85 }));
+  floor.position.y = 0.45;
+  boatMesh.add(floor);
+
+  const lantern = new THREE.Mesh(new THREE.SphereGeometry(0.14), new THREE.MeshBasicMaterial({ color: 0xffd175 }));
+  lantern.position.set(0, 1.4, 1.8);
+  boatMesh.add(lantern);
+
+  boatMesh.position.set(x, y, z);
+  islandGroup.add(boatMesh);
+}
+
+function spawnNPC(name, role, dialogue, x, y, z) {
+  const group = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 1.1, 12), new THREE.MeshStandardMaterial({ color: 0x3b5066, roughness: 0.85 }));
+  body.position.y = 0.65;
+  body.castShadow = true;
+  group.add(body);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 12), new THREE.MeshStandardMaterial({ color: 0xd4a373, roughness: 0.7 }));
+  head.position.y = 1.35;
+  head.castShadow = true;
+  group.add(head);
+
+  group.position.set(x, y, z);
+  islandGroup.add(group);
+
+  interactables.push({
+    type: 'npc',
+    name: name,
+    role: role,
+    dialogue: dialogue,
+    pos: new THREE.Vector3(x, y, z),
+    radius: 2.4,
+    prompt: 'Bicara dengan ' + name + ' (' + role + ')',
+    onInteract: () => {
+      diagNameEl.textContent = name;
+      diagRoleEl.textContent = role;
+      diagTextEl.textContent = dialogue;
+      diagModal.classList.add('active');
+    }
+  });
+}
+
+function spawnResourceNode(type, amount, x, y, z) {
+  const group = new THREE.Group();
+  let color = 0x684b2e;
+  let label = "🌾 Bahan";
+  if (type === 'medicine') { color = 0xdbeafe; label = "💊 Kotak Obat (+" + amount + ")"; }
+  else if (type === 'food') { color = 0xca8a04; label = "🌾 Peti Ransum (+" + amount + ")"; }
+  else if (type === 'metal') { color = 0x64748b; label = "🔩 Rongsokan Besi (+" + amount + ")"; }
+  else if (type === 'wood') { color = 0x78350f; label = "🪵 Kayu Glondong (+" + amount + ")"; }
+
+  const box = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.8, 0.85), new THREE.MeshStandardMaterial({ color: color, roughness: 0.75 }));
+  box.position.y = 0.4;
+  box.castShadow = true;
+  group.add(box);
+
+  group.position.set(x, y, z);
+  islandGroup.add(group);
+
+  const nodeObj = {
+    type: 'resource',
+    resType: type,
+    amount: amount,
+    pos: new THREE.Vector3(x, y, z),
+    radius: 2.2,
+    mesh: group,
+    harvested: false,
+    prompt: 'Tekan E untuk Panen ' + label,
+    onInteract: () => {
+      if (nodeObj.harvested) return;
+      if (getTotalCargo() + amount > BOAT_CAPACITY) {
+        alert("⚠️ Palka Perahu Penuh! (Kapasitas: " + BOAT_CAPACITY + " unit). Kembalilah ke perahu!");
+        return;
+      }
+      carriedCargo[type] += amount;
+      nodeObj.harvested = true;
+      updateCargoHUD();
+
+      // Harvest animation
+      let t = 0;
+      const interval = setInterval(() => {
+        t += 0.1;
+        group.scale.subScalar(0.12);
+        if (group.scale.x <= 0.05) {
+          clearInterval(interval);
+          islandGroup.remove(group);
+        }
+      }, 30);
+    }
+  };
+
+  interactables.push(nodeObj);
+  resourceNodes.push(nodeObj);
 }
 
 // ==============================================================================
-// LOCKED 3D GLB CHARACTER & ANIMATIONS
+// ZOMBIE AI & COMBAT
+// ==============================================================================
+function spawnZombie(type, x, y, z) {
+  const group = new THREE.Group();
+  const isRunner = (type === 'runner');
+  const maxHp = isRunner ? 35 : 60;
+  const speed = isRunner ? 3.8 : 2.0;
+  const dmg = isRunner ? 14 : 22;
+
+  const fleshColor = isRunner ? 0x6b2d24 : 0x3d5440;
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.75, 0.32), new THREE.MeshStandardMaterial({ color: fleshColor, roughness: 0.9 }));
+  torso.position.y = 0.75;
+  torso.castShadow = true;
+  group.add(torso);
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 10), new THREE.MeshStandardMaterial({ color: fleshColor, roughness: 0.9 }));
+  head.position.y = 1.35;
+  head.castShadow = true;
+  group.add(head);
+
+  // HP Bar mesh
+  const hpBg = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.12), new THREE.MeshBasicMaterial({ color: 0x331111 }));
+  hpBg.position.set(0, 1.8, 0);
+  group.add(hpBg);
+  const hpFill = new THREE.Mesh(new THREE.PlaneGeometry(0.78, 0.1), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+  hpFill.position.set(0, 1.8, 0.01);
+  group.add(hpFill);
+
+  group.position.set(x, y, z);
+  islandGroup.add(group);
+
+  const zombieObj = {
+    type: type,
+    maxHp: maxHp,
+    hp: maxHp,
+    speed: speed,
+    damage: dmg,
+    mesh: group,
+    hpFill: hpFill,
+    hpBg: hpBg,
+    state: 'idle', // 'idle' | 'chase' | 'attack' | 'dead'
+    wanderTimer: Math.random() * 2,
+    wanderDir: new THREE.Vector3(),
+    attackCooldown: 0,
+    takeDamage: (amount) => {
+      if (zombieObj.state === 'dead') return;
+      zombieObj.hp -= amount;
+      zombieObj.state = 'chase'; // aggro immediately
+
+      // Hit flash
+      torso.material.color.setHex(0xff3333);
+      setTimeout(() => { torso.material.color.setHex(fleshColor); }, 140);
+
+      // Knockback
+      const knock = group.position.clone().sub(playerPos).normalize().multiplyScalar(1.2);
+      group.position.add(knock);
+
+      // Update HP bar
+      const pct = Math.max(0, zombieObj.hp / zombieObj.maxHp);
+      hpFill.scale.x = pct;
+
+      if (zombieObj.hp <= 0) {
+        zombieObj.state = 'dead';
+        hpBg.visible = false;
+        hpFill.visible = false;
+
+        // Drop lootable metal scrap
+        spawnResourceNode("metal", 1, group.position.x, group.position.y, group.position.z);
+
+        // Death tween
+        let t = 0;
+        const deathInt = setInterval(() => {
+          t += 0.1;
+          group.rotation.x -= 0.15;
+          group.scale.subScalar(0.08);
+          if (group.scale.x <= 0.05) {
+            clearInterval(deathInt);
+            islandGroup.remove(group);
+          }
+        }, 30);
+      }
+    }
+  };
+
+  enemies.push(zombieObj);
+}
+
+function updateZombies(delta) {
+  for (let z of enemies) {
+    if (z.state === 'dead') continue;
+
+    z.hpBg.quaternion.copy(camera.quaternion);
+    z.hpFill.quaternion.copy(camera.quaternion);
+
+    if (z.attackCooldown > 0) z.attackCooldown -= delta;
+
+    const d = z.mesh.position.distanceTo(playerPos);
+
+    if (z.state === 'idle') {
+      z.wanderTimer -= delta;
+      if (z.wanderTimer <= 0) {
+        z.wanderTimer = 2.0 + Math.random() * 3.0;
+        z.wanderDir.set(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+      }
+      z.mesh.position.addScaledVector(z.wanderDir, z.speed * 0.4 * delta);
+      if (d < 10.0) {
+        z.state = 'chase';
+        // Alert other nearby zombies
+        for (let other of enemies) {
+          if (other.mesh.position.distanceTo(z.mesh.position) < 8.0) other.state = 'chase';
+        }
+      }
+    } else if (z.state === 'chase') {
+      const toPlayer = playerPos.clone().sub(z.mesh.position);
+      toPlayer.y = 0;
+      if (toPlayer.length() > 1.2) {
+        toPlayer.normalize();
+        z.mesh.position.addScaledVector(toPlayer, z.speed * delta);
+        z.mesh.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
+      } else {
+        // In attack range
+        if (z.attackCooldown <= 0) {
+          z.attackCooldown = 1.4;
+          playerTakeDamage(z.damage);
+        }
+      }
+    }
+  }
+}
+
+function playerTakeDamage(amount) {
+  if (invulnerableTimer > 0) return;
+  invulnerableTimer = 0.5;
+  playerHp = Math.max(0, playerHp - amount);
+  updateHPBar();
+
+  // Screen flash
+  damageFlash.classList.add('flash');
+  setTimeout(() => damageFlash.classList.remove('flash'), 120);
+
+  if (playerHp <= 0) {
+    alert("⚠️ Karakter tumbang diserang zombie! Diselamatkan kembali ke Safe Island dengan kehilangan muatan.");
+    // Clear cargo on death
+    for (let k in carriedCargo) carriedCargo[k] = 0;
+    updateCargoHUD();
+    playerHp = playerMaxHp;
+    updateHPBar();
+    buildSafeIsland();
+  }
+}
+
+function updateHPBar() {
+  const pct = (playerHp / playerMaxHp) * 100;
+  hpBarFill.style.width = pct + '%';
+}
+
+function getTotalCargo() {
+  return carriedCargo.food + carriedCargo.wood + carriedCargo.metal + carriedCargo.medicine;
+}
+
+function updateCargoHUD() {
+  hudCargo.textContent = "📦 Palka: " + getTotalCargo() + "/" + BOAT_CAPACITY;
+}
+
+function updateStockpileHUD() {
+  valFood.textContent = stockpile.food;
+  valWood.textContent = stockpile.wood;
+  valMetal.textContent = stockpile.metal;
+  valMed.textContent = stockpile.medicine;
+}
+
+// ==============================================================================
+// TRANSITIONS: VOYAGE BETWEEN ISLANDS
+// ==============================================================================
+function startVoyageToZombieIsland() {
+  voyageCaption.textContent = "BERLAYAR MENUJU PULAU ZOMBIE PERTAMA...";
+  voyageScreen.classList.add('active');
+
+  setTimeout(() => {
+    buildZombieIsland();
+    setTimeout(() => {
+      voyageScreen.classList.remove('active');
+    }, 600);
+  }, 1000);
+}
+
+function startVoyageToSafeIsland() {
+  voyageCaption.textContent = "BERLAYAR PULANG MEMBAWA JARAHAN KE SAFE ISLAND...";
+  voyageScreen.classList.add('active');
+
+  setTimeout(() => {
+    // Unload cargo to stockpile
+    const rescued = { ...carriedCargo };
+    for (let k in carriedCargo) {
+      stockpile[k] = (stockpile[k] || 0) + carriedCargo[k];
+      carriedCargo[k] = 0;
+    }
+    dayCount++;
+    // Daily community upkeep
+    stockpile.food = Math.max(0, stockpile.food - 3);
+    stockpile.wood = Math.max(0, stockpile.wood - 1);
+
+    updateCargoHUD();
+    updateStockpileHUD();
+
+    buildSafeIsland();
+
+    setTimeout(() => {
+      voyageScreen.classList.remove('active');
+      // Show Debrief
+      let txt = "Ekspedisi Berhasil! Perahu bersandar aman di dermaga desa.<br><br><b>Bahan Dibongkar ke Gudang Komunitas:</b><br>";
+      txt += "🌾 Makanan: +" + rescued.food + "<br>";
+      txt += "🪵 Kayu: +" + rescued.wood + "<br>";
+      txt += "🔩 Besi: +" + rescued.metal + "<br>";
+      txt += "💊 Obat: +" + rescued.medicine + "<br><br>";
+      txt += "<i>Konsumsi harian warga: -3 Makanan, -1 Kayu. Komunitas bertahan di Hari ke-" + dayCount + "!</i>";
+      debriefTextEl.innerHTML = txt;
+      debriefModal.classList.add('active');
+    }, 600);
+  }, 1000);
+}
+
+// ==============================================================================
+// LOCKED 3D CHARACTER CONTROLLER
 // ==============================================================================
 function loadCharacter() {
   const loader = new THREE.GLTFLoader();
@@ -780,7 +1247,6 @@ function loadCharacter() {
       else if (name.includes('box_03') || name.includes('attack')) actions.attack = action;
     });
 
-    // Fallbacks if names differ slightly
     if (!actions.idle && gltf.animations[0]) actions.idle = mixer.clipAction(gltf.animations[0]);
     if (!actions.attack && actions.idle) actions.attack = actions.idle;
     if (!actions.walk && actions.idle) actions.walk = actions.idle;
@@ -818,6 +1284,7 @@ function switchAnimation(newKey, fadeDuration = 0.15) {
 function triggerAttack() {
   if (isAttacking || !actions.attack) return;
   isAttacking = true;
+  hasHitInSwing = false;
   attackTimer = 0.45;
 
   const prevAction = currentAction;
@@ -827,12 +1294,17 @@ function triggerAttack() {
   actions.attack.fadeIn(0.08).play();
   if (prevAction) prevAction.fadeOut(0.08);
 
-  // Combat zoom effect on camera
-  CAM_DIST_OFFSET = -1.5;
+  // Combat zoom effect
+  CAM_DIST = 12.8;
+
+  // Check hit in swing window
+  setTimeout(() => {
+    checkAttackHitbox();
+  }, 160);
 
   setTimeout(() => {
     isAttacking = false;
-    CAM_DIST_OFFSET = 0.0;
+    CAM_DIST = 14.5;
     if (actions.attack) actions.attack.fadeOut(0.12);
     if (actions[currentActionKey]) {
       actions[currentActionKey].reset().fadeIn(0.12).play();
@@ -841,11 +1313,25 @@ function triggerAttack() {
   }, 450);
 }
 
-let CAM_DIST_OFFSET = 0.0;
+function checkAttackHitbox() {
+  if (hasHitInSwing) return;
+  const strikePos = playerPos.clone().add(new THREE.Vector3(Math.sin(playerFacing), 0, Math.cos(playerFacing)).multiplyScalar(1.2));
+  for (let z of enemies) {
+    if (z.state === 'dead') continue;
+    if (z.mesh.position.distanceTo(strikePos) < 1.6) {
+      z.takeDamage(25);
+      hasHitInSwing = true;
+    }
+  }
+}
 
 function handleInteraction() {
   if (diagModal.classList.contains('active')) {
     closeDialogue();
+    return;
+  }
+  if (debriefModal.classList.contains('active')) {
+    debriefModal.classList.remove('active');
     return;
   }
   if (activeInteractable && activeInteractable.onInteract) {
@@ -858,26 +1344,35 @@ function closeDialogue() {
 }
 
 // ==============================================================================
-// GAME LOOP
+// TERRAIN HEIGHT RESOLVER
 // ==============================================================================
 function getTerrainHeight(x, z) {
-  // Village plateau
-  if (z <= -10) return 2.5;
-  // Dock pier
-  if (z >= 1.0 && Math.abs(x) <= 1.4) return 0.5;
-  // Sloping path from village to beach
-  if (z > -10 && z < 1.0) {
-    const t = (z - (-10)) / (1.0 - (-10));
-    return THREE.MathUtils.lerp(2.5, 0.4, t);
+  if (currentWorld === 'safe_island') {
+    if (z <= -10) return 2.5;
+    if (z >= 1.0 && Math.abs(x) <= 1.4) return 0.5;
+    if (z > -10 && z < 1.0) {
+      const t = (z - (-10)) / (1.0 - (-10));
+      return THREE.MathUtils.lerp(2.5, 0.4, t);
+    }
+    return 0.35;
+  } else {
+    // Zombie Island
+    if (z <= -6) return 3.6; // elevated ruins
+    if (z > -6 && z < 7) return 1.9; // forest plateau
+    if (z >= 14 && Math.abs(x) <= 1.4) return 0.5; // pier
+    return 0.4; // beach
   }
-  // Beach shore
-  return 0.35;
 }
 
+// ==============================================================================
+// MAIN LOOP
+// ==============================================================================
 function animate() {
   requestAnimationFrame(animate);
 
   const delta = Math.min(clock.getDelta(), 0.1);
+
+  if (invulnerableTimer > 0) invulnerableTimer -= delta;
 
   // Water bobbing for moored boat
   if (boatMesh) {
@@ -886,10 +1381,17 @@ function animate() {
     boatMesh.rotation.z = Math.sin(boatBobTime * 0.8) * 0.02;
   }
 
+  // Update zombie AI if on Zombie Island
+  if (currentWorld === 'zombie_island') {
+    updateZombies(delta);
+  }
+
   // Player input & movement
   let moveX = 0;
   let moveZ = 0;
-  if (!diagModal.classList.contains('active') && !expModal.classList.contains('active')) {
+  const isModalOpen = diagModal.classList.contains('active') || expModal.classList.contains('active') || retModal.classList.contains('active') || debriefModal.classList.contains('active') || voyageScreen.classList.contains('active');
+
+  if (!isModalOpen) {
     if (keys['KeyW'] || keys['ArrowUp']) moveZ -= 1;
     if (keys['KeyS'] || keys['ArrowDown']) moveZ += 1;
     if (keys['KeyA'] || keys['ArrowLeft']) moveX -= 1;
@@ -901,7 +1403,6 @@ function animate() {
 
   if (isMoving) {
     const inputDir = new THREE.Vector2(moveX, moveZ).normalize();
-    // Rotate relative to 3/4 camera yaw (18 degrees)
     const angle = CAM_YAW;
     const rotatedX = inputDir.x * Math.cos(angle) - inputDir.y * Math.sin(angle);
     const rotatedZ = inputDir.x * Math.sin(angle) + inputDir.y * Math.cos(angle);
@@ -910,41 +1411,42 @@ function animate() {
     playerPos.x += rotatedX * speed * delta;
     playerPos.z += rotatedZ * speed * delta;
 
-    // Clamp within Safe Island boundaries
-    playerPos.x = THREE.MathUtils.clamp(playerPos.x, -14, 14);
-    playerPos.z = THREE.MathUtils.clamp(playerPos.z, -24, 7.8);
+    // Island clamping
+    if (currentWorld === 'safe_island') {
+      playerPos.x = THREE.MathUtils.clamp(playerPos.x, -14, 14);
+      playerPos.z = THREE.MathUtils.clamp(playerPos.z, -24, 7.8);
+    } else {
+      playerPos.x = THREE.MathUtils.clamp(playerPos.x, -12, 12);
+      playerPos.z = THREE.MathUtils.clamp(playerPos.z, -22, 18.5);
+    }
 
-    // Height sync with terrain
     playerPos.y = getTerrainHeight(playerPos.x, playerPos.z);
 
-    // Smooth character rotation
     const targetAngle = Math.atan2(rotatedX, rotatedZ);
     let diff = targetAngle - playerFacing;
     while (diff > Math.PI) diff -= Math.PI * 2;
     while (diff < -Math.PI) diff += Math.PI * 2;
     playerFacing += diff * 14.0 * delta;
 
-    // Animation transition
     if (!isAttacking) {
       switchAnimation(isSprinting ? 'run' : 'walk');
     }
   } else {
-    // Height sync
     playerPos.y = getTerrainHeight(playerPos.x, playerPos.z);
     if (!isAttacking) {
       switchAnimation('idle');
     }
   }
 
-  // Sync player group transform
   playerGroup.position.copy(playerPos);
   if (characterModel) {
     characterModel.rotation.y = playerFacing;
   }
 
-  // Check interactables
+  // Interactables check
   activeInteractable = null;
   for (let obj of interactables) {
+    if (obj.harvested) continue;
     const d = playerPos.distanceTo(obj.pos);
     if (d < obj.radius) {
       activeInteractable = obj;
@@ -952,7 +1454,7 @@ function animate() {
     }
   }
 
-  if (activeInteractable && !diagModal.classList.contains('active') && !expModal.classList.contains('active')) {
+  if (activeInteractable && !isModalOpen) {
     promptTextEl.textContent = activeInteractable.prompt;
     promptEl.classList.add('show');
   } else {
@@ -971,6 +1473,9 @@ function animate() {
 
 window.addEventListener('DOMContentLoaded', () => {
   initThree();
+  updateHPBar();
+  updateCargoHUD();
+  updateStockpileHUD();
   animate();
 });
 </script>

@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3 uid="uid://df4m8v2p6q9x"]
+[gd_scene load_steps=5 format=3 uid="uid://df4m8v2p6q9x"]
 
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1_hud_script"]
 
@@ -14,6 +14,20 @@ corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_bg"]
+bg_color = Color(0.180392, 0.0588235, 0.0588235, 0.8)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_fill"]
+bg_color = Color(0.878431, 0.235294, 0.235294, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud_script")
 
@@ -27,15 +41,35 @@ offset_bottom = 60.0
 grow_horizontal = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
 
-[node name="DayLabel" type="Label" parent="TopBar"]
+[node name="HPContainer" type="HBoxContainer" parent="TopBar"]
 layout_mode = 2
 size_flags_horizontal = 0
-text = "  Hari ke-1 · Safe Island (Desa Nelayan)  "
+
+[node name="Label" type="Label" parent="TopBar/HPContainer"]
+layout_mode = 2
+text = "  ❤️ HP: "
+
+[node name="HPBar" type="ProgressBar" parent="TopBar/HPContainer"]
+custom_minimum_size = Vector2(100, 16)
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_styles/background = SubResource("StyleBoxFlat_hp_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_hp_fill")
+value = 100.0
+show_percentage = false
+
+[node name="CargoContainer" type="HBoxContainer" parent="TopBar"]
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="CargoLabel" type="Label" parent="TopBar/CargoContainer"]
+layout_mode = 2
+text = "📦 Palka: 0/12"
 
 [node name="ResourcesHBox" type="HBoxContainer" parent="TopBar"]
 layout_mode = 2
 size_flags_horizontal = 8
-theme_override_constants/separation = 24
+theme_override_constants/separation = 18
 
 [node name="FoodContainer" type="HBoxContainer" parent="TopBar/ResourcesHBox"]
 layout_mode = 2
@@ -127,3 +161,36 @@ text = "Nama Penyintas"
 layout_mode = 2
 text = "Isi percakapan dengan penyintas..."
 autowrap_mode = 2
+
+[node name="DebriefModal" type="PanelContainer" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -260.0
+offset_top = -120.0
+offset_right = 260.0
+offset_bottom = 120.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_panel")
+
+[node name="VBox" type="VBoxContainer" parent="DebriefModal"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="DebriefModal/VBox"]
+layout_mode = 2
+text = "⚓ LAPORAN KEPULANGAN EKSPEDISI"
+horizontal_alignment = 1
+
+[node name="DebriefText" type="Label" parent="DebriefModal/VBox"]
+layout_mode = 2
+text = "Hasil jarahan berhasil disetor ke gudang desa."
+autowrap_mode = 2
+
+[node name="CloseHint" type="Label" parent="DebriefModal/VBox"]
+layout_mode = 2
+text = "Tekan [E] atau [Spasi] untuk Melanjutkan"
+horizontal_alignment = 1
