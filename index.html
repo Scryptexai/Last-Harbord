@@ -3,662 +3,1104 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Driftholm — Bertahan di Laut yang Naik</title>
-<meta name="description" content="Driftholm — game survival di laut yang naik. Seberapa jauh aku mau pergi sebelum aku berbalik?">
-<meta name="theme-color" content="#04090f">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Driftholm">
-<meta property="og:title" content="Driftholm — Bertahan di Laut yang Naik">
-<meta property="og:description" content="Seberapa jauh aku mau pergi sebelum aku berbalik?">
-<meta property="og:image" content="assets/branding/loading_hero.png">
-<meta property="og:url" content="https://lastharbor.fun/">
+<title>Last Harbor — Realistic 3D Survival Game</title>
 <link rel="icon" type="image/png" href="assets/branding/appicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
-<link rel="preload" href="character_glb_idle_box_03_run_walk_7.glb" as="fetch" crossorigin>
+<script src="js/vendor/three.min.js"></script>
+<script src="js/vendor/GLTFLoader.js"></script>
 <style>
-/* ================= LAYAR PEMBUKA (boot) + LOADING =================
-   Dashboard minimalis: latar foto dermaga, slideshow bab pulau di atas,
-   logo + tagline di tengah, satu tombol PLAY besar di bawah.
-   Overlay loading bergaya "boot icon": ikon maskot berayun di dalam cincin
-   progres yang menyapu, hilang begitu asset inti siap. */
-#screen-boot {
-  position: absolute;
-  inset: 0;
-  z-index: 40;
-  pointer-events: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  overflow: hidden;
-  background: var(--deep);
-}
-.boot-bg {
-  position: absolute;
-  inset: -4%;
-  background: url("assets/branding/dashboard_bg.png") center/cover no-repeat;
-  filter: saturate(1.05) brightness(0.82);
-  animation: bgDrift 26s ease-in-out infinite alternate;
-  opacity: 0;
-  /* mulai fade-in pas saat overlay loading (0.55s) sudah lenyap total */
-  transition: opacity 0.9s ease 0.55s;
-}
-/* Latar dashboard hanya tersingkap SETELAH overlay loading memudar — tidak ada
-   momen dua foto terlihat bertumpuk pada awal muat. */
-#screen-boot.boot-shown .boot-bg { opacity: 1; }
-.boot-vignette {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(180deg, rgba(4,9,15,0.55) 0%, rgba(4,9,15,0.18) 30%,
-                    rgba(4,9,15,0.12) 55%, rgba(4,9,15,0.82) 100%),
-    radial-gradient(120% 90% at 50% 30%, rgba(4,9,15,0) 40%, rgba(4,9,15,0.55) 100%);
-}
-@keyframes bgDrift {
-  from { transform: translate3d(-1.2%, -1%, 0) scale(1.02); }
-  to   { transform: translate3d(1.2%, 1%, 0) scale(1.06); }
-}
-
-/* ---- slideshow bab perjalanan ---- */
-.boot-chapters {
-  position: relative;
-  z-index: 2;
-  margin-top: calc(26px + env(safe-area-inset-top));
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-}
-.chapters-label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 5px;
-  color: rgba(216,170,90,0.85);
-  text-transform: uppercase;
-}
-#chapter-title {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 19px;
-  font-weight: 800;
-  letter-spacing: 3px;
-  color: var(--ink);
-  min-height: 26px;
-  transition: opacity 0.45s ease, transform 0.45s ease, filter 0.45s ease;
-  text-shadow: 0 2px 14px rgba(0,0,0,0.85);
-}
-#chapter-title.swap {
-  opacity: 0;
-  transform: translateY(8px);
-  filter: blur(3px);
-}
-.chapters-dots { display: flex; gap: 6px; }
-.chapters-dots i {
-  width: 5px; height: 5px; border-radius: 50%;
-  background: rgba(237,242,247,0.28);
-  transition: background 0.3s, transform 0.3s;
-}
-.chapters-dots i.on { background: var(--brass); transform: scale(1.3); }
-
-/* ---- logo + tagline ---- */
-.boot-inner {
-  position: relative;
-  z-index: 2;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  padding: 0 24px;
-}
-.boot-logo {
-  width: min(74vw, 340px);
-  height: auto;
-  filter: drop-shadow(0 14px 34px rgba(0,0,0,0.75));
-  animation: logoFloat 5.2s ease-in-out infinite;
-}
-@keyframes logoFloat {
-  0%, 100% { transform: translateY(0) rotate(-0.4deg); }
-  50%      { transform: translateY(-8px) rotate(0.5deg); }
-}
-.boot-tagline {
-  font-size: 13px;
-  font-style: italic;
-  color: rgba(237,242,247,0.78);
-  line-height: 1.6;
-  text-shadow: 0 2px 12px rgba(0,0,0,0.9);
-}
-
-/* ---- dok tombol ---- */
-.boot-dock {
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  max-width: 420px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 18px 24px calc(26px + env(safe-area-inset-bottom));
-}
-.btn-play {
-  width: 100%;
-  font-family: 'Montserrat', sans-serif;
-  font-size: 19px;
-  font-weight: 900;
-  letter-spacing: 4px;
-  color: #201305;
-  padding: 18px 22px;
-  border: none;
-  border-radius: 18px;
-  background:
-    linear-gradient(180deg, #ffd98a 0%, #e6a94f 55%, #c8863a 100%);
-  box-shadow:
-    0 12px 30px rgba(0,0,0,0.55),
-    0 0 0 1px rgba(255,222,150,0.55) inset,
-    0 2px 0 rgba(255,240,200,0.65) inset;
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s;
-  animation: playPulse 2.4s ease-in-out infinite;
-}
-.btn-play:active { transform: translateY(2px) scale(0.99); filter: brightness(0.94); }
-@keyframes playPulse {
-  0%, 100% { box-shadow: 0 12px 30px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,222,150,0.55) inset, 0 0 0 0 rgba(240,190,100,0.35); }
-  50%      { box-shadow: 0 12px 34px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,222,150,0.6) inset, 0 0 26px 4px rgba(240,190,100,0.4); }
-}
-.boot-sub-actions { display: flex; gap: 10px; width: 100%; }
-.boot-sub-actions .btn { flex: 1; font-size: 12px; padding: 11px 12px; letter-spacing: 2px; }
-.boot-warning {
-  font-size: 11px;
-  color: #e0b979;
-  line-height: 1.5;
-  max-width: 380px;
-}
-
-/* ---- overlay loading (boot icon) ---- */
-#boot-loader {
-  position: absolute;
-  inset: 0;
-  z-index: 6;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 22px;
-  /* dasar gelap penuh MENDAHULUI foto hero — sementara foto termuat tidak ada
-     celah transparan tempat latar dashboard ikut terlihat bertumpuk */
-  background: var(--deep);
-  background-image: url("assets/branding/loading_hero.png");
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
-  transition: opacity 0.55s ease, visibility 0.55s;
-}
-#boot-loader::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(90% 70% at 50% 45%, rgba(4,9,15,0.05), rgba(4,9,15,0.68));
-  pointer-events: none;
-}
-#boot-loader.ready { opacity: 0; visibility: hidden; pointer-events: none; }
-#boot-loader > * { position: relative; z-index: 2; }
-.loader-stack { position: relative; width: 148px; height: 148px; }
-.loader-ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: conic-gradient(from 0deg, #ffd98a, #e6a94f 180deg, rgba(240,196,120,0.06) 78%, transparent 80%);
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #000 calc(100% - 6px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #000 calc(100% - 6px));
-  animation: ringSpin 1.5s linear infinite;
-  box-shadow: 0 0 24px rgba(240,196,120,0.28);
-}
-@keyframes ringSpin { to { transform: rotate(360deg); } }
-.loader-icon {
-  position: absolute;
-  inset: 21px;
-  animation: iconBoot 1.5s ease-in-out infinite;
-  filter: drop-shadow(0 6px 18px rgba(0,0,0,0.65));
-}
-.loader-icon img { width: 100%; height: 100%; object-fit: contain; }
-@keyframes iconBoot {
-  0%, 100% { transform: translateY(3px) scale(0.96); }
-  50%      { transform: translateY(-4px) scale(1.03); }
-}
-.loader-text {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 7px;
-  color: rgba(240,214,160,0.92);
-  text-shadow: 0 2px 12px rgba(0,0,0,0.9);
-}
-.loader-text span { animation: dotPulse 1.4s ease-in-out infinite; display: inline-block; }
-.loader-text span:nth-child(2) { animation-delay: 0.2s; }
-.loader-text span:nth-child(3) { animation-delay: 0.4s; }
-@keyframes dotPulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
-
-/* ---- dashboard menu (kartu atas / statistik tengah / aksi bawah) ---- */
-.boot-dash {
-  position: relative; z-index: 2;
-  width: 100%; max-width: 560px;
-  display: flex; flex-direction: column; gap: 10px;
-  padding: 6px 18px calc(18px + env(safe-area-inset-bottom));
-  max-height: 64vh; overflow-y: auto;
-  scrollbar-width: none;                      /* pita gulir tidak mengganggu kartu */
-}
-.boot-dash::-webkit-scrollbar { display: none; }
-
-.dash-row { width: 100%; }
-.dash-card {
-  background: rgba(8, 15, 24, 0.82);
-  border: 1px solid rgba(216, 170, 90, 0.22);
-  border-radius: 16px;
-  padding: 12px 14px;
-  text-align: left;
-  backdrop-filter: blur(6px);
-  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
-}
-.dash-card-head { display: flex; align-items: center; gap: 10px; }
-.dash-card-icon img { width: 34px; height: 34px; filter: drop-shadow(0 3px 8px rgba(0,0,0,0.6)); }
-.dash-card-titles { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.dash-card-titles b { font-size: 13px; letter-spacing: 1.4px; color: var(--ink); }
-.dash-card-titles .small { color: var(--muted); }
-.dash-run-bar { height: 6px; border-radius: 4px; background: rgba(140, 170, 200, 0.14); margin: 10px 0 6px; overflow: hidden; }
-.dash-run-bar i { display: block; height: 100%; width: 0%; border-radius: 4px; background: linear-gradient(90deg, var(--brass), #ffe3a1); box-shadow: 0 0 8px rgba(216,170,90,0.6); transition: width 0.6s ease; }
-#dash-run-meta { color: var(--muted); }
-.dash-mid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.dash-stat {
-  background: rgba(8, 15, 24, 0.7);
-  border: 1px solid rgba(120, 150, 180, 0.18);
-  border-radius: 12px;
-  padding: 8px 6px;
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  backdrop-filter: blur(5px);
-  transition: transform 0.15s ease, border-color 0.2s;
-}
-.dash-stat:hover { transform: translateY(-2px); border-color: rgba(216, 170, 90, 0.45); }
-.dash-stat b { font-family: 'Montserrat', sans-serif; font-size: 20px; font-weight: 800; color: var(--brass); line-height: 1.1; }
-.dash-stat span { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); text-align: center; }
-.dash-actions { display: flex; flex-direction: column; gap: 8px; }
-.dash-menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.dash-menu-btn {
-  min-height: 44px;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  background: rgba(8, 15, 24, 0.78);
-  border: 1px solid rgba(120, 150, 180, 0.26);
-  border-radius: 12px;
-  color: var(--ink);
-  font-size: 12px; font-weight: 700; letter-spacing: 2px;
-  cursor: pointer;
-  transition: transform 0.12s ease, border-color 0.2s, background 0.2s;
-  backdrop-filter: blur(5px);
-}
-.dash-menu-btn b { color: var(--brass); font-size: 15px; font-weight: 400; }
-.dash-menu-btn:active { transform: translateY(1px) scale(0.99); }
-.dash-menu-btn:hover { border-color: rgba(216, 170, 90, 0.5); background: rgba(14, 22, 33, 0.9); }
-.dash-version { color: rgba(237, 242, 247, 0.42); letter-spacing: 1px; margin-top: 2px; }
-/* ---- overlay pop kartu (panduan & pengaturan) ---- */
-.menu-pop {
-  position: absolute; inset: 0; z-index: 30;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(4, 9, 15, 0.7);
-  backdrop-filter: blur(3px);
-  pointer-events: auto;
-}
-.menu-card {
-  width: min(92vw, 460px);
-  background: rgba(9, 17, 26, 0.97);
-  border: 1px solid rgba(216, 170, 90, 0.3);
-  border-radius: 16px;
-  padding: 14px 16px 16px;
-  text-align: left;
-  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.65);
-  max-height: 84vh; overflow-y: auto;
-}
-.menu-card.hidden, .menu-pop.hidden { display: none; }
-.menu-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-.menu-card-head h3 { font-family: 'Montserrat', sans-serif; font-size: 14px; letter-spacing: 3px; color: var(--brass); text-transform: uppercase; }
-.howto-list { padding-left: 18px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; line-height: 1.55; color: var(--ink); }
-.howto-list b { color: var(--brass); }
-.set-row {
-  width: 100%; min-height: 48px;
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 12px 14px; margin-bottom: 8px;
-  background: rgba(18, 28, 40, 0.55);
-  border: 1px solid rgba(120, 150, 180, 0.22);
-  border-radius: 12px;
-  color: var(--ink); font-size: 13px;
-  cursor: pointer;
-  transition: border-color 0.2s, background 0.2s, transform 0.12s;
-}
-.set-row:hover { border-color: rgba(216, 170, 90, 0.45); background: rgba(22, 33, 46, 0.75); }
-.set-row:active { transform: translateY(1px); }
-.set-row b { font-size: 11px; letter-spacing: 2px; color: var(--brass); }
-.set-row.off b { color: var(--muted); }
-.set-danger:hover { border-color: rgba(216, 80, 63, 0.6); }
-.set-danger b { color: var(--red); }
-.set-note { color: var(--muted); margin-top: 2px; }
-@media (max-width: 480px) {
-  .boot-dash { padding: 4px 12px calc(14px + env(safe-area-inset-bottom)); }
-  .dash-mid { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-height: 480px) {
-  .boot-chapters { margin-top: calc(10px + env(safe-area-inset-top)); transform: scale(0.85); }
-  .boot-inner { flex: 0 0 auto; gap: 2px; padding: 0; }
-  .boot-logo { width: min(28vw, 128px); }
-  .boot-tagline { display: none; }
-  .boot-dash { max-height: none; gap: 8px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
-  .dash-stat span { font-size: 8px; }
-  /* Layar pendek: tombol menu jadi ikon pojok kanan-atas di luar alur kartu —
-     standar roguelike mobile (⚙ selalu terlihat tanpa menggulir). */
-  .dash-menu-grid {
-    position: fixed; z-index: 26;
-    top: calc(8px + env(safe-area-inset-top));
-    right: calc(10px + env(safe-area-inset-right));
-    width: auto; display: flex; gap: 8px;
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #0b1f33;
+    font-family: 'Inter', system-ui, sans-serif;
+    color: #f1f5f9;
   }
-  .dash-menu-btn { min-height: 40px; height: 40px; padding: 0 12px; font-size: 10px; border-radius: 10px; }
-}
+  #webgl-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    z-index: 1;
+  }
+
+  /* CINEMATIC HUD (MINIMALIST, WORLD FIRST) */
+  #cinematic-hud {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 10;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: rgba(11, 26, 44, 0.82);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 10px;
+    padding: 10px 18px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+  #cinematic-hud h1 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    color: #ffde96;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  #cinematic-hud span {
+    font-size: 12px;
+    color: #cbd5e1;
+  }
+
+  /* BOTTOM NAVIGATION & CONTROLS */
+  .bottom-info {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    z-index: 10;
+    background: rgba(11, 26, 44, 0.82);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 12px;
+    color: #e2e8f0;
+    pointer-events: auto;
+  }
+  .bottom-info b { color: #38bdf8; }
+
+  .view-controls {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    z-index: 10;
+    display: flex;
+    gap: 10px;
+    pointer-events: auto;
+  }
+  .hud-btn {
+    background: rgba(11, 26, 44, 0.88);
+    border: 1.5px solid #38bdf8;
+    color: #38bdf8;
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+    box-shadow: 0 4px 15px rgba(56, 189, 248, 0.2);
+  }
+  .hud-btn:hover {
+    background: rgba(56, 189, 248, 0.25);
+    color: #ffffff;
+  }
+
+  /* CONTEXT PROMPT */
+  #context-prompt {
+    position: absolute;
+    bottom: 85px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    z-index: 12;
+    background: rgba(7, 21, 38, 0.94);
+    border: 1.5px solid #eab308;
+    color: #fef08a;
+    padding: 10px 24px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  #context-prompt.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 </style>
 </head>
 <body>
-<canvas id="game"></canvas>
 
-<div id="ui">
+<canvas id="webgl-canvas"></canvas>
 
-  <!-- ================= LAYAR PEMBUKA / DASHBOARD ================= -->
-  <section id="screen-boot">
-    <div class="boot-bg"></div>
-    <div class="boot-vignette"></div>
-
-    <div class="boot-chapters">
-      <span class="chapters-label">Bab Perjalanan</span>
-      <h2 id="chapter-title">Pulau Sepuh</h2>
-      <div class="chapters-dots" id="chapter-dots"></div>
-    </div>
-
-    <div class="boot-inner">
-      <img class="boot-logo" src="assets/branding/logo.png" alt="Driftholm">
-      <p class="boot-tagline">Seberapa jauh aku mau pergi sebelum aku berbalik?</p>
-    </div>
-
-    <!-- ================= DASHBOARD MENU (roguemenu standar: kartu atas, statistik tengah, aksi bawah) ================= -->
-    <div class="boot-dash" id="boot-dash">
-      <!-- ATAS: kartu kondisi pelayaran berjalan -->
-      <div class="dash-row dash-top">
-        <div class="dash-card" id="dash-run">
-          <div class="dash-card-head">
-            <span class="dash-card-icon"><img src="assets/branding/mascot.png" alt=""></span>
-            <div class="dash-card-titles">
-              <b id="dash-run-title">Pelayaran Pertama</b>
-              <span id="dash-run-sub" class="small">Dermaga masih menunggu.</span>
-            </div>
-          </div>
-          <div class="dash-run-bar"><i id="dash-run-bar-fill"></i></div>
-          <p id="dash-run-meta" class="small">Palka I · 0 kayu · 0 solar tersimpan</p>
-        </div>
-      </div>
-
-      <!-- TENGAH: grid kartu statistik lintas-run -->
-      <div class="dash-row dash-mid">
-        <div class="dash-stat"><b id="st-night">0</b><span>Malam terbaik</span></div>
-        <div class="dash-stat"><b id="st-kills">0</b><span>Zombie terbunuh</span></div>
-        <div class="dash-stat"><b id="st-isles">0</b><span>Pulau disurvei</span></div>
-        <div class="dash-stat"><b id="st-deaths">0</b><span>Kematian</span></div>
-      </div>
-
-      <!-- BAWAH: kartu aksi menu standar roguelike -->
-      <div class="dash-row dash-actions">
-        <a href="safe_island_3d.html" class="btn-rebuild-preview" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; text-decoration: none; font-family: 'Montserrat', sans-serif; font-size: 14px; font-weight: 800; letter-spacing: 2px; color: #0284c7; background: rgba(56, 189, 248, 0.15); border: 1.5px solid #38bdf8; border-radius: 14px; padding: 12px 16px; margin-bottom: 8px; box-shadow: 0 4px 15px rgba(56, 189, 248, 0.2); transition: all 0.2s;">🏝️ COBA SAFE ISLAND 2.5D (REBUILD)</a>
-        <button id="btn-boot-start" class="btn-play">▶&nbsp; MAIN</button>
-        <div class="boot-sub-actions">
-          <button id="btn-boot-continue" class="btn btn-primary hidden">LANJUTKAN</button>
-          <button id="btn-boot-new" class="btn hidden">MALAM BARU</button>
-        </div>
-        <div class="dash-menu-grid">
-          <button id="btn-menu-howto" class="dash-menu-btn"><b>⌁</b> CARA MAIN</button>
-          <button id="btn-menu-settings" class="dash-menu-btn"><b>⚙</b> PENGATURAN</button>
-          <button id="btn-menu-journal" class="dash-menu-btn"><b>◈</b> JURNAL</button>
-        </div>
-        <p class="dash-version small">Driftholm · kabar dari dermaga terakhir</p>
-      </div>
-      <p id="boot-warning" class="boot-warning hidden">Gudang &amp; progres refit tetap tersimpan di dermaga. Malam akan dimulai lagi dari awal.</p>
-    </div>
-
-    <!-- Overlay: PANDUAN -->
-    <div id="menu-howto" class="menu-pop hidden">
-      <div class="menu-card">
-        <div class="menu-card-head"><h3>Cara Main</h3><button class="icon-btn" data-pop-close="menu-howto">✕</button></div>
-        <ol class="howto-list">
-          <li>Berjalan dengan <b>WASD / panah / joystick</b> (di ponsel, sentuh kuadran kiri — joystick mengikuti jempol).</li>
-          <li><b>E / tombol AKSI</b> untuk memakai meja, memanen, dan naik kapal. <b>SPASI / tombol SERANG</b> untuk melawan zombie.</li>
-          <li>Berlayar dari peta laut, kuras pulau, dan pulang <b>sebelum air pasang</b> membekap lambungmu.</li>
-          <li>Perbaiki palka di meja refit. Bertahanlah sampai <b>fajar</b> — air turun, kamu dicatat.</li>
-        </ol>
-      </div>
-    </div>
-    <!-- Overlay: PENGATURAN -->
-    <div id="menu-settings" class="menu-pop hidden">
-      <div class="menu-card">
-        <div class="menu-card-head"><h3>Pengaturan</h3><button class="icon-btn" data-pop-close="menu-settings">✕</button></div>
-        <button class="set-row" id="set-music"><span>Musik &amp; ambience</span><b id="set-music-val">NYALA</b></button>
-        <button class="set-row" id="set-motion"><span>Kurangi animasi</span><b id="set-motion-val">MATI</b></button>
-        <button class="set-row set-danger" id="set-wipe"><span>Hapus semua data</span><b id="set-wipe-val">…</b></button>
-        <p class="small set-note">Hapus data menghilangkan save, statistik, dan preferensi — tidak bisa dibatalkan.</p>
-        <div class="set-log">
-          <b>Rekam Perjalanan</b>
-          <p id="set-logout" class="small">…</p>
-        </div>
-      </div>
-    </div>
-
-    <div id="boot-loader">
-      <div class="loader-stack">
-        <div class="loader-ring"></div>
-        <div class="loader-icon"><img src="assets/branding/mascot.png" alt=""></div>
-      </div>
-      <div class="loader-text">MEMUAT<span>.</span><span>.</span><span>.</span></div>
-    </div>
-  </section>
-
-  <!-- ================= FAJAR PERTAMA (ritual satu-dua kali seumur hidup) ================= -->
-  <div id="dawn-ceremony" aria-hidden="true">
-    <div class="dc-bar dc-top"></div>
-    <div class="dc-bar dc-bottom"></div>
-    <div class="dc-text">
-      <span class="dc-label">FAJAR PERTAMA</span>
-      <p>Air turun, langit pulih — dan kamu pulang. Catatan baru masuk ke jurnal.</p>
-    </div>
-  </div>
-
-  <!-- ================= HUD ================= -->
-  <section id="hud">
-    <div id="hud-top">
-      <!-- kartu profil: avatar + nama + nyawa kapal -->
-      <div class="hud-card card-profile">
-        <div class="profile-avatar"><img src="assets/branding/appicon.png" alt="Kapten"></div>
-        <div class="profile-meta">
-          <span class="profile-title">PELAMPUNG</span>
-          <div class="hull-bar"><div id="hull-fill"></div></div>
-          <span id="hull-text" class="mono">100/100</span>
-        </div>
-      </div>
-
-      <!-- kartu resource: 4 ikon + muatan, semua ikon tanpa teks label -->
-      <div class="hud-card card-res">
-        <span class="res-chip" title="Solar"><img src="assets/ui/icon_fuel.png"><b id="res-fuel">0</b></span>
-        <span class="res-chip" title="Kayu"><img src="assets/ui/icon_wood.png"><b id="res-wood">0</b></span>
-        <span class="res-chip" title="Makanan"><img src="assets/ui/icon_food.png"><b id="res-food">0</b></span>
-        <span class="res-chip" title="Obat"><img src="assets/ui/icon_medicine.png"><b id="res-medicine">0</b></span>
-        <span class="res-chip carry" title="Muatan palka"><img src="assets/ui/icon_inventory.png"><b id="hold-text" class="mono">0/10</b></span>
-        <div id="hold-pips" class="hold-pips"></div>
-      </div>
-
-      <!-- kartu koin drif -->
-      <div class="hud-card card-drif" title="Koin drif">
-        <img src="assets/branding/coin_drif.png">
-        <b id="drif-count">0</b>
-      </div>
-
-      <div id="tide-block" class="hud-card card-tide tide-calm hidden">
-        <div id="tide-name">TENANG</div>
-        <div class="tide-bar"><div id="tide-fill"></div></div>
-      </div>
-
-      <button id="btn-pause" class="icon-btn" title="Jeda (P)" style="letter-spacing:-1px;font-weight:900">▮▮</button>
-      <button id="btn-mute" class="icon-btn" title="Suara (M)">♪</button>
-    </div>
-
-    <div id="goal-chip">—</div>
-    <div id="gather-chip" class="hidden"></div>
-    <div id="hint-line" class="hidden"></div>
-    <div id="bank-beat" class="hidden"></div>
-    <div id="toasts"></div>
-
-    <!-- ================= DOCK MENU FOOTER (Navigasi Dermaga Standar Mobile) ================= -->
-    <nav id="harbor-dock" class="harbor-dock hidden" aria-label="Navigasi Dermaga">
-      <div class="dock-bar">
-        <button class="dock-tab" id="dock-btn-chart" data-dock="chart" title="Peta Perairan">
-          <span class="dock-icon"><img src="assets/ui/icon_sail.png" alt=""></span>
-          <span class="dock-label">PETA</span>
-        </button>
-        <button class="dock-tab" id="dock-btn-bench" data-dock="bench" title="Meja Kerja / Refit">
-          <span class="dock-icon"><img src="assets/ui/icon_upgrade.png" alt=""></span>
-          <span class="dock-label">BENGKEL</span>
-          <span class="dock-badge hidden" id="dock-badge-bench"></span>
-        </button>
-        <button class="dock-tab" id="dock-btn-store" data-dock="inventory" title="Gudang & Kapal">
-          <span class="dock-icon"><img src="assets/ui/icon_inventory.png" alt=""></span>
-          <span class="dock-label">GUDANG</span>
-        </button>
-        <button class="dock-tab" id="dock-btn-journal" data-dock="journal" title="Jurnal Catatan">
-          <span class="dock-icon"><img src="assets/environment/note_scrap.png" alt=""></span>
-          <span class="dock-label">JURNAL</span>
-          <span class="dock-badge hidden" id="dock-badge-journal"></span>
-        </button>
-        <button class="dock-tab" id="dock-btn-shop" data-dock="shop" title="Kios Kosmetik">
-          <span class="dock-icon"><img src="assets/branding/coin_drif.png" alt=""></span>
-          <span class="dock-label">KIOS</span>
-        </button>
-      </div>
-    </nav>
-
-    <div id="hud-bottom">
-      <div id="joystick"><div id="joy-knob"></div></div>
-      <div id="hud-actions">
-        <button id="btn-context" class="ctx hidden">AKSI</button>
-        <button id="btn-heal" class="heal hidden">MAKAN</button>
-        <button id="btn-attack" class="atk hidden">SERANG</button>
-      </div>
-    </div>
-
-    <!-- JEDA: selubung pemutar pasif; waktu game beku selama tampil -->
-    <div id="pause-veil" class="hidden">
-      <div class="pause-card">
-        <h2>JEDA</h2>
-        <p class="muted">Laut menunggumu. Pasang pun ikut berhenti.</p>
-        <button id="btn-resume" class="btn btn-primary wide">LANJUT</button>
-      <button id="btn-veil-journal" class="btn wide">JURNAL</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= MEJA PETA ================= -->
-  <section id="modal-chart" class="modal hidden">
-    <div class="panel modal-panel">
-      <div class="modal-head">
-        <h2>PETA PERAIRAN</h2>
-        <button id="chart-close" class="icon-btn">✕</button>
-      </div>
-      <div id="chart-bank" class="chips"></div>
-      <div id="chart-map" class="chart-map"></div>
-      <div id="chart-list" class="chart-rows chart-list"></div>
-      <p id="chart-hint" class="hint"></p>
-      <button id="chart-sail" class="btn btn-primary wide">BERLAYAR</button>
-      <p class="fineprint">Jarak dari dermaga adalah ongkosnya. Pulau jauh lebih kaya — dan pasang terus naik selama kau di luar.</p>
-    </div>
-  </section>
-
-  <!-- ================= MEJA KERJA ================= -->
-  <section id="modal-bench" class="modal hidden">
-    <div class="panel modal-panel">
-      <div class="modal-head">
-        <h2 id="bench-title">MEJA KERJA</h2>
-        <button id="bench-close" class="icon-btn">✕</button>
-      </div>
-      <p id="bench-sub" class="fineprint"></p>
-      <div id="bench-bank" class="chips"></div>
-      <div id="bench-rows" class="bench-rows"></div>
-      <p class="fineprint">Gudang di dermaga tidak bisa hilang. Hanya muatan yang masih kau bawa yang bisa hilang.</p>
-    </div>
-  </section>
-
-  <!-- ================= GUDANG & KAPAL ================= -->
-  <section id="modal-inventory" class="modal hidden">
-    <div class="panel modal-panel">
-      <div class="modal-head">
-        <h2>GUDANG &amp; KAPAL</h2>
-        <button id="inv-close" class="icon-btn">✕</button>
-      </div>
-      <div id="inv-resources"></div>
-      <div id="inv-boat"></div>
-      <p class="fineprint">Semakin besar kapal (pasang Palka di meja kerja), semakin banyak resource yang bisa kau bawa dalam satu pelayaran.</p>
-    </div>
-  </section>
-
-  <!-- ================= DEBRIEF ================= -->
-  <section id="modal-shop" class="modal hidden">
-    <div class="panel modal-panel">
-      <div class="modal-head">
-        <div>
-          <h2>KIOS LENTERA & CAT</h2>
-          <p class="fineprint">Warna pelita, aksen antarmuka, tinta peta. Koin drif tidak membeli kekuatan — hanya rasa.</p>
-        </div>
-        <button class="icon-btn" id="shop-close">✕</button>
-      </div>
-      <div class="shop-balance">Koin drif: <b id="shop-drif">0</b> <img src="assets/branding/coin_drif.png" alt=""></div>
-      <div id="shop-rows" class="shop-rows"></div>
-    </div>
-  </section>
-
-  <section id="modal-journal" class="modal hidden">
-    <div class="panel modal-panel">
-      <div class="modal-head">
-        <h2>JURNAL PELAMPUNG</h2>
-        <button class="icon-btn" id="journal-close">✕</button>
-      </div>
-      <div class="journal-meta chips"><span class="res-chip">◧ <b id="journal-count">0 / 0 lembar</b></span></div>
-      <div id="journal-rows" class="journal-rows"></div>
-      <p class="fineprint">Catatan dari pelaut yang tidak pulang. Lembar terombang-ambik di pulau — injak ia.</p>
-    </div>
-  </section>
-
-  <section id="modal-debrief" class="modal hidden">
-    <div class="panel modal-panel debrief">
-      <h2 id="db-title">KAPAL TENGGELAM</h2>
-      <p id="db-cause" class="cause"></p>
-      <div id="db-lost"></div>
-      <div id="db-kept"></div>
-      <p id="db-salvage" class="salvage-line"></p>
-      <div id="db-night" class="night-line"></div>
-      <p id="db-goal" class="goal-line"></p>
-      <p id="db-records" class="records-line small"></p>
-      <button id="db-close" class="btn btn-primary wide">KEMBALI KE DERMAGA</button>
-    </div>
-  </section>
-
+<div id="cinematic-hud">
+  <h1>Safe Island · Pemukiman Nelayan 3D</h1>
+  <span>Elevasi Alamiah · Hutan Pinus & Kelapa · Kabin Autentik · Dermaga Pesisir</span>
 </div>
 
-<noscript><div style="color:#fff;padding:20px">Game ini membutuhkan JavaScript.</div></noscript>
-<script src="js/vendor/three.min.js"></script>
-<script src="js/vendor/GLTFLoader.js"></script>
-<script type="module" src="js/boot.js"></script>
+<div class="bottom-info">
+  <b>W A S D</b> Bergerak &nbsp;|&nbsp; <b>Shift</b> Lari &nbsp;|&nbsp; <b>Spasi</b> Pukul Tempur
+</div>
+
+<div class="view-controls">
+  <button class="hud-btn" id="btn-cam-toggle">Kamera: Cinematic 3/4</button>
+  <a href="classic_2d.html" class="hud-btn">Mode 2D Klasik →</a>
+</div>
+
+<div id="context-prompt">
+  <span style="background:#eab308;color:#0f172a;padding:2px 6px;border-radius:4px;margin-right:6px">E</span>
+  <span id="prompt-label">Interaksi</span>
+</div>
+
+<script>
+// ==============================================================================
+// REALISTIC / STYLIZED-REALISTIC 3D SURVIVAL WORLD
+// Bright Daylight Coastal Environment:
+// 1. Procedural Natural 3D Terrain with elevation contours, beach, village terrace, and cliffs
+// 2. Beautiful Turquoise Ocean with depth gradient and shoreline foam
+// 3. Authentic Survivor Cabins on stilts with corrugated tin roofs, porches, crates, and drums
+// 4. Organic Foliage: Curved coastal palms with fanning fronds, towering pines, bushes, and rocks
+// 5. Weathered Boardwalk Dock with round pilings and cleats extending into water
+// 6. Moored Expedition Boat with curved hull and cargo
+// 7. Locked 3D Player Character with Human Scale Reference (~1.75m) & Contact Shadow
+// 8. Cinematic 3/4 Third-Person Perspective (38° angle with Low Horizon toggle)
+// ==============================================================================
+
+const canvas = document.getElementById('webgl-canvas');
+const contextPrompt = document.getElementById('context-prompt');
+const promptLabel = document.getElementById('prompt-label');
+
+let renderer, scene, camera;
+let clock = new THREE.Clock();
+
+// Character State
+let playerGroup = new THREE.Group();
+let characterModel = null;
+let placeholderModel = null;
+let mixer = null;
+let actions = {};
+let currentAction = null;
+let currentActionKey = 'idle';
+
+let playerPos = new THREE.Vector3(0, 1.8, -4);
+let playerFacing = -Math.PI / 2;
+let isAttacking = false;
+let attackTimer = 0;
+let attackDuration = 0.45;
+
+// Camera System (Cinematic Third-Person 3/4)
+let camPitch = 38 * Math.PI / 180;
+let camYaw = 16 * Math.PI / 180;
+let camDist = 13.5;
+let targetCamDist = 13.5;
+let cameraTarget = new THREE.Vector3(0, 1.8, -4);
+let isCinematicView = false;
+
+// World Elements
+let terrainMesh = null;
+let terrainGeo = null;
+let oceanMesh = null;
+let waterTime = 0;
+let boatGroup = null;
+let boatBobTime = 0;
+
+// Interactive elements
+const interactables = [];
+let activeInteractable = null;
+
+// Materials
+let matTerrain, matWaterOcean, matTimberPlanks, matCorrugatedRoof, matRockCliff, matPalmFrond, matPineNeedles;
+
+function initMaterials() {
+  // Rich natural textures for bright daylight survival world
+  const cSand = document.createElement('canvas'); cSand.width = cSand.height = 256;
+  const ctxS = cSand.getContext('2d');
+  ctxS.fillStyle = '#dfc28d'; ctxS.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 4000; i++) {
+    ctxS.fillStyle = Math.random() > 0.5 ? 'rgba(180, 150, 100, 0.3)' : 'rgba(240, 220, 175, 0.4)';
+    ctxS.fillRect(Math.random()*256, Math.random()*256, 2, 2);
+  }
+  const texSand = new THREE.CanvasTexture(cSand);
+  texSand.wrapS = texSand.wrapT = THREE.RepeatWrapping;
+  texSand.repeat.set(12, 12);
+
+  const cWood = document.createElement('canvas'); cWood.width = cWood.height = 256;
+  const ctxW = cWood.getContext('2d');
+  ctxW.fillStyle = '#6d482f'; ctxW.fillRect(0, 0, 256, 256);
+  for (let y = 0; y < 256; y += 32) {
+    ctxW.fillStyle = 'rgba(25, 14, 8, 0.45)'; ctxW.fillRect(0, y, 256, 2);
+    for (let j = 0; j < 12; j++) {
+      ctxW.fillStyle = 'rgba(95, 65, 40, 0.35)'; ctxW.fillRect(0, y + Math.random()*32, 256, 1.5);
+    }
+  }
+  const texWood = new THREE.CanvasTexture(cWood);
+  texWood.wrapS = texWood.wrapT = THREE.RepeatWrapping;
+  texWood.repeat.set(4, 4);
+
+  const cRoof = document.createElement('canvas'); cRoof.width = cRoof.height = 256;
+  const ctxR = cRoof.getContext('2d');
+  ctxR.fillStyle = '#7a7e85'; ctxR.fillRect(0, 0, 256, 256);
+  for (let x = 0; x < 256; x += 16) {
+    ctxR.fillStyle = 'rgba(255, 255, 255, 0.18)'; ctxR.fillRect(x, 0, 8, 256);
+    ctxR.fillStyle = 'rgba(0, 0, 0, 0.22)'; ctxR.fillRect(x + 8, 0, 8, 256);
+  }
+  for (let i = 0; i < 150; i++) {
+    ctxR.fillStyle = 'rgba(175, 75, 30, 0.4)';
+    ctxR.beginPath(); ctxR.arc(Math.random()*256, Math.random()*256, 8 + Math.random()*15, 0, Math.PI*2); ctxR.fill();
+  }
+  const texRoof = new THREE.CanvasTexture(cRoof);
+  texRoof.wrapS = texRoof.wrapT = THREE.RepeatWrapping;
+  texRoof.repeat.set(3, 3);
+
+  matTerrain = new THREE.MeshLambertMaterial({
+    map: texSand,
+    flatShading: false,
+    vertexColors: true,
+  });
+
+  matWaterOcean = new THREE.MeshLambertMaterial({
+    color: 0x0284c7,
+    transparent: true,
+    opacity: 0.88,
+  });
+
+  matTimberPlanks = new THREE.MeshLambertMaterial({
+    map: texWood,
+    color: 0xffffff,
+  });
+
+  matCorrugatedRoof = new THREE.MeshLambertMaterial({
+    map: texRoof,
+    color: 0xffffff,
+  });
+
+  matRockCliff = new THREE.MeshLambertMaterial({
+    color: 0x6e727a,
+  });
+
+  matPalmFrond = new THREE.MeshLambertMaterial({
+    color: 0x2d6a4f,
+    side: THREE.DoubleSide,
+  });
+
+  matPineNeedles = new THREE.MeshLambertMaterial({
+    color: 0x1b4332,
+    flatShading: true,
+  });
+}
+
+// ==============================================================================
+// 1. NATURAL 3D TERRAIN & COASTLINE
+// ==============================================================================
+function getIslandElevation(x, z) {
+  const distCore = Math.hypot(x * 0.95, z + 8);
+  if (distCore > 38) return -1.5;
+
+  let h = 0.0;
+  if (z > 2) {
+    const tBeach = (z - 2) / 10.0;
+    h = THREE.MathUtils.lerp(1.2, -0.4, tBeach);
+  } else if (z <= 2 && z > -16) {
+    const tPlateau = (z - 2) / (-18);
+    h = 1.2 + tPlateau * 1.6;
+  } else {
+    const tHill = (-16 - z) / 16.0;
+    h = 2.8 + tHill * 4.2;
+  }
+
+  const noise = Math.sin(x * 0.14) * Math.cos(z * 0.12) * 0.75 + Math.sin(x * 0.28 + 1.2) * Math.cos(z * 0.25) * 0.35;
+  h += noise;
+
+  const pathDist = Math.abs(x - Math.sin(z * 0.2) * 1.2);
+  if (pathDist < 3.0 && z > -14 && z < 7) {
+    const pathSmooth = (1.0 - pathDist / 3.0);
+    const targetPathY = THREE.MathUtils.lerp(2.2, 0.4, (z + 14) / 21.0);
+    h = THREE.MathUtils.lerp(h, targetPathY, pathSmooth * 0.65);
+  }
+
+  return h;
+}
+
+function buildNaturalTerrain() {
+  const sizeX = 96;
+  const sizeZ = 96;
+  const segs = 80;
+
+  terrainGeo = new THREE.PlaneGeometry(sizeX, sizeZ, segs, segs);
+  terrainGeo.rotateX(-Math.PI / 2);
+
+  const pos = terrainGeo.attributes.position;
+  const colors = [];
+
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const z = pos.getZ(i);
+    const y = getIslandElevation(x, z);
+    pos.setY(i, y);
+
+    // Bright, natural vertex colors:
+    if (y < 0.2) {
+      colors.push(0.72, 0.62, 0.48); // Wet sand
+    } else if (y < 1.1) {
+      colors.push(0.95, 0.88, 0.68); // Warm golden sand dune
+    } else if (y > 4.2) {
+      colors.push(0.62, 0.65, 0.68); // Rugged cliff stone
+    } else {
+      // Village grass & path
+      const pathDist = Math.abs(x - Math.sin(z * 0.2) * 1.2);
+      if (pathDist < 2.0 && z > -14 && z < 7) {
+        colors.push(0.78, 0.64, 0.48); // Worn dirt path
+      } else {
+        colors.push(0.42, 0.65, 0.32); // Lush coastal grass
+      }
+    }
+  }
+
+  terrainGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  terrainGeo.computeVertexNormals();
+
+  terrainMesh = new THREE.Mesh(terrainGeo, matTerrain);
+  scene.add(terrainMesh);
+}
+
+// ==============================================================================
+// 2. OCEAN DEPTH & SHORELINE FOAM
+// ==============================================================================
+function buildOcean() {
+  const oceanGeo = new THREE.PlaneGeometry(200, 200, 32, 32);
+  oceanGeo.rotateX(-Math.PI / 2);
+
+  oceanMesh = new THREE.Mesh(oceanGeo, matWaterOcean);
+  oceanMesh.position.y = 0.05;
+  scene.add(oceanMesh);
+
+  // Glistening white shoreline foam ring
+  const foamGeo = new THREE.RingGeometry(8, 14, 32);
+  foamGeo.rotateX(-Math.PI / 2);
+  const matFoam = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.6,
+    depthWrite: false,
+  });
+  const foamMesh = new THREE.Mesh(foamGeo, matFoam);
+  foamMesh.position.set(0, 0.08, 7.5);
+  foamMesh.scale.set(1.5, 1, 0.8);
+  scene.add(foamMesh);
+}
+
+// ==============================================================================
+// 3. REALISTIC 3D VEGETATION: PALMS, PINES, BUSHES, ROCKS
+// ==============================================================================
+function createRealisticPalmTree(x, z, scale = 1.0, rotY = 0) {
+  const yBase = getIslandElevation(x, z);
+  if (yBase < 0.2) return;
+  const group = new THREE.Group();
+
+  const segments = 7;
+  const totalHeight = 6.0 * scale;
+  const curveFactor = 0.95 * scale;
+  let prevPos = new THREE.Vector3(0, 0, 0);
+
+  for (let i = 0; i < segments; i++) {
+    const t0 = i / segments;
+    const t1 = (i + 1) / segments;
+    const r0 = THREE.MathUtils.lerp(0.32, 0.18, t0) * scale;
+    const r1 = THREE.MathUtils.lerp(0.32, 0.18, t1) * scale;
+    const h = totalHeight / segments;
+
+    const segGeo = new THREE.CylinderGeometry(r1, r0, h, 7);
+    const segMesh = new THREE.Mesh(segGeo, matTimberPlanks);
+
+    const currX = Math.sin(t1 * 1.4) * curveFactor;
+    const currY = t1 * totalHeight;
+    const currZ = Math.cos(t1 * 1.4) * (curveFactor * 0.4);
+
+    segMesh.position.set((prevPos.x + currX) / 2, (prevPos.y + currY) / 2, (prevPos.z + currZ) / 2);
+    segMesh.rotation.z = -(currX - prevPos.x) / h * 0.9;
+    group.add(segMesh);
+
+    prevPos.set(currX, currY, currZ);
+  }
+
+  // 8 Drooping Palm Fronds
+  const numFronds = 8;
+  for (let f = 0; f < numFronds; f++) {
+    const angle = (f / numFronds) * Math.PI * 2;
+    const frondGroup = new THREE.Group();
+    frondGroup.position.copy(prevPos);
+
+    const frondLen = 2.8 * scale;
+    const bladeGeo = new THREE.ConeGeometry(0.55 * scale, frondLen, 5);
+    bladeGeo.rotateX(Math.PI / 2);
+    bladeGeo.scale(1, 0.12, 1);
+    const blade = new THREE.Mesh(bladeGeo, matPalmFrond);
+    blade.position.z = frondLen * 0.45;
+
+    frondGroup.rotation.y = angle;
+    frondGroup.rotation.x = 0.45;
+    frondGroup.add(blade);
+    group.add(frondGroup);
+  }
+
+  group.position.set(x, yBase, z);
+  group.rotation.y = rotY;
+  scene.add(group);
+}
+
+function createRealisticPineTree(x, z, scale = 1.0, rotY = 0) {
+  const yBase = getIslandElevation(x, z);
+  if (yBase < 0.3) return;
+  const group = new THREE.Group();
+
+  const trunkH = 8.5 * scale;
+  const trunkGeo = new THREE.CylinderGeometry(0.18 * scale, 0.38 * scale, trunkH, 7);
+  const trunk = new THREE.Mesh(trunkGeo, matTimberPlanks);
+  trunk.position.y = trunkH * 0.5;
+  group.add(trunk);
+
+  const tiers = 4;
+  for (let t = 0; t < tiers; t++) {
+    const tierR = THREE.MathUtils.lerp(2.2, 0.8, t / tiers) * scale;
+    const tierH = 2.4 * scale;
+    const boughGeo = new THREE.ConeGeometry(tierR, tierH, 7);
+    const bough = new THREE.Mesh(boughGeo, matPineNeedles);
+    bough.position.y = (3.5 + t * 1.5) * scale;
+    group.add(bough);
+  }
+
+  group.position.set(x, yBase, z);
+  group.rotation.y = rotY;
+  scene.add(group);
+}
+
+function createBush(x, z, scale = 1.0) {
+  const yBase = getIslandElevation(x, z);
+  if (yBase < 0.3) return;
+  const group = new THREE.Group();
+
+  for (let i = 0; i < 3; i++) {
+    const sGeo = new THREE.DodecahedronGeometry(0.65 * scale, 1);
+    const sMesh = new THREE.Mesh(sGeo, matPalmFrond);
+    sMesh.position.set(
+      (Math.random() - 0.5) * 0.5 * scale,
+      (0.35 + Math.random() * 0.3) * scale,
+      (Math.random() - 0.5) * 0.5 * scale
+    );
+    group.add(sMesh);
+  }
+
+  group.position.set(x, yBase, z);
+  scene.add(group);
+}
+
+function createCoastalRock(x, z, scale = 1.0, rot = 0) {
+  const yBase = getIslandElevation(x, z);
+  const rockGeo = new THREE.DodecahedronGeometry(1.4 * scale, 1);
+  const rockMesh = new THREE.Mesh(rockGeo, matRockCliff);
+  rockMesh.position.set(x, yBase + 0.3 * scale, z);
+  rockMesh.rotation.set(0.2, rot, -0.15);
+  scene.add(rockMesh);
+}
+
+// ==============================================================================
+// 4. REALISTIC SURVIVOR BUILDINGS (CABINS)
+// ==============================================================================
+function createDetailedSurvivorCabin(x, z, rotY = 0) {
+  const group = new THREE.Group();
+  const yBase = getIslandElevation(x, z);
+
+  const floorW = 4.8;
+  const floorD = 4.2;
+  const stiltH = 0.6;
+
+  // Foundation Stilts
+  for (let sx = -floorW/2 + 0.3; sx <= floorW/2 - 0.3; sx += (floorW - 0.6)/2) {
+    for (let sz = -floorD/2 + 0.3; sz <= floorD/2 - 0.3; sz += (floorD - 0.6)) {
+      const stilt = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, stiltH + 0.4, 6), matTimberPlanks);
+      stilt.position.set(sx, (stiltH + 0.4)/2 - 0.2, sz);
+      group.add(stilt);
+    }
+  }
+
+  // Wooden deck platform
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(floorW + 0.3, 0.18, floorD + 1.2), matTimberPlanks);
+  deck.position.set(0, stiltH, 0.4);
+  group.add(deck);
+
+  // Porch Steps
+  const step = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.25, 0.6), matTimberPlanks);
+  step.position.set(0, stiltH * 0.4, floorD/2 + 0.9);
+  group.add(step);
+
+  // Walls
+  const wallH = 2.4;
+  const backWall = new THREE.Mesh(new THREE.BoxGeometry(floorW, wallH, 0.15), matTimberPlanks);
+  backWall.position.set(0, stiltH + wallH/2, -floorD/2);
+  group.add(backWall);
+
+  const wallL = new THREE.Mesh(new THREE.BoxGeometry(0.15, wallH, floorD), matTimberPlanks);
+  wallL.position.set(-floorW/2, stiltH + wallH/2, 0);
+  group.add(wallL);
+
+  const wallR = new THREE.Mesh(new THREE.BoxGeometry(0.15, wallH, floorD), matTimberPlanks);
+  wallR.position.set(floorW/2, stiltH + wallH/2, 0);
+  group.add(wallR);
+
+  // Front Wall with Doorway
+  const frontWallL = new THREE.Mesh(new THREE.BoxGeometry(1.6, wallH, 0.15), matTimberPlanks);
+  frontWallL.position.set(-1.45, stiltH + wallH/2, floorD/2);
+  group.add(frontWallL);
+
+  const frontWallR = new THREE.Mesh(new THREE.BoxGeometry(1.6, wallH, 0.15), matTimberPlanks);
+  frontWallR.position.set(1.45, stiltH + wallH/2, floorD/2);
+  group.add(frontWallR);
+
+  const frontHeader = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.5, 0.15), matTimberPlanks);
+  frontHeader.position.set(0, stiltH + wallH - 0.25, floorD/2);
+  group.add(frontHeader);
+
+  // Gabled Corrugated Tin Roof
+  const roofW = floorW + 0.6;
+  const roofSlopeL = new THREE.Mesh(new THREE.BoxGeometry(roofW, 0.08, 2.8), matCorrugatedRoof);
+  roofSlopeL.position.set(0, stiltH + wallH + 0.8, -1.0);
+  roofSlopeL.rotation.x = 0.55;
+  group.add(roofSlopeL);
+
+  const roofSlopeR = new THREE.Mesh(new THREE.BoxGeometry(roofW, 0.08, 2.8), matCorrugatedRoof);
+  roofSlopeR.position.set(0, stiltH + wallH + 0.8, 1.0);
+  roofSlopeR.rotation.x = -0.55;
+  group.add(roofSlopeR);
+
+  // Blue Tarpaulin Repair Patch
+  const matTarp = new THREE.MeshLambertMaterial({ color: 0x2563eb });
+  const tarp = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.04, 1.8), matTarp);
+  tarp.position.set(-0.8, stiltH + wallH + 0.86, -0.8);
+  tarp.rotation.x = 0.55;
+  group.add(tarp);
+
+  // Porch Support Posts
+  const postL = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, wallH, 6), matTimberPlanks);
+  postL.position.set(-floorW/2 + 0.2, stiltH + wallH/2, floorD/2 + 0.8);
+  group.add(postL);
+
+  const postR = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, wallH, 6), matTimberPlanks);
+  postR.position.set(floorW/2 - 0.2, stiltH + wallH/2, floorD/2 + 0.8);
+  group.add(postR);
+
+  // Crates and Fuel Drum
+  const crateA = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.8, 0.85), matTimberPlanks);
+  crateA.position.set(floorW/2 + 0.6, stiltH + 0.4, 0.3);
+  group.add(crateA);
+
+  const matDrum = new THREE.MeshLambertMaterial({ color: 0x334155 });
+  const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.95, 10), matDrum);
+  drum.position.set(floorW/2 + 0.6, stiltH + 0.48, -0.7);
+  group.add(drum);
+
+  group.position.set(x, yBase, z);
+  group.rotation.y = rotY;
+  scene.add(group);
+}
+
+// ==============================================================================
+// 5. WEATHERED BOARDWALK DOCK
+// ==============================================================================
+function buildDetailedDock() {
+  const group = new THREE.Group();
+  const startZ = 2.0;
+  const endZ = 11.2;
+  const dockW = 3.0;
+  const dockY = 0.55;
+
+  // Round pilings & cross-beams
+  for (let z = startZ + 0.8; z <= endZ; z += 2.2) {
+    const pL = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 2.4, 8), matTimberPlanks);
+    pL.position.set(-dockW/2 + 0.2, dockY - 0.9, z);
+    group.add(pL);
+
+    const pR = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 2.4, 8), matTimberPlanks);
+    pR.position.set(dockW/2 - 0.2, dockY - 0.9, z);
+    group.add(pR);
+
+    const beam = new THREE.Mesh(new THREE.BoxGeometry(dockW + 0.1, 0.18, 0.22), matTimberPlanks);
+    beam.position.set(0, dockY - 0.12, z);
+    group.add(beam);
+  }
+
+  // 36 Weathered Planks
+  const numPlanks = 36;
+  const spacing = (endZ - startZ) / numPlanks;
+  for (let i = 0; i < numPlanks; i++) {
+    const pZ = startZ + i * spacing;
+    const plank = new THREE.Mesh(new THREE.BoxGeometry(dockW + Math.sin(i*3)*0.1, 0.08, spacing * 0.88), matTimberPlanks);
+    plank.position.set(0, dockY + Math.sin(i*5)*0.012, pZ);
+    plank.rotation.y = Math.sin(i*7)*0.02;
+    group.add(plank);
+  }
+
+  // Mooring Cleats & Coiled Ropes
+  const matCleat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+  const matRope = new THREE.MeshLambertMaterial({ color: 0xd97706 });
+  function addCleat(side, pz) {
+    const cleat = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.25, 6), matCleat);
+    cleat.position.set(side * (dockW/2 - 0.15), dockY + 0.12, pz);
+    group.add(cleat);
+
+    const rope = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.035, 6, 10), matRope);
+    rope.rotation.x = Math.PI / 2;
+    rope.position.set(side * (dockW/2 - 0.15), dockY + 0.04, pz);
+    group.add(rope);
+  }
+  addCleat(1, 4.5);
+  addCleat(1, 8.5);
+  addCleat(-1, 6.5);
+  addCleat(-1, 10.5);
+
+  // Dock Lamp Post
+  const lampPost = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 2.6, 6), matTimberPlanks);
+  lampPost.position.set(dockW/2 - 0.2, dockY + 1.3, 7.5);
+  group.add(lampPost);
+
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffd175 }));
+  bulb.position.set(dockW/2 - 0.2, dockY + 2.5, 7.5);
+  group.add(bulb);
+
+  const light = new THREE.PointLight(0xffa500, 2.0, 10.0, 1.4);
+  light.position.copy(bulb.position);
+  group.add(light);
+
+  scene.add(group);
+}
+
+// ==============================================================================
+// 6. MOORED EXPEDITION BOAT
+// ==============================================================================
+function buildDetailedBoat() {
+  boatGroup = new THREE.Group();
+
+  const hullBase = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 4.4), matTimberPlanks);
+  hullBase.position.y = 0.35;
+  boatGroup.add(hullBase);
+
+  const bowGeo = new THREE.ConeGeometry(0.95, 1.4, 4);
+  bowGeo.rotateX(Math.PI / 2);
+  bowGeo.scale(1, 0.55, 1);
+  const bow = new THREE.Mesh(bowGeo, matTimberPlanks);
+  bow.position.set(0, 0.42, 2.7);
+  boatGroup.add(bow);
+
+  const bench = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.08, 0.4), matTimberPlanks);
+  bench.position.set(0, 0.65, 0.8);
+  boatGroup.add(bench);
+
+  boatGroup.position.set(2.8, 0.0, 8.2);
+  scene.add(boatGroup);
+
+  interactables.push({
+    pos: new THREE.Vector3(1.8, 0.6, 8.2),
+    radius: 2.8,
+    label: "Naik Perahu & Siapkan Pelayaran",
+    action: () => {
+      alert("⚓ Perahu siap! Meluncurkan pelayaran.");
+    }
+  });
+}
+
+// ==============================================================================
+// 7. SURVIVOR CAMPFIRE
+// ==============================================================================
+function buildCampfire(x, z) {
+  const group = new THREE.Group();
+  const yBase = getIslandElevation(x, z);
+
+  const numStones = 9;
+  for (let i = 0; i < numStones; i++) {
+    const angle = (i / numStones) * Math.PI * 2;
+    const stone = new THREE.Mesh(new THREE.DodecahedronGeometry(0.22, 1), matRockCliff);
+    stone.position.set(Math.cos(angle) * 0.75, 0.12, Math.sin(angle) * 0.75);
+    group.add(stone);
+  }
+
+  const matChar = new THREE.MeshLambertMaterial({ color: 0x1f1915 });
+  for (let j = 0; j < 4; j++) {
+    const log = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 0.85, 5), matChar);
+    log.rotation.z = Math.PI / 3;
+    log.rotation.y = j * Math.PI / 2;
+    log.position.y = 0.14;
+    group.add(log);
+  }
+
+  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.65, 6), new THREE.MeshBasicMaterial({ color: 0xff6b1a }));
+  flame.position.y = 0.45;
+  group.add(flame);
+
+  const fireLight = new THREE.PointLight(0xff7722, 2.6, 12.0, 1.4);
+  fireLight.position.set(0, 0.8, 0);
+  group.add(fireLight);
+
+  group.position.set(x, yBase, z);
+  scene.add(group);
+}
+
+// ==============================================================================
+// 8. SCENE COMPOSITION
+// ==============================================================================
+function populateSafeIslandScene() {
+  buildNaturalTerrain();
+  buildOcean();
+
+  buildCampfire(0, -9.5);
+
+  createDetailedSurvivorCabin(-6.8, -12.5, 0.35); // West Clinic Cabin
+  createDetailedSurvivorCabin(6.5, -11.0, -0.4);  // East Workshop Cabin
+  createDetailedSurvivorCabin(-1.5, -20.0, 0.05); // North Lookout Cabin
+
+  buildDetailedDock();
+  buildDetailedBoat();
+
+  // Natural Coastal Palms
+  createRealisticPalmTree(-7.5, 3.5, 1.1, 0.4);
+  createRealisticPalmTree(-9.2, 0.5, 0.95, 1.2);
+  createRealisticPalmTree(7.8, 2.2, 1.15, -0.6);
+  createRealisticPalmTree(9.5, -1.0, 0.9, 0.8);
+  createRealisticPalmTree(-5.0, -3.0, 1.05, 0.2);
+  createRealisticPalmTree(5.5, -4.5, 1.0, -0.5);
+
+  // Background Pines in Hills
+  createRealisticPineTree(-14.0, -18.0, 1.2, 0.3);
+  createRealisticPineTree(-10.5, -24.0, 1.35, 0.8);
+  createRealisticPineTree(-4.0, -28.0, 1.4, -0.2);
+  createRealisticPineTree(3.5, -29.0, 1.45, 0.6);
+  createRealisticPineTree(11.0, -25.0, 1.3, -0.5);
+  createRealisticPineTree(14.5, -19.0, 1.15, 0.2);
+
+  // Coastal Rocks
+  createCoastalRock(-11.5, 5.0, 1.4, 0.4);
+  createCoastalRock(-13.0, 2.0, 1.6, 1.1);
+  createCoastalRock(11.8, 6.0, 1.5, -0.8);
+  createCoastalRock(13.2, 2.5, 1.7, 0.5);
+
+  // Bushes
+  createBush(-2.8, -2.5, 1.1);
+  createBush(2.6, -1.5, 0.9);
+  createBush(-3.5, -8.0, 1.2);
+  createBush(3.2, -6.5, 1.0);
+}
+
+// ==============================================================================
+// 9. 3D CHARACTER INTEGRATION & CONTACT SHADOW
+// ==============================================================================
+function createPlaceholderCharacter() {
+  // Shown immediately from frame 1 so the character is NEVER invisible
+  placeholderModel = new THREE.Group();
+  const matJacket = new THREE.MeshLambertMaterial({ color: 0x2b3a4a });
+  const matSkin = new THREE.MeshLambertMaterial({ color: 0xd4a373 });
+
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.26, 1.0, 8), matJacket);
+  body.position.y = 0.9;
+  placeholderModel.add(body);
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), matSkin);
+  head.position.y = 1.55;
+  placeholderModel.add(head);
+
+  playerGroup.add(placeholderModel);
+}
+
+function loadPlayerCharacter() {
+  createPlaceholderCharacter();
+
+  // Contact Shadow
+  const shadowGeo = new THREE.PlaneGeometry(0.85, 0.85);
+  const shadowMat = new THREE.MeshBasicMaterial({
+    color: 0x050c14,
+    transparent: true,
+    opacity: 0.55,
+    depthWrite: false,
+  });
+  const contactShadow = new THREE.Mesh(shadowGeo, shadowMat);
+  contactShadow.rotation.x = -Math.PI / 2;
+  contactShadow.position.y = 0.02;
+  playerGroup.add(contactShadow);
+
+  playerGroup.position.copy(playerPos);
+  scene.add(playerGroup);
+
+  // Load locked GLB in background
+  const loader = new THREE.GLTFLoader();
+  loader.load('character_glb_idle_box_03_run_walk_7.glb', (gltf) => {
+    characterModel = gltf.scene;
+
+    // Remove placeholder
+    if (placeholderModel) {
+      playerGroup.remove(placeholderModel);
+      placeholderModel = null;
+    }
+
+    characterModel.traverse((child) => {
+      if (child.isMesh && child.material) {
+        child.material.metalness = 0.0;
+        child.material.roughness = 0.85;
+      }
+    });
+
+    characterModel.scale.set(0.95, 0.95, 0.95);
+    playerGroup.add(characterModel);
+
+    mixer = new THREE.AnimationMixer(characterModel);
+    gltf.animations.forEach((clip) => {
+      const name = clip.name.toLowerCase();
+      const action = mixer.clipAction(clip);
+      if (name.includes('idle')) actions.idle = action;
+      else if (name.includes('walk')) actions.walk = action;
+      else if (name.includes('run')) actions.run = action;
+      else if (name.includes('box_03') || name.includes('attack')) actions.attack = action;
+    });
+
+    if (!actions.idle && gltf.animations[0]) actions.idle = mixer.clipAction(gltf.animations[0]);
+    if (!actions.attack && actions.idle) actions.attack = actions.idle;
+    if (!actions.walk && actions.idle) actions.walk = actions.idle;
+    if (!actions.run && actions.walk) actions.run = actions.walk;
+
+    if (actions.idle) {
+      actions.idle.play();
+      currentAction = actions.idle;
+      currentActionKey = 'idle';
+    }
+  }, undefined, (err) => {
+    console.warn("Using stylized character fallback:", err);
+  });
+}
+
+function switchAnimation(newKey, fadeDuration = 0.14) {
+  if (currentActionKey === newKey || !actions[newKey]) return;
+  const prevAction = currentAction;
+  const nextAction = actions[newKey];
+
+  if (prevAction) {
+    prevAction.fadeOut(fadeDuration);
+  }
+  nextAction.reset().fadeIn(fadeDuration).play();
+  currentAction = nextAction;
+  currentActionKey = newKey;
+}
+
+function triggerAttack() {
+  if (isAttacking || !actions.attack) return;
+  isAttacking = true;
+  attackTimer = attackDuration;
+
+  const prevAction = currentAction;
+  actions.attack.reset();
+  actions.attack.setLoop(THREE.LoopOnce, 1);
+  actions.attack.clampWhenFinished = true;
+  actions.attack.fadeIn(0.06).play();
+  if (prevAction) prevAction.fadeOut(0.06);
+
+  targetCamDist = 11.5;
+}
+
+// ==============================================================================
+// 10. CINEMATIC CAMERA SYSTEM
+// ==============================================================================
+function updateCameraTransform(targetPos, delta) {
+  cameraTarget.lerp(targetPos, delta ? 6.0 * delta : 1.0);
+  camDist = THREE.MathUtils.lerp(camDist, targetCamDist, delta ? 8.0 * delta : 1.0);
+
+  const pitch = isCinematicView ? (26 * Math.PI / 180) : camPitch;
+  const dist = isCinematicView ? 16.0 : camDist;
+
+  const offset = new THREE.Vector3(
+    Math.sin(camYaw) * Math.cos(pitch) * dist,
+    Math.sin(pitch) * dist,
+    Math.cos(camYaw) * Math.cos(pitch) * dist
+  );
+  camera.position.copy(cameraTarget).add(offset);
+  camera.lookAt(cameraTarget.x, cameraTarget.y + 0.9, cameraTarget.z);
+}
+
+document.getElementById('btn-cam-toggle').addEventListener('click', () => {
+  isCinematicView = !isCinematicView;
+  document.getElementById('btn-cam-toggle').textContent = isCinematicView ? "Kamera: Low Horizon 26°" : "Kamera: Cinematic 3/4 (38°)";
+});
+
+// ==============================================================================
+// 11. INPUT & GAME LOOP
+// ==============================================================================
+const keys = {};
+window.addEventListener('keydown', (e) => {
+  keys[e.code] = true;
+  if (e.code === 'Space') {
+    triggerAttack();
+  }
+  if (e.code === 'KeyE') {
+    if (activeInteractable && activeInteractable.action) {
+      activeInteractable.action();
+    }
+  }
+});
+window.addEventListener('keyup', (e) => {
+  keys[e.code] = false;
+});
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  const delta = Math.min(clock.getDelta(), 0.05);
+
+  // Ocean wave surface animation
+  waterTime += delta * 1.5;
+  if (oceanMesh) {
+    oceanMesh.position.y = 0.05 + Math.sin(waterTime) * 0.03;
+  }
+
+  // Moored boat wave bobbing
+  if (boatGroup) {
+    boatBobTime += delta * 1.5;
+    boatGroup.position.y = Math.sin(boatBobTime) * 0.06;
+    boatGroup.rotation.z = Math.sin(boatBobTime * 0.7) * 0.025;
+    boatGroup.rotation.x = Math.cos(boatBobTime * 0.6) * 0.015;
+  }
+
+  // Attack timer handling
+  if (isAttacking) {
+    attackTimer -= delta;
+    if (attackTimer <= 0) {
+      isAttacking = false;
+      targetCamDist = 13.5;
+      if (actions.attack) actions.attack.fadeOut(0.12);
+      if (actions[currentActionKey]) {
+        actions[currentActionKey].reset().fadeIn(0.12).play();
+        currentAction = actions[currentActionKey];
+      }
+    }
+  }
+
+  // Movement input
+  let moveX = 0;
+  let moveZ = 0;
+  if (keys['KeyW'] || keys['ArrowUp']) moveZ -= 1;
+  if (keys['KeyS'] || keys['ArrowDown']) moveZ += 1;
+  if (keys['KeyA'] || keys['ArrowLeft']) moveX -= 1;
+  if (keys['KeyD'] || keys['ArrowRight']) moveX += 1;
+
+  const isMoving = (moveX !== 0 || moveZ !== 0) && !isAttacking;
+  const isSprinting = keys['ShiftLeft'] || keys['ShiftRight'];
+
+  if (isMoving) {
+    const inputDir = new THREE.Vector2(moveX, moveZ).normalize();
+    const angle = camYaw;
+    const rotatedX = inputDir.x * Math.cos(angle) - inputDir.y * Math.sin(angle);
+    const rotatedZ = inputDir.x * Math.sin(angle) + inputDir.y * Math.cos(angle);
+
+    const speed = isSprinting ? 5.8 : 3.2;
+    playerPos.x += rotatedX * speed * delta;
+    playerPos.z += rotatedZ * speed * delta;
+
+    playerPos.x = THREE.MathUtils.clamp(playerPos.x, -24, 24);
+    playerPos.z = THREE.MathUtils.clamp(playerPos.z, -32, 11);
+
+    if (playerPos.z >= 2.0 && Math.abs(playerPos.x) <= 1.5) {
+      playerPos.y = 0.55;
+    } else {
+      playerPos.y = getIslandElevation(playerPos.x, playerPos.z);
+    }
+
+    const targetAngle = Math.atan2(rotatedX, rotatedZ);
+    let diff = targetAngle - playerFacing;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    playerFacing += diff * 12.0 * delta;
+
+    if (!isAttacking) {
+      switchAnimation(isSprinting ? 'run' : 'walk');
+    }
+  } else {
+    if (playerPos.z >= 2.0 && Math.abs(playerPos.x) <= 1.5) {
+      playerPos.y = 0.55;
+    } else {
+      playerPos.y = getIslandElevation(playerPos.x, playerPos.z);
+    }
+
+    if (!isAttacking) {
+      switchAnimation('idle');
+    }
+  }
+
+  playerGroup.position.copy(playerPos);
+  if (characterModel) {
+    characterModel.rotation.y = playerFacing;
+  }
+  if (placeholderModel) {
+    placeholderModel.rotation.y = playerFacing;
+  }
+
+  // Check interactables
+  activeInteractable = null;
+  for (let obj of interactables) {
+    if (playerPos.distanceTo(obj.pos) < obj.radius) {
+      activeInteractable = obj;
+      break;
+    }
+  }
+
+  if (activeInteractable) {
+    promptLabel.textContent = activeInteractable.label;
+    contextPrompt.classList.add('show');
+  } else {
+    contextPrompt.classList.remove('show');
+  }
+
+  updateCameraTransform(playerPos, delta);
+
+  if (mixer) {
+    mixer.update(delta);
+  }
+
+  renderer.render(scene, camera);
+}
+
+// Window init
+window.addEventListener('DOMContentLoaded', () => {
+  renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: false,
+    powerPreference: 'high-performance',
+    precision: 'mediump'
+  });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
+
+  scene = new THREE.Scene();
+  // Bright daylight coastal sky
+  scene.background = new THREE.Color(0x8ec5fc);
+  scene.fog = new THREE.FogExp2(0xa1c4fd, 0.009);
+
+  camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.5, 160);
+
+  // Bright, warm daylight lighting setup
+  const hemi = new THREE.HemisphereLight(0xbbe1fa, 0x5a4a35, 1.15);
+  scene.add(hemi);
+
+  const sun = new THREE.DirectionalLight(0xfff5e6, 1.7);
+  sun.position.set(28, 45, 24);
+  scene.add(sun);
+
+  const fillSun = new THREE.DirectionalLight(0xa0d8ef, 0.65);
+  fillSun.position.set(-20, 25, -20);
+  scene.add(fillSun);
+
+  initMaterials();
+  populateSafeIslandScene();
+  loadPlayerCharacter();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  animate();
+});
+</script>
 </body>
 </html>

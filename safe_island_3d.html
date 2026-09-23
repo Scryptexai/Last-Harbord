@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Last Harbor — Realistic 3D Survival Settlement</title>
+<title>Safe Island 3D Rebuild — Realistic 3D Survival Game</title>
 <link rel="icon" type="image/png" href="assets/branding/appicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,7 +15,7 @@
   html, body {
     width: 100%; height: 100%;
     overflow: hidden;
-    background: #02060c;
+    background: #0b1f33;
     font-family: 'Inter', system-ui, sans-serif;
     color: #f1f5f9;
   }
@@ -28,76 +28,78 @@
     z-index: 1;
   }
 
-  /* MINIMALIST CINEMATIC BADGE (WORLD FIRST, MINIMAL UI) */
+  /* CINEMATIC HUD */
   #cinematic-hud {
     position: absolute;
-    top: 18px;
+    top: 20px;
     left: 20px;
     z-index: 10;
     pointer-events: none;
     display: flex;
     flex-direction: column;
     gap: 4px;
-    background: rgba(3, 8, 16, 0.75);
+    background: rgba(11, 26, 44, 0.82);
     backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 10px;
-    padding: 10px 16px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    padding: 10px 18px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
   }
   #cinematic-hud h1 {
     font-family: 'Montserrat', sans-serif;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 800;
     color: #ffde96;
     letter-spacing: 1px;
     text-transform: uppercase;
   }
   #cinematic-hud span {
-    font-size: 11px;
-    color: #94a3b8;
+    font-size: 12px;
+    color: #cbd5e1;
   }
 
   /* BOTTOM NAVIGATION & CONTROLS */
   .bottom-info {
     position: absolute;
-    bottom: 18px;
+    bottom: 20px;
     left: 20px;
     z-index: 10;
-    background: rgba(3, 8, 16, 0.7);
+    background: rgba(11, 26, 44, 0.82);
     backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
-    padding: 8px 14px;
-    font-size: 11px;
-    color: #cbd5e1;
+    padding: 8px 16px;
+    font-size: 12px;
+    color: #e2e8f0;
     pointer-events: auto;
   }
-  .bottom-info b { color: #f8fafc; }
+  .bottom-info b { color: #38bdf8; }
 
   .view-controls {
     position: absolute;
-    bottom: 18px;
+    bottom: 20px;
     right: 20px;
     z-index: 10;
     display: flex;
-    gap: 8px;
+    gap: 10px;
     pointer-events: auto;
   }
   .hud-btn {
-    background: rgba(3, 8, 16, 0.85);
-    border: 1px solid rgba(56, 189, 248, 0.4);
+    background: rgba(11, 26, 44, 0.88);
+    border: 1.5px solid #38bdf8;
     color: #38bdf8;
-    padding: 8px 14px;
+    padding: 9px 16px;
     border-radius: 8px;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     cursor: pointer;
     text-decoration: none;
     transition: all 0.15s;
+    box-shadow: 0 4px 15px rgba(56, 189, 248, 0.2);
   }
   .hud-btn:hover {
-    background: rgba(56, 189, 248, 0.2);
+    background: rgba(56, 189, 248, 0.25);
+    color: #ffffff;
   }
 
   /* CONTEXT PROMPT */
@@ -107,7 +109,7 @@
     left: 50%;
     transform: translateX(-50%) translateY(10px);
     z-index: 12;
-    background: rgba(7, 21, 38, 0.92);
+    background: rgba(7, 21, 38, 0.94);
     border: 1.5px solid #eab308;
     color: #fef08a;
     padding: 10px 24px;
@@ -123,62 +125,24 @@
     opacity: 1;
     transform: translateX(-50%) translateY(0);
   }
-
-  /* LOADING SCREEN */
-  #loading-screen {
-    position: absolute;
-    inset: 0;
-    background: #02070e;
-    z-index: 50;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    transition: opacity 0.4s ease;
-  }
-  #loading-screen.done {
-    opacity: 0;
-    pointer-events: none;
-  }
-  .spinner {
-    width: 44px;
-    height: 44px;
-    border: 3.5px solid rgba(56, 189, 248, 0.2);
-    border-top-color: #38bdf8;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .load-text {
-    font-size: 13px;
-    color: #94a3b8;
-    font-weight: 600;
-    letter-spacing: 1.5px;
-  }
 </style>
 </head>
 <body>
 
-<div id="loading-screen">
-  <div class="spinner"></div>
-  <p class="load-text">MEMBANGUN WORLD REALISTIS (3D TERRAIN & ASSETS)...</p>
-</div>
-
 <canvas id="webgl-canvas"></canvas>
 
 <div id="cinematic-hud">
-  <h1>Safe Island · Pemukiman Nelayan</h1>
-  <span>Elevasi Alamiah · Hutan Pesisir · Rombongan Kabin · Dermaga Kayu</span>
+  <h1>Safe Island · Pemukiman Nelayan 3D</h1>
+  <span>Elevasi Alamiah · Hutan Pinus & Kelapa · Kabin Autentik · Dermaga Pesisir</span>
 </div>
 
 <div class="bottom-info">
-  <b>Kontrol Karakter:</b> <b>W A S D</b> Bergerak &nbsp;|&nbsp; <b>Shift</b> Lari &nbsp;|&nbsp; <b>Spasi</b> Pukul Tempur
+  <b>W A S D</b> Bergerak &nbsp;|&nbsp; <b>Shift</b> Lari &nbsp;|&nbsp; <b>Spasi</b> Pukul Tempur
 </div>
 
 <div class="view-controls">
   <button class="hud-btn" id="btn-cam-toggle">Kamera: Cinematic 3/4</button>
-  <a href="index.html" class="hud-btn">← Menu Utama</a>
+  <a href="classic_2d.html" class="hud-btn">Mode 2D Klasik →</a>
 </div>
 
 <div id="context-prompt">
@@ -188,18 +152,19 @@
 
 <script>
 // ==============================================================================
-// REDESIGNED FROM THE GROUND UP: REAL 3D SURVIVAL GAME PRESENTATION
-// - Procedural Realistic 3D Terrain with Height Curves, Cliffs & Organic Coastline
-// - Real Ocean Depth Gradient & Animated Foam Waves
-// - Realistic 3D Foliage: Curved Palm Trees, Coastal Pines, Leafy Undergrowth
-// - Realistic Apocalypse Survivor Cabins: Stilt Foundations, Timber Siding, Corrugated Roofs, Porches
-// - Realistic Weathered Boardwalk Dock extending into deep water
-// - True Environmental Human Scaling (Human = 1.75m reference)
-// - Cinematic 3/4 Third-Person Camera with Real Depth
+// REALISTIC / STYLIZED-REALISTIC 3D SURVIVAL WORLD
+// Bright Daylight Coastal Environment:
+// 1. Procedural Natural 3D Terrain with elevation contours, beach, village terrace, and cliffs
+// 2. Beautiful Turquoise Ocean with depth gradient and shoreline foam
+// 3. Authentic Survivor Cabins on stilts with corrugated tin roofs, porches, crates, and drums
+// 4. Organic Foliage: Curved coastal palms with fanning fronds, towering pines, bushes, and rocks
+// 5. Weathered Boardwalk Dock with round pilings and cleats extending into water
+// 6. Moored Expedition Boat with curved hull and cargo
+// 7. Locked 3D Player Character with Human Scale Reference (~1.75m) & Contact Shadow
+// 8. Cinematic 3/4 Third-Person Perspective (38° angle with Low Horizon toggle)
 // ==============================================================================
 
 const canvas = document.getElementById('webgl-canvas');
-const loadingScreen = document.getElementById('loading-screen');
 const contextPrompt = document.getElementById('context-prompt');
 const promptLabel = document.getElementById('prompt-label');
 
@@ -209,12 +174,13 @@ let clock = new THREE.Clock();
 // Character State
 let playerGroup = new THREE.Group();
 let characterModel = null;
+let placeholderModel = null;
 let mixer = null;
 let actions = {};
 let currentAction = null;
 let currentActionKey = 'idle';
 
-let playerPos = new THREE.Vector3(0, 1.8, -4); // Starts on main village path
+let playerPos = new THREE.Vector3(0, 1.8, -4);
 let playerFacing = -Math.PI / 2;
 let isAttacking = false;
 let attackTimer = 0;
@@ -228,7 +194,7 @@ let targetCamDist = 13.5;
 let cameraTarget = new THREE.Vector3(0, 1.8, -4);
 let isCinematicView = false;
 
-// Procedural World Elements
+// World Elements
 let terrainMesh = null;
 let terrainGeo = null;
 let oceanMesh = null;
@@ -236,216 +202,115 @@ let waterTime = 0;
 let boatGroup = null;
 let boatBobTime = 0;
 
-// Interactive zones
+// Interactive elements
 const interactables = [];
+let activeInteractable = null;
 
-// ==============================================================================
-// TEXTURE GENERATION FOR REALISTIC MATERIAL RESPONSE
-// ==============================================================================
-function createProceduralTexture(type) {
-  const c = document.createElement('canvas');
-  c.width = 512;
-  c.height = 512;
-  const ctx = c.getContext('2d');
-
-  if (type === 'sand') {
-    // Warm natural coastal sand with fine pebble grain
-    ctx.fillStyle = '#bfa77b';
-    ctx.fillRect(0, 0, 512, 512);
-    for (let i = 0; i < 18000; i++) {
-      const x = Math.random() * 512;
-      const y = Math.random() * 512;
-      const gray = Math.floor(160 + Math.random() * 60);
-      ctx.fillStyle = `rgba(${gray}, ${gray - 20}, ${gray - 45}, 0.18)`;
-      ctx.fillRect(x, y, 1.5, 1.5);
-    }
-  } else if (type === 'dirt_grass') {
-    // Rich coastal loam with moss & dead pine needles
-    ctx.fillStyle = '#423628';
-    ctx.fillRect(0, 0, 512, 512);
-    for (let i = 0; i < 22000; i++) {
-      const x = Math.random() * 512;
-      const y = Math.random() * 512;
-      const isGreen = Math.random() > 0.45;
-      if (isGreen) {
-        ctx.fillStyle = `rgba(${30 + Math.random()*25}, ${60 + Math.random()*35}, ${25 + Math.random()*20}, 0.28)`;
-        ctx.fillRect(x, y, 3, 2);
-      } else {
-        ctx.fillStyle = `rgba(${75 + Math.random()*30}, ${50 + Math.random()*25}, ${30 + Math.random()*15}, 0.25)`;
-        ctx.fillRect(x, y, 2, 2);
-      }
-    }
-  } else if (type === 'wood_plank') {
-    // Weathered maritime timber with visible grain and nail holes
-    ctx.fillStyle = '#4e3b2b';
-    ctx.fillRect(0, 0, 512, 512);
-    // Draw horizontal planks
-    const plankH = 64;
-    for (let y = 0; y < 512; y += plankH) {
-      ctx.fillStyle = 'rgba(20, 12, 8, 0.45)';
-      ctx.fillRect(0, y, 512, 3); // gap line
-      // Wood grain lines
-      for (let j = 0; j < 30; j++) {
-        const gy = y + Math.random() * plankH;
-        ctx.fillStyle = `rgba(${65 + Math.random()*30}, ${48 + Math.random()*25}, ${32 + Math.random()*20}, 0.35)`;
-        ctx.fillRect(0, gy, 512, 1.5);
-      }
-      // Weathered nails
-      ctx.fillStyle = '#1c1510';
-      ctx.fillRect(24, y + 28, 4, 4);
-      ctx.fillRect(488, y + 28, 4, 4);
-    }
-  } else if (type === 'cliff_rock') {
-    // Weathered coastal granite with dark fissures
-    ctx.fillStyle = '#525459';
-    ctx.fillRect(0, 0, 512, 512);
-    for (let i = 0; i < 15000; i++) {
-      const x = Math.random() * 512;
-      const y = Math.random() * 512;
-      const shade = Math.floor(60 + Math.random() * 45);
-      ctx.fillStyle = `rgba(${shade}, ${shade + 4}, ${shade + 6}, 0.22)`;
-      ctx.fillRect(x, y, 4, 2);
-    }
-  } else if (type === 'rusty_roof') {
-    // Corrugated iron sheet with red-brown rust patches
-    ctx.fillStyle = '#6e7075';
-    ctx.fillRect(0, 0, 512, 512);
-    // Corrugation ridges
-    for (let x = 0; x < 512; x += 16) {
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
-      ctx.fillRect(x, 0, 8, 512);
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-      ctx.fillRect(x + 8, 0, 8, 512);
-    }
-    // Rust specks
-    for (let i = 0; i < 400; i++) {
-      const rx = Math.random() * 512;
-      const ry = Math.random() * 512;
-      const s = 10 + Math.random() * 30;
-      ctx.fillStyle = 'rgba(150, 60, 25, 0.35)';
-      ctx.beginPath();
-      ctx.arc(rx, ry, s, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  } else if (type === 'water_foam') {
-    // Ocean normal/caustics pattern
-    ctx.fillStyle = '#083248';
-    ctx.fillRect(0, 0, 512, 512);
-    for (let i = 0; i < 120; i++) {
-      ctx.strokeStyle = 'rgba(180, 235, 255, 0.18)';
-      ctx.lineWidth = 3 + Math.random() * 5;
-      ctx.beginPath();
-      ctx.arc(Math.random() * 512, Math.random() * 512, 20 + Math.random() * 60, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-  }
-
-  const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.RepeatWrapping;
-  return tex;
-}
-
-// Global PBR-stylized Materials
-let texSand, texDirt, texWood, texRock, texRoof, texWater;
-let matTerrain, matWaterOcean, matTimberPlanks, matCorrugatedRoof, matRockCliff;
+// Materials
+let matTerrain, matWaterOcean, matTimberPlanks, matCorrugatedRoof, matRockCliff, matPalmFrond, matPineNeedles;
 
 function initMaterials() {
-  texSand = createProceduralTexture('sand');
+  const cSand = document.createElement('canvas'); cSand.width = cSand.height = 256;
+  const ctxS = cSand.getContext('2d');
+  ctxS.fillStyle = '#dfc28d'; ctxS.fillRect(0, 0, 256, 256);
+  for (let i = 0; i < 4000; i++) {
+    ctxS.fillStyle = Math.random() > 0.5 ? 'rgba(180, 150, 100, 0.3)' : 'rgba(240, 220, 175, 0.4)';
+    ctxS.fillRect(Math.random()*256, Math.random()*256, 2, 2);
+  }
+  const texSand = new THREE.CanvasTexture(cSand);
+  texSand.wrapS = texSand.wrapT = THREE.RepeatWrapping;
   texSand.repeat.set(12, 12);
 
-  texDirt = createProceduralTexture('dirt_grass');
-  texDirt.repeat.set(16, 16);
-
-  texWood = createProceduralTexture('wood_plank');
+  const cWood = document.createElement('canvas'); cWood.width = cWood.height = 256;
+  const ctxW = cWood.getContext('2d');
+  ctxW.fillStyle = '#6d482f'; ctxW.fillRect(0, 0, 256, 256);
+  for (let y = 0; y < 256; y += 32) {
+    ctxW.fillStyle = 'rgba(25, 14, 8, 0.45)'; ctxW.fillRect(0, y, 256, 2);
+    for (let j = 0; j < 12; j++) {
+      ctxW.fillStyle = 'rgba(95, 65, 40, 0.35)'; ctxW.fillRect(0, y + Math.random()*32, 256, 1.5);
+    }
+  }
+  const texWood = new THREE.CanvasTexture(cWood);
+  texWood.wrapS = texWood.wrapT = THREE.RepeatWrapping;
   texWood.repeat.set(4, 4);
 
-  texRock = createProceduralTexture('cliff_rock');
-  texRock.repeat.set(8, 8);
-
-  texRoof = createProceduralTexture('rusty_roof');
+  const cRoof = document.createElement('canvas'); cRoof.width = cRoof.height = 256;
+  const ctxR = cRoof.getContext('2d');
+  ctxR.fillStyle = '#7a7e85'; ctxR.fillRect(0, 0, 256, 256);
+  for (let x = 0; x < 256; x += 16) {
+    ctxR.fillStyle = 'rgba(255, 255, 255, 0.18)'; ctxR.fillRect(x, 0, 8, 256);
+    ctxR.fillStyle = 'rgba(0, 0, 0, 0.22)'; ctxR.fillRect(x + 8, 0, 8, 256);
+  }
+  for (let i = 0; i < 150; i++) {
+    ctxR.fillStyle = 'rgba(175, 75, 30, 0.4)';
+    ctxR.beginPath(); ctxR.arc(Math.random()*256, Math.random()*256, 8 + Math.random()*15, 0, Math.PI*2); ctxR.fill();
+  }
+  const texRoof = new THREE.CanvasTexture(cRoof);
+  texRoof.wrapS = texRoof.wrapT = THREE.RepeatWrapping;
   texRoof.repeat.set(3, 3);
 
-  texWater = createProceduralTexture('water_foam');
-  texWater.repeat.set(6, 6);
-
-  matTerrain = new THREE.MeshStandardMaterial({
-    map: texDirt,
-    roughness: 0.88,
-    metalness: 0.05,
+  matTerrain = new THREE.MeshLambertMaterial({
+    map: texSand,
     flatShading: false,
+    vertexColors: true,
   });
 
-  matWaterOcean = new THREE.MeshStandardMaterial({
-    color: 0x094868,
-    map: texWater,
-    roughness: 0.15,
-    metalness: 0.35,
+  matWaterOcean = new THREE.MeshLambertMaterial({
+    color: 0x0284c7,
     transparent: true,
-    opacity: 0.92,
+    opacity: 0.88,
   });
 
-  matTimberPlanks = new THREE.MeshStandardMaterial({
+  matTimberPlanks = new THREE.MeshLambertMaterial({
     map: texWood,
-    roughness: 0.82,
-    metalness: 0.08,
+    color: 0xffffff,
   });
 
-  matCorrugatedRoof = new THREE.MeshStandardMaterial({
+  matCorrugatedRoof = new THREE.MeshLambertMaterial({
     map: texRoof,
-    roughness: 0.65,
-    metalness: 0.45,
+    color: 0xffffff,
   });
 
-  matRockCliff = new THREE.MeshStandardMaterial({
-    map: texRock,
-    roughness: 0.92,
-    metalness: 0.05,
+  matRockCliff = new THREE.MeshLambertMaterial({
+    color: 0x6e727a,
+  });
+
+  matPalmFrond = new THREE.MeshLambertMaterial({
+    color: 0x2d6a4f,
+    side: THREE.DoubleSide,
+  });
+
+  matPineNeedles = new THREE.MeshLambertMaterial({
+    color: 0x1b4332,
+    flatShading: true,
   });
 }
 
 // ==============================================================================
-// 1. PROCEDURAL 3D NATURAL TERRAIN & COASTLINE
+// 1. NATURAL 3D TERRAIN & COASTLINE
 // ==============================================================================
 function getIslandElevation(x, z) {
-  // Center: (0, -6) -> Village terrace
-  // South: (0, 6) -> Beach & Dock
-  // North / NW: (0, -28) -> High forested hills & cliffs
-
-  // Distance from island core
   const distCore = Math.hypot(x * 0.95, z + 8);
-  if (distCore > 38) {
-    return -1.5; // Deep ocean
-  }
+  if (distCore > 38) return -1.5;
 
-  // Base natural slope from North (+6.5m) down to South shoreline (0.0m)
   let h = 0.0;
-
-  // South Beach Cove:
   if (z > 2) {
-    // Gentle sandy beach slope down to water
     const tBeach = (z - 2) / 10.0;
     h = THREE.MathUtils.lerp(1.2, -0.4, tBeach);
   } else if (z <= 2 && z > -16) {
-    // Village Terrace (Main settlement plateau)
     const tPlateau = (z - 2) / (-18);
-    h = 1.2 + tPlateau * 1.6; // from 1.2m to 2.8m
+    h = 1.2 + tPlateau * 1.6;
   } else {
-    // Back Hills & Rocky Cliffs (North)
     const tHill = (-16 - z) / 16.0;
-    h = 2.8 + tHill * 4.2; // Rises up to 7.0m!
+    h = 2.8 + tHill * 4.2;
   }
 
-  // Add natural undulating organic noise
-  const noise1 = Math.sin(x * 0.14) * Math.cos(z * 0.12) * 0.75;
-  const noise2 = Math.sin(x * 0.28 + 1.2) * Math.cos(z * 0.25) * 0.35;
-  h += (noise1 + noise2);
+  const noise = Math.sin(x * 0.14) * Math.cos(z * 0.12) * 0.75 + Math.sin(x * 0.28 + 1.2) * Math.cos(z * 0.25) * 0.35;
+  h += noise;
 
-  // Carve out a distinct walking path from Village down to Dock
   const pathDist = Math.abs(x - Math.sin(z * 0.2) * 1.2);
   if (pathDist < 3.0 && z > -14 && z < 7) {
     const pathSmooth = (1.0 - pathDist / 3.0);
-    // Smooth walking grade
     const targetPathY = THREE.MathUtils.lerp(2.2, 0.4, (z + 14) / 21.0);
     h = THREE.MathUtils.lerp(h, targetPathY, pathSmooth * 0.65);
   }
@@ -470,48 +335,46 @@ function buildNaturalTerrain() {
     const y = getIslandElevation(x, z);
     pos.setY(i, y);
 
-    // Natural vertex color biome tinting:
-    // Shallow water / Wet Sand: Dark sand (#6b5a3e)
-    // Dry Sand: Warm yellow-tan (#cbb287)
-    // Grass / Forest: Deep mossy green (#3e5634)
-    // High Rock Cliffs: Slate gray (#5a5e66)
     if (y < 0.2) {
-      colors.push(0.42, 0.36, 0.26); // Wet shore sand
+      colors.push(0.72, 0.62, 0.48);
     } else if (y < 1.1) {
-      colors.push(0.78, 0.68, 0.48); // Dry sand dune
+      colors.push(0.95, 0.88, 0.68);
     } else if (y > 4.2) {
-      colors.push(0.40, 0.42, 0.45); // Cliff stone
+      colors.push(0.62, 0.65, 0.68);
     } else {
-      colors.push(0.28, 0.38, 0.22); // Coastal vegetation grass
+      const pathDist = Math.abs(x - Math.sin(z * 0.2) * 1.2);
+      if (pathDist < 2.0 && z > -14 && z < 7) {
+        colors.push(0.78, 0.64, 0.48);
+      } else {
+        colors.push(0.42, 0.65, 0.32);
+      }
     }
   }
 
   terrainGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   terrainGeo.computeVertexNormals();
 
-  matTerrain.vertexColors = true;
   terrainMesh = new THREE.Mesh(terrainGeo, matTerrain);
   scene.add(terrainMesh);
 }
 
 // ==============================================================================
-// 2. OCEAN SHADER SURFACE WITH DEPTH GRADIENT & ANIMATED FOAM
+// 2. OCEAN DEPTH & SHORELINE FOAM
 // ==============================================================================
 function buildOcean() {
-  const oceanGeo = new THREE.PlaneGeometry(180, 180, 40, 40);
+  const oceanGeo = new THREE.PlaneGeometry(200, 200, 32, 32);
   oceanGeo.rotateX(-Math.PI / 2);
 
   oceanMesh = new THREE.Mesh(oceanGeo, matWaterOcean);
   oceanMesh.position.y = 0.05;
   scene.add(oceanMesh);
 
-  // Shoreline foam wave ring
   const foamGeo = new THREE.RingGeometry(8, 14, 32);
   foamGeo.rotateX(-Math.PI / 2);
   const matFoam = new THREE.MeshBasicMaterial({
-    color: 0xdbf4ff,
+    color: 0xffffff,
     transparent: true,
-    opacity: 0.45,
+    opacity: 0.6,
     depthWrite: false,
   });
   const foamMesh = new THREE.Mesh(foamGeo, matFoam);
@@ -521,53 +384,38 @@ function buildOcean() {
 }
 
 // ==============================================================================
-// 3. REALISTIC 3D VEGETATION: CURVED PALM TREES & LAYERED PINES
+// 3. REALISTIC 3D VEGETATION
 // ==============================================================================
 function createRealisticPalmTree(x, z, scale = 1.0, rotY = 0) {
-  const group = new THREE.Group();
   const yBase = getIslandElevation(x, z);
-  if (yBase < 0.2) return; // Don't spawn submerged in ocean
+  if (yBase < 0.2) return;
+  const group = new THREE.Group();
 
-  // Organic curved trunk (6 segments leaning toward the sun)
   const segments = 7;
-  const totalHeight = 5.8 * scale;
-  const curveFactor = 0.9 * scale;
-
+  const totalHeight = 6.0 * scale;
+  const curveFactor = 0.95 * scale;
   let prevPos = new THREE.Vector3(0, 0, 0);
-  const trunkMat = new THREE.MeshStandardMaterial({
-    color: 0x58432f,
-    map: texWood,
-    roughness: 0.9,
-  });
 
   for (let i = 0; i < segments; i++) {
     const t0 = i / segments;
     const t1 = (i + 1) / segments;
     const r0 = THREE.MathUtils.lerp(0.32, 0.18, t0) * scale;
     const r1 = THREE.MathUtils.lerp(0.32, 0.18, t1) * scale;
-    const h = (totalHeight / segments);
+    const h = totalHeight / segments;
 
     const segGeo = new THREE.CylinderGeometry(r1, r0, h, 7);
-    const segMesh = new THREE.Mesh(segGeo, trunkMat);
+    const segMesh = new THREE.Mesh(segGeo, matTimberPlanks);
 
     const currX = Math.sin(t1 * 1.4) * curveFactor;
     const currY = t1 * totalHeight;
     const currZ = Math.cos(t1 * 1.4) * (curveFactor * 0.4);
 
     segMesh.position.set((prevPos.x + currX) / 2, (prevPos.y + currY) / 2, (prevPos.z + currZ) / 2);
-    // Align angle
     segMesh.rotation.z = -(currX - prevPos.x) / h * 0.9;
     group.add(segMesh);
 
     prevPos.set(currX, currY, currZ);
   }
-
-  // Crown of 7 drooping palm fronds
-  const frondMat = new THREE.MeshStandardMaterial({
-    color: 0x225528,
-    roughness: 0.75,
-    side: THREE.DoubleSide,
-  });
 
   const numFronds = 8;
   for (let f = 0; f < numFronds; f++) {
@@ -575,25 +423,18 @@ function createRealisticPalmTree(x, z, scale = 1.0, rotY = 0) {
     const frondGroup = new THREE.Group();
     frondGroup.position.copy(prevPos);
 
-    // Arched frond stem with leaflets
     const frondLen = 2.8 * scale;
     const bladeGeo = new THREE.ConeGeometry(0.55 * scale, frondLen, 5);
     bladeGeo.rotateX(Math.PI / 2);
     bladeGeo.scale(1, 0.12, 1);
-    const blade = new THREE.Mesh(bladeGeo, frondMat);
+    const blade = new THREE.Mesh(bladeGeo, matPalmFrond);
     blade.position.z = frondLen * 0.45;
 
     frondGroup.rotation.y = angle;
-    frondGroup.rotation.x = 0.45; // Droop down
+    frondGroup.rotation.x = 0.45;
     frondGroup.add(blade);
     group.add(frondGroup);
   }
-
-  // Base root flair
-  const rootGeo = new THREE.CylinderGeometry(0.42 * scale, 0.55 * scale, 0.5 * scale, 8);
-  const roots = new THREE.Mesh(rootGeo, trunkMat);
-  roots.position.y = 0.25 * scale;
-  group.add(roots);
 
   group.position.set(x, yBase, z);
   group.rotation.y = rotY;
@@ -601,30 +442,22 @@ function createRealisticPalmTree(x, z, scale = 1.0, rotY = 0) {
 }
 
 function createRealisticPineTree(x, z, scale = 1.0, rotY = 0) {
-  const group = new THREE.Group();
   const yBase = getIslandElevation(x, z);
   if (yBase < 0.3) return;
+  const group = new THREE.Group();
 
   const trunkH = 8.5 * scale;
   const trunkGeo = new THREE.CylinderGeometry(0.18 * scale, 0.38 * scale, trunkH, 7);
-  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x3d2d22, map: texWood, roughness: 0.95 });
-  const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+  const trunk = new THREE.Mesh(trunkGeo, matTimberPlanks);
   trunk.position.y = trunkH * 0.5;
   group.add(trunk);
-
-  // 4 tiered drooping needle foliage boughs
-  const foliageMat = new THREE.MeshStandardMaterial({
-    color: 0x1b3c22,
-    roughness: 0.88,
-    flatShading: true,
-  });
 
   const tiers = 4;
   for (let t = 0; t < tiers; t++) {
     const tierR = THREE.MathUtils.lerp(2.2, 0.8, t / tiers) * scale;
     const tierH = 2.4 * scale;
     const boughGeo = new THREE.ConeGeometry(tierR, tierH, 7);
-    const bough = new THREE.Mesh(boughGeo, foliageMat);
+    const bough = new THREE.Mesh(boughGeo, matPineNeedles);
     bough.position.y = (3.5 + t * 1.5) * scale;
     group.add(bough);
   }
@@ -639,16 +472,9 @@ function createBush(x, z, scale = 1.0) {
   if (yBase < 0.3) return;
   const group = new THREE.Group();
 
-  const bushMat = new THREE.MeshStandardMaterial({
-    color: 0x2e5229,
-    roughness: 0.85,
-    flatShading: true,
-  });
-
-  const count = 3;
-  for (let i = 0; i < count; i++) {
+  for (let i = 0; i < 3; i++) {
     const sGeo = new THREE.DodecahedronGeometry(0.65 * scale, 1);
-    const sMesh = new THREE.Mesh(sGeo, bushMat);
+    const sMesh = new THREE.Mesh(sGeo, matPalmFrond);
     sMesh.position.set(
       (Math.random() - 0.5) * 0.5 * scale,
       (0.35 + Math.random() * 0.3) * scale,
@@ -664,15 +490,6 @@ function createBush(x, z, scale = 1.0) {
 function createCoastalRock(x, z, scale = 1.0, rot = 0) {
   const yBase = getIslandElevation(x, z);
   const rockGeo = new THREE.DodecahedronGeometry(1.4 * scale, 1);
-  // Deform for natural ruggedness
-  const pos = rockGeo.attributes.position;
-  for (let i = 0; i < pos.count; i++) {
-    pos.setX(i, pos.getX(i) * (0.8 + Math.sin(i) * 0.25));
-    pos.setY(i, pos.getY(i) * (0.55 + Math.cos(i) * 0.15));
-    pos.setZ(i, pos.getZ(i) * (0.85 + Math.sin(i * 1.5) * 0.2));
-  }
-  rockGeo.computeVertexNormals();
-
   const rockMesh = new THREE.Mesh(rockGeo, matRockCliff);
   rockMesh.position.set(x, yBase + 0.3 * scale, z);
   rockMesh.rotation.set(0.2, rot, -0.15);
@@ -680,73 +497,57 @@ function createCoastalRock(x, z, scale = 1.0, rot = 0) {
 }
 
 // ==============================================================================
-// 4. REALISTIC SURVIVOR BUILDINGS (BELIEVABLE APOCALYPSE ARCHITECTURE)
+// 4. REALISTIC SURVIVOR CABINS
 // ==============================================================================
 function createDetailedSurvivorCabin(x, z, rotY = 0) {
   const group = new THREE.Group();
   const yBase = getIslandElevation(x, z);
 
-  // Reference scale: Human height ~ 1.75m
-  // Cabin Floor: 4.8m x 4.0m, Height to roof peak: 4.2m (~2.4x human height)
   const floorW = 4.8;
   const floorD = 4.2;
-  const stiltH = 0.6; // elevated off damp earth
+  const stiltH = 0.6;
 
-  // Stilt Foundation (6 round tree-trunk pillars)
-  const stiltMat = matTimberPlanks;
   for (let sx = -floorW/2 + 0.3; sx <= floorW/2 - 0.3; sx += (floorW - 0.6)/2) {
     for (let sz = -floorD/2 + 0.3; sz <= floorD/2 - 0.3; sz += (floorD - 0.6)) {
-      const stilt = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, stiltH + 0.4, 6), stiltMat);
+      const stilt = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, stiltH + 0.4, 6), matTimberPlanks);
       stilt.position.set(sx, (stiltH + 0.4)/2 - 0.2, sz);
       group.add(stilt);
     }
   }
 
-  // Wooden deck / floor
   const deck = new THREE.Mesh(new THREE.BoxGeometry(floorW + 0.3, 0.18, floorD + 1.2), matTimberPlanks);
-  deck.position.set(0, stiltH, 0.4); // extends forward for porch
+  deck.position.set(0, stiltH, 0.4);
   group.add(deck);
 
-  // Porch Steps (2 weathered wooden steps)
-  const step1 = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.15, 0.4), matTimberPlanks);
-  step1.position.set(0, stiltH * 0.65, floorD/2 + 0.8);
-  group.add(step1);
-  const step2 = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.15, 0.4), matTimberPlanks);
-  step2.position.set(0, stiltH * 0.3, floorD/2 + 1.15);
-  group.add(step2);
+  const step = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.25, 0.6), matTimberPlanks);
+  step.position.set(0, stiltH * 0.4, floorD/2 + 0.9);
+  group.add(step);
 
-  // Timber Walls with horizontal siding
   const wallH = 2.4;
-  const wallMat = matTimberPlanks;
-
-  // Back Wall
-  const backWall = new THREE.Mesh(new THREE.BoxGeometry(floorW, wallH, 0.15), wallMat);
+  const backWall = new THREE.Mesh(new THREE.BoxGeometry(floorW, wallH, 0.15), matTimberPlanks);
   backWall.position.set(0, stiltH + wallH/2, -floorD/2);
   group.add(backWall);
 
-  // Left & Right Walls
-  const wallL = new THREE.Mesh(new THREE.BoxGeometry(0.15, wallH, floorD), wallMat);
+  const wallL = new THREE.Mesh(new THREE.BoxGeometry(0.15, wallH, floorD), matTimberPlanks);
   wallL.position.set(-floorW/2, stiltH + wallH/2, 0);
   group.add(wallL);
 
-  const wallR = new THREE.Mesh(new THREE.BoxGeometry(0.15, wallH, floorD), wallMat);
+  const wallR = new THREE.Mesh(new THREE.BoxGeometry(0.15, wallH, floorD), matTimberPlanks);
   wallR.position.set(floorW/2, stiltH + wallH/2, 0);
   group.add(wallR);
 
-  // Front Wall with Doorway cutout
-  const frontWallL = new THREE.Mesh(new THREE.BoxGeometry(1.7, wallH, 0.15), wallMat);
+  const frontWallL = new THREE.Mesh(new THREE.BoxGeometry(1.6, wallH, 0.15), matTimberPlanks);
   frontWallL.position.set(-1.45, stiltH + wallH/2, floorD/2);
   group.add(frontWallL);
 
-  const frontWallR = new THREE.Mesh(new THREE.BoxGeometry(1.7, wallH, 0.15), wallMat);
+  const frontWallR = new THREE.Mesh(new THREE.BoxGeometry(1.6, wallH, 0.15), matTimberPlanks);
   frontWallR.position.set(1.45, stiltH + wallH/2, floorD/2);
   group.add(frontWallR);
 
-  const frontHeader = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.45, 0.15), wallMat);
-  frontHeader.position.set(0, stiltH + wallH - 0.22, floorD/2);
+  const frontHeader = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.5, 0.15), matTimberPlanks);
+  frontHeader.position.set(0, stiltH + wallH - 0.25, floorD/2);
   group.add(frontHeader);
 
-  // A-Frame Gabled Roof with Corrugated Iron Panels & Tarpaulin Patch
   const roofW = floorW + 0.6;
   const roofSlopeL = new THREE.Mesh(new THREE.BoxGeometry(roofW, 0.08, 2.8), matCorrugatedRoof);
   roofSlopeL.position.set(0, stiltH + wallH + 0.8, -1.0);
@@ -758,174 +559,121 @@ function createDetailedSurvivorCabin(x, z, rotY = 0) {
   roofSlopeR.rotation.x = -0.55;
   group.add(roofSlopeR);
 
-  // Makeshift blue tarpaulin repair patch tied with ropes
-  const tarpMat = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.6 });
-  const tarp = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.04, 1.8), tarpMat);
+  const matTarp = new THREE.MeshLambertMaterial({ color: 0x2563eb });
+  const tarp = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.04, 1.8), matTarp);
   tarp.position.set(-0.8, stiltH + wallH + 0.86, -0.8);
   tarp.rotation.x = 0.55;
   group.add(tarp);
 
-  // Front Porch support posts & hanging lantern
-  const porchPostL = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, wallH, 6), matTimberPlanks);
-  porchPostL.position.set(-floorW/2 + 0.2, stiltH + wallH/2, floorD/2 + 0.8);
-  group.add(porchPostL);
+  const postL = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, wallH, 6), matTimberPlanks);
+  postL.position.set(-floorW/2 + 0.2, stiltH + wallH/2, floorD/2 + 0.8);
+  group.add(postL);
 
-  const porchPostR = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, wallH, 6), matTimberPlanks);
-  porchPostR.position.set(floorW/2 - 0.2, stiltH + wallH/2, floorD/2 + 0.8);
-  group.add(porchPostR);
+  const postR = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, wallH, 6), matTimberPlanks);
+  postR.position.set(floorW/2 - 0.2, stiltH + wallH/2, floorD/2 + 0.8);
+  group.add(postR);
 
-  // Hanging porch lantern with warm light
-  const lanternBulb = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffb84d }));
-  lanternBulb.position.set(0.8, stiltH + wallH - 0.2, floorD/2 + 0.6);
-  group.add(lanternBulb);
+  const crateA = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.8, 0.85), matTimberPlanks);
+  crateA.position.set(floorW/2 + 0.6, stiltH + 0.4, 0.3);
+  group.add(crateA);
 
-  const lanternLight = new THREE.PointLight(0xff9933, 1.6, 7.0, 1.6);
-  lanternLight.position.copy(lanternBulb.position);
-  group.add(lanternLight);
-
-  // Environmental Props around cabin (Crates, Barrels, Scrap)
-  createDetailedCrate(group, -floorW/2 - 0.6, stiltH, 0.4, 0.8);
-  createDetailedCrate(group, -floorW/2 - 0.5, stiltH + 0.7, 0.5, 0.65);
-  createOilDrum(group, floorW/2 + 0.6, stiltH, -0.4);
+  const matDrum = new THREE.MeshLambertMaterial({ color: 0x334155 });
+  const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.95, 10), matDrum);
+  drum.position.set(floorW/2 + 0.6, stiltH + 0.48, -0.7);
+  group.add(drum);
 
   group.position.set(x, yBase, z);
   group.rotation.y = rotY;
   scene.add(group);
 }
 
-function createDetailedCrate(parent, lx, ly, lz, size = 0.8) {
-  const crate = new THREE.Mesh(new THREE.BoxGeometry(size, size, size), matTimberPlanks);
-  crate.position.set(lx, ly + size/2, lz);
-  parent.add(crate);
-}
-
-function createOilDrum(parent, lx, ly, lz) {
-  const drumMat = new THREE.MeshStandardMaterial({ color: 0x2e4053, roughness: 0.5, metalness: 0.6 });
-  const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.95, 12), drumMat);
-  drum.position.set(lx, ly + 0.48, lz);
-  parent.add(drum);
-}
-
 // ==============================================================================
-// 5. WEATHERED BOARDWALK DOCK (EMERGES FROM BEACH INTO OCEAN)
+// 5. WEATHERED BOARDWALK DOCK
 // ==============================================================================
 function buildDetailedDock() {
   const group = new THREE.Group();
-
-  // Dock starts from beach sand at z = 2.0 and extends into deep ocean at z = 11.0
   const startZ = 2.0;
   const endZ = 11.2;
-  const dockW = 3.0; // 3m wide (~1.7x human height)
-  const dockY = 0.55; // slightly above water level (0.05m)
+  const dockW = 3.0;
+  const dockY = 0.55;
 
-  // 1. Heavy Wooden Pilings driven into seabed (Pairs every 2.2m)
-  const pilingMat = matTimberPlanks;
   for (let z = startZ + 0.8; z <= endZ; z += 2.2) {
-    const leftPiling = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 2.4, 8), pilingMat);
-    leftPiling.position.set(-dockW/2 + 0.2, dockY - 0.9, z);
-    group.add(leftPiling);
+    const pL = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 2.4, 8), matTimberPlanks);
+    pL.position.set(-dockW/2 + 0.2, dockY - 0.9, z);
+    group.add(pL);
 
-    const rightPiling = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 2.4, 8), pilingMat);
-    rightPiling.position.set(dockW/2 - 0.2, dockY - 0.9, z);
-    group.add(rightPiling);
+    const pR = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 2.4, 8), matTimberPlanks);
+    pR.position.set(dockW/2 - 0.2, dockY - 0.9, z);
+    group.add(pR);
 
-    // Cross-beam support under planks
-    const crossBeam = new THREE.Mesh(new THREE.BoxGeometry(dockW + 0.1, 0.18, 0.22), pilingMat);
-    crossBeam.position.set(0, dockY - 0.12, z);
-    group.add(crossBeam);
+    const beam = new THREE.Mesh(new THREE.BoxGeometry(dockW + 0.1, 0.18, 0.22), matTimberPlanks);
+    beam.position.set(0, dockY - 0.12, z);
+    group.add(beam);
   }
 
-  // 2. Individual Weathered Wooden Planks (36 planks with micro height/angle jitter)
   const numPlanks = 36;
-  const plankSpacing = (endZ - startZ) / numPlanks;
+  const spacing = (endZ - startZ) / numPlanks;
   for (let i = 0; i < numPlanks; i++) {
-    const pZ = startZ + i * plankSpacing;
-    const pLen = dockW + (Math.sin(i * 3) * 0.12);
-    const plank = new THREE.Mesh(new THREE.BoxGeometry(pLen, 0.08, plankSpacing * 0.88), matTimberPlanks);
-    // Slight authentic irregularity
-    plank.position.set(0, dockY + (Math.sin(i * 5) * 0.015), pZ);
-    plank.rotation.y = (Math.sin(i * 7) * 0.02);
+    const pZ = startZ + i * spacing;
+    const plank = new THREE.Mesh(new THREE.BoxGeometry(dockW + Math.sin(i*3)*0.1, 0.08, spacing * 0.88), matTimberPlanks);
+    plank.position.set(0, dockY + Math.sin(i*5)*0.012, pZ);
+    plank.rotation.y = Math.sin(i*7)*0.02;
     group.add(plank);
   }
 
-  // 3. Mooring Cleats & Coiled Ropes
-  const cleatMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, metalness: 0.7, roughness: 0.4 });
+  const matCleat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+  const matRope = new THREE.MeshLambertMaterial({ color: 0xd97706 });
   function addCleat(side, pz) {
-    const cleat = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.25, 6), cleatMat);
+    const cleat = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.25, 6), matCleat);
     cleat.position.set(side * (dockW/2 - 0.15), dockY + 0.12, pz);
     group.add(cleat);
 
-    const ropeTorus = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.035, 6, 12), new THREE.MeshLambertMaterial({ color: 0xc4a46a }));
-    ropeTorus.rotation.x = Math.PI / 2;
-    ropeTorus.position.set(side * (dockW/2 - 0.15), dockY + 0.04, pz);
-    group.add(ropeTorus);
+    const rope = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.035, 6, 10), matRope);
+    rope.rotation.x = Math.PI / 2;
+    rope.position.set(side * (dockW/2 - 0.15), dockY + 0.04, pz);
+    group.add(rope);
   }
   addCleat(1, 4.5);
   addCleat(1, 8.5);
   addCleat(-1, 6.5);
   addCleat(-1, 10.5);
 
-  // 4. Sturdy Dock Lamp Post
   const lampPost = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 2.6, 6), matTimberPlanks);
   lampPost.position.set(dockW/2 - 0.2, dockY + 1.3, 7.5);
   group.add(lampPost);
 
-  const dockBulb = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffcc66 }));
-  dockBulb.position.set(dockW/2 - 0.2, dockY + 2.5, 7.5);
-  group.add(dockBulb);
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffd175 }));
+  bulb.position.set(dockW/2 - 0.2, dockY + 2.5, 7.5);
+  group.add(bulb);
 
-  const dockLight = new THREE.PointLight(0xffaa33, 2.2, 11.0, 1.5);
-  dockLight.position.copy(dockBulb.position);
-  group.add(dockLight);
+  const light = new THREE.PointLight(0xffa500, 2.0, 10.0, 1.4);
+  light.position.copy(bulb.position);
+  group.add(light);
 
   scene.add(group);
 }
 
 // ==============================================================================
-// 6. REALISTIC MOORED EXPEDITION BOAT
+// 6. MOORED EXPEDITION BOAT
 // ==============================================================================
 function buildDetailedBoat() {
   boatGroup = new THREE.Group();
 
-  // Boat Hull: Length 4.6m, Width 1.8m (~2.6x human height)
-  const boatWoodMat = new THREE.MeshStandardMaterial({
-    map: texWood,
-    color: 0x543c29,
-    roughness: 0.75,
-  });
-
-  // Curved Hull Base
-  const hullBase = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 4.4), boatWoodMat);
+  const hullBase = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 4.4), matTimberPlanks);
   hullBase.position.y = 0.35;
   boatGroup.add(hullBase);
 
-  // Pointed Bow (Triangle Wedge)
   const bowGeo = new THREE.ConeGeometry(0.95, 1.4, 4);
   bowGeo.rotateX(Math.PI / 2);
   bowGeo.scale(1, 0.55, 1);
-  const bow = new THREE.Mesh(bowGeo, boatWoodMat);
+  const bow = new THREE.Mesh(bowGeo, matTimberPlanks);
   bow.position.set(0, 0.42, 2.7);
   boatGroup.add(bow);
 
-  // Deck Seats / Thwarts
-  const bench1 = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.08, 0.4), boatWoodMat);
-  bench1.position.set(0, 0.65, 0.8);
-  boatGroup.add(bench1);
+  const bench = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.08, 0.4), matTimberPlanks);
+  bench.position.set(0, 0.65, 0.8);
+  boatGroup.add(bench);
 
-  const bench2 = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.08, 0.4), boatWoodMat);
-  bench2.position.set(0, 0.65, -1.0);
-  boatGroup.add(bench2);
-
-  // Cargo crates stowed in hull
-  createDetailedCrate(boatGroup, 0.2, 0.35, -0.2, 0.55);
-  createDetailedCrate(boatGroup, -0.3, 0.35, 0.1, 0.5);
-
-  // Mooring rope tied from bow to dock cleat
-  const bowCleat = new THREE.Mesh(new THREE.SphereGeometry(0.08), new THREE.MeshBasicMaterial({ color: 0x222222 }));
-  bowCleat.position.set(0, 0.7, 2.4);
-  boatGroup.add(bowCleat);
-
-  // Moored on the starboard side of the dock at (2.6, 0.0, 8.0)
   boatGroup.position.set(2.8, 0.0, 8.2);
   scene.add(boatGroup);
 
@@ -934,77 +682,63 @@ function buildDetailedBoat() {
     radius: 2.8,
     label: "Naik Perahu & Siapkan Pelayaran",
     action: () => {
-      alert("⚓ Perahu siap! Meluncurkan ekspedisi ke Pulau Luar.");
+      alert("⚓ Perahu siap! Meluncurkan pelayaran.");
     }
   });
 }
 
 // ==============================================================================
-// 7. SURVIVOR CAMPFIRE & STORYTELLING PROPS
+// 7. SURVIVOR CAMPFIRE
 // ==============================================================================
 function buildCampfire(x, z) {
   const group = new THREE.Group();
   const yBase = getIslandElevation(x, z);
 
-  // Ring of 8 river stones
-  const stoneMat = matRockCliff;
   const numStones = 9;
   for (let i = 0; i < numStones; i++) {
     const angle = (i / numStones) * Math.PI * 2;
-    const stone = new THREE.Mesh(new THREE.DodecahedronGeometry(0.22, 1), stoneMat);
+    const stone = new THREE.Mesh(new THREE.DodecahedronGeometry(0.22, 1), matRockCliff);
     stone.position.set(Math.cos(angle) * 0.75, 0.12, Math.sin(angle) * 0.75);
     group.add(stone);
   }
 
-  // Charred wood logs
-  const logMat = new THREE.MeshStandardMaterial({ color: 0x1a1512, roughness: 0.95 });
+  const matChar = new THREE.MeshLambertMaterial({ color: 0x1f1915 });
   for (let j = 0; j < 4; j++) {
-    const log = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 0.85, 5), logMat);
+    const log = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 0.85, 5), matChar);
     log.rotation.z = Math.PI / 3;
     log.rotation.y = j * Math.PI / 2;
     log.position.y = 0.14;
     group.add(log);
   }
 
-  // Glowing embers & flame core
-  const flameMesh = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.65, 6), new THREE.MeshBasicMaterial({ color: 0xff6210 }));
-  flameMesh.position.y = 0.45;
-  group.add(flameMesh);
+  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.65, 6), new THREE.MeshBasicMaterial({ color: 0xff6b1a }));
+  flame.position.y = 0.45;
+  group.add(flame);
 
-  const fireLight = new THREE.PointLight(0xff7722, 2.8, 14.0, 1.4);
+  const fireLight = new THREE.PointLight(0xff7722, 2.6, 12.0, 1.4);
   fireLight.position.set(0, 0.8, 0);
   group.add(fireLight);
-
-  // Survivor seating log benches
-  const benchLog = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 2.2, 7), matTimberPlanks);
-  benchLog.rotation.z = Math.PI / 2;
-  benchLog.position.set(0, 0.2, 1.6);
-  group.add(benchLog);
 
   group.position.set(x, yBase, z);
   scene.add(group);
 }
 
 // ==============================================================================
-// 8. SCENE COMPOSITION & ENVIRONMENT POPULATION
+// 8. SCENE COMPOSITION
 // ==============================================================================
 function populateSafeIslandScene() {
   buildNaturalTerrain();
   buildOcean();
 
-  // Village Center: (0, -10)
   buildCampfire(0, -9.5);
 
-  // 3 Major Believable Survivor Cabins
-  createDetailedSurvivorCabin(-6.8, -12.5, 0.35); // West Cabin (Doctor / Clinic)
-  createDetailedSurvivorCabin(6.5, -11.0, -0.4);  // East Cabin (Workshop & Scavenger)
-  createDetailedSurvivorCabin(-1.5, -20.0, 0.05); // North Lookout Cabin (Elder / Food)
+  createDetailedSurvivorCabin(-6.8, -12.5, 0.35);
+  createDetailedSurvivorCabin(6.5, -11.0, -0.4);
+  createDetailedSurvivorCabin(-1.5, -20.0, 0.05);
 
-  // Boardwalk Dock & Moored Boat
   buildDetailedDock();
   buildDetailedBoat();
 
-  // Natural Coastal Palm Trees (Along beach dunes and shore)
   createRealisticPalmTree(-7.5, 3.5, 1.1, 0.4);
   createRealisticPalmTree(-9.2, 0.5, 0.95, 1.2);
   createRealisticPalmTree(7.8, 2.2, 1.15, -0.6);
@@ -1012,66 +746,80 @@ function populateSafeIslandScene() {
   createRealisticPalmTree(-5.0, -3.0, 1.05, 0.2);
   createRealisticPalmTree(5.5, -4.5, 1.0, -0.5);
 
-  // Dense Forest of Pines in Background Hills (North & Cliffs)
   createRealisticPineTree(-14.0, -18.0, 1.2, 0.3);
   createRealisticPineTree(-10.5, -24.0, 1.35, 0.8);
   createRealisticPineTree(-4.0, -28.0, 1.4, -0.2);
   createRealisticPineTree(3.5, -29.0, 1.45, 0.6);
   createRealisticPineTree(11.0, -25.0, 1.3, -0.5);
   createRealisticPineTree(14.5, -19.0, 1.15, 0.2);
-  createRealisticPineTree(8.5, -22.0, 1.25, 0.9);
 
-  // Coastal Rocks & Headlands
   createCoastalRock(-11.5, 5.0, 1.4, 0.4);
   createCoastalRock(-13.0, 2.0, 1.6, 1.1);
   createCoastalRock(11.8, 6.0, 1.5, -0.8);
   createCoastalRock(13.2, 2.5, 1.7, 0.5);
-  createCoastalRock(-8.0, -7.0, 1.1, 0.2);
-  createCoastalRock(8.5, -8.0, 1.2, -0.4);
 
-  // Shrubbery & Bush Clusters along paths
   createBush(-2.8, -2.5, 1.1);
   createBush(2.6, -1.5, 0.9);
   createBush(-3.5, -8.0, 1.2);
   createBush(3.2, -6.5, 1.0);
-  createBush(-4.5, -15.0, 1.3);
-  createBush(4.0, -16.0, 1.2);
 }
 
 // ==============================================================================
-// 9. LOCKED 3D CHARACTER INTEGRATION & CONTACT SHADOW
+// 9. 3D CHARACTER INTEGRATION & CONTACT SHADOW
 // ==============================================================================
+function createPlaceholderCharacter() {
+  placeholderModel = new THREE.Group();
+  const matJacket = new THREE.MeshLambertMaterial({ color: 0x2b3a4a });
+  const matSkin = new THREE.MeshLambertMaterial({ color: 0xd4a373 });
+
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.26, 1.0, 8), matJacket);
+  body.position.y = 0.9;
+  placeholderModel.add(body);
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), matSkin);
+  head.position.y = 1.55;
+  placeholderModel.add(head);
+
+  playerGroup.add(placeholderModel);
+}
+
 function loadPlayerCharacter() {
+  createPlaceholderCharacter();
+
+  const shadowGeo = new THREE.PlaneGeometry(0.85, 0.85);
+  const shadowMat = new THREE.MeshBasicMaterial({
+    color: 0x050c14,
+    transparent: true,
+    opacity: 0.55,
+    depthWrite: false,
+  });
+  const contactShadow = new THREE.Mesh(shadowGeo, shadowMat);
+  contactShadow.rotation.x = -Math.PI / 2;
+  contactShadow.position.y = 0.02;
+  playerGroup.add(contactShadow);
+
+  playerGroup.position.copy(playerPos);
+  scene.add(playerGroup);
+
   const loader = new THREE.GLTFLoader();
   loader.load('character_glb_idle_box_03_run_walk_7.glb', (gltf) => {
     characterModel = gltf.scene;
 
-    // Strict lock: no geometry or proportion changes
+    if (placeholderModel) {
+      playerGroup.remove(placeholderModel);
+      placeholderModel = null;
+    }
+
     characterModel.traverse((child) => {
       if (child.isMesh && child.material) {
-        child.material.metalness = 0.05;
+        child.material.metalness = 0.0;
         child.material.roughness = 0.85;
       }
     });
 
-    // Reference scale: human ~ 1.75m tall
     characterModel.scale.set(0.95, 0.95, 0.95);
     playerGroup.add(characterModel);
 
-    // Realistic Contact Shadow beneath boots
-    const shadowGeo = new THREE.PlaneGeometry(0.85, 0.85);
-    const shadowMat = new THREE.MeshBasicMaterial({
-      color: 0x050c14,
-      transparent: true,
-      opacity: 0.55,
-      depthWrite: false,
-    });
-    const contactShadow = new THREE.Mesh(shadowGeo, shadowMat);
-    contactShadow.rotation.x = -Math.PI / 2;
-    contactShadow.position.y = 0.02;
-    playerGroup.add(contactShadow);
-
-    // Animations setup
     mixer = new THREE.AnimationMixer(characterModel);
     gltf.animations.forEach((clip) => {
       const name = clip.name.toLowerCase();
@@ -1092,14 +840,8 @@ function loadPlayerCharacter() {
       currentAction = actions.idle;
       currentActionKey = 'idle';
     }
-
-    playerGroup.position.copy(playerPos);
-    scene.add(playerGroup);
-
-    loadingScreen.classList.add('done');
   }, undefined, (err) => {
-    console.error("Gagal memuat GLB:", err);
-    loadingScreen.classList.add('done');
+    console.warn("Using stylized character fallback:", err);
   });
 }
 
@@ -1128,7 +870,7 @@ function triggerAttack() {
   actions.attack.fadeIn(0.06).play();
   if (prevAction) prevAction.fadeOut(0.06);
 
-  targetCamDist = 11.5; // Cinematic punch zoom
+  targetCamDist = 11.5;
 }
 
 // ==============================================================================
@@ -1138,7 +880,7 @@ function updateCameraTransform(targetPos, delta) {
   cameraTarget.lerp(targetPos, delta ? 6.0 * delta : 1.0);
   camDist = THREE.MathUtils.lerp(camDist, targetCamDist, delta ? 8.0 * delta : 1.0);
 
-  const pitch = isCinematicView ? (26 * Math.PI / 180) : camPitch; // Lower angle for cinematic horizon
+  const pitch = isCinematicView ? (26 * Math.PI / 180) : camPitch;
   const dist = isCinematicView ? 16.0 : camDist;
 
   const offset = new THREE.Vector3(
@@ -1174,21 +916,16 @@ window.addEventListener('keyup', (e) => {
   keys[e.code] = false;
 });
 
-let activeInteractable = null;
-
 function animate() {
   requestAnimationFrame(animate);
 
   const delta = Math.min(clock.getDelta(), 0.05);
 
-  // Ocean wave surface animation
-  waterTime += delta * 1.2;
-  if (matWaterOcean.map) {
-    matWaterOcean.map.offset.y = waterTime * 0.02;
-    matWaterOcean.map.offset.x = Math.sin(waterTime * 0.5) * 0.01;
+  waterTime += delta * 1.5;
+  if (oceanMesh) {
+    oceanMesh.position.y = 0.05 + Math.sin(waterTime) * 0.03;
   }
 
-  // Moored boat gentle wave bobbing
   if (boatGroup) {
     boatBobTime += delta * 1.5;
     boatGroup.position.y = Math.sin(boatBobTime) * 0.06;
@@ -1196,7 +933,6 @@ function animate() {
     boatGroup.rotation.x = Math.cos(boatBobTime * 0.6) * 0.015;
   }
 
-  // Attack timer handling
   if (isAttacking) {
     attackTimer -= delta;
     if (attackTimer <= 0) {
@@ -1210,7 +946,6 @@ function animate() {
     }
   }
 
-  // Movement input
   let moveX = 0;
   let moveZ = 0;
   if (keys['KeyW'] || keys['ArrowUp']) moveZ -= 1;
@@ -1231,12 +966,9 @@ function animate() {
     playerPos.x += rotatedX * speed * delta;
     playerPos.z += rotatedZ * speed * delta;
 
-    // Constrain within island boundaries
     playerPos.x = THREE.MathUtils.clamp(playerPos.x, -24, 24);
     playerPos.z = THREE.MathUtils.clamp(playerPos.z, -32, 11);
 
-    // Dynamic terrain height resolution
-    // If on wooden dock (z > 2.0 and |x| < 1.5), maintain dock boardwalk height (0.55m)
     if (playerPos.z >= 2.0 && Math.abs(playerPos.x) <= 1.5) {
       playerPos.y = 0.55;
     } else {
@@ -1268,8 +1000,10 @@ function animate() {
   if (characterModel) {
     characterModel.rotation.y = playerFacing;
   }
+  if (placeholderModel) {
+    placeholderModel.rotation.y = playerFacing;
+  }
 
-  // Check interactables
   activeInteractable = null;
   for (let obj of interactables) {
     if (playerPos.distanceTo(obj.pos) < obj.radius) {
@@ -1294,7 +1028,7 @@ function animate() {
   renderer.render(scene, camera);
 }
 
-// Initialization
+// Window init
 window.addEventListener('DOMContentLoaded', () => {
   renderer = new THREE.WebGLRenderer({
     canvas,
@@ -1306,29 +1040,32 @@ window.addEventListener('DOMContentLoaded', () => {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
 
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0c1e30);
-  scene.fog = new THREE.FogExp2(0x0e2438, 0.014);
+  scene.background = new THREE.Color(0x8ec5fc);
+  scene.fog = new THREE.FogExp2(0xa1c4fd, 0.009);
 
   camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.5, 160);
 
-  // Warm Cinematic Sunlight with atmospheric blue sky ambient
-  const hemi = new THREE.HemisphereLight(0xaad3f5, 0x1a2e38, 0.85);
+  const hemi = new THREE.HemisphereLight(0xbbe1fa, 0x5a4a35, 1.15);
   scene.add(hemi);
 
-  const sun = new THREE.DirectionalLight(0xffecd0, 1.35);
-  sun.position.set(22, 38, 16);
+  const sun = new THREE.DirectionalLight(0xfff5e6, 1.7);
+  sun.position.set(28, 45, 24);
   scene.add(sun);
 
-  // Soft horizon rim light
-  const rim = new THREE.DirectionalLight(0xd97736, 0.45);
-  rim.position.set(-20, 12, -25);
-  scene.add(rim);
+  const fillSun = new THREE.DirectionalLight(0xa0d8ef, 0.65);
+  fillSun.position.set(-20, 25, -20);
+  scene.add(fillSun);
 
   initMaterials();
   populateSafeIslandScene();
   loadPlayerCharacter();
 
-  window.addEventListener('resize', onResize);
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
   animate();
 });
 </script>

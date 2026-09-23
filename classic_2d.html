@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Driftholm — Bertahan di Laut yang Naik</title>
+<meta name="description" content="Driftholm — game survival di laut yang naik. Seberapa jauh aku mau pergi sebelum aku berbalik?">
+<meta name="theme-color" content="#04090f">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Driftholm">
+<meta property="og:title" content="Driftholm — Bertahan di Laut yang Naik">
+<meta property="og:description" content="Seberapa jauh aku mau pergi sebelum aku berbalik?">
+<meta property="og:image" content="assets/branding/loading_hero.png">
+<meta property="og:url" content="https://lastharbor.fun/">
+<link rel="icon" type="image/png" href="assets/branding/appicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="preload" href="character_glb_idle_box_03_run_walk_7.glb" as="fetch" crossorigin>
+<style>
+/* ================= LAYAR PEMBUKA (boot) + LOADING =================
+   Dashboard minimalis: latar foto dermaga, slideshow bab pulau di atas,
+   logo + tagline di tengah, satu tombol PLAY besar di bawah.
+   Overlay loading bergaya "boot icon": ikon maskot berayun di dalam cincin
+   progres yang menyapu, hilang begitu asset inti siap. */
+#screen-boot {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  overflow: hidden;
+  background: var(--deep);
+}
+.boot-bg {
+  position: absolute;
+  inset: -4%;
+  background: url("assets/branding/dashboard_bg.png") center/cover no-repeat;
+  filter: saturate(1.05) brightness(0.82);
+  animation: bgDrift 26s ease-in-out infinite alternate;
+  opacity: 0;
+  /* mulai fade-in pas saat overlay loading (0.55s) sudah lenyap total */
+  transition: opacity 0.9s ease 0.55s;
+}
+/* Latar dashboard hanya tersingkap SETELAH overlay loading memudar — tidak ada
+   momen dua foto terlihat bertumpuk pada awal muat. */
+#screen-boot.boot-shown .boot-bg { opacity: 1; }
+.boot-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(4,9,15,0.55) 0%, rgba(4,9,15,0.18) 30%,
+                    rgba(4,9,15,0.12) 55%, rgba(4,9,15,0.82) 100%),
+    radial-gradient(120% 90% at 50% 30%, rgba(4,9,15,0) 40%, rgba(4,9,15,0.55) 100%);
+}
+@keyframes bgDrift {
+  from { transform: translate3d(-1.2%, -1%, 0) scale(1.02); }
+  to   { transform: translate3d(1.2%, 1%, 0) scale(1.06); }
+}
+
+/* ---- slideshow bab perjalanan ---- */
+.boot-chapters {
+  position: relative;
+  z-index: 2;
+  margin-top: calc(26px + env(safe-area-inset-top));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+.chapters-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 5px;
+  color: rgba(216,170,90,0.85);
+  text-transform: uppercase;
+}
+#chapter-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: var(--ink);
+  min-height: 26px;
+  transition: opacity 0.45s ease, transform 0.45s ease, filter 0.45s ease;
+  text-shadow: 0 2px 14px rgba(0,0,0,0.85);
+}
+#chapter-title.swap {
+  opacity: 0;
+  transform: translateY(8px);
+  filter: blur(3px);
+}
+.chapters-dots { display: flex; gap: 6px; }
+.chapters-dots i {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(237,242,247,0.28);
+  transition: background 0.3s, transform 0.3s;
+}
+.chapters-dots i.on { background: var(--brass); transform: scale(1.3); }
+
+/* ---- logo + tagline ---- */
+.boot-inner {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 0 24px;
+}
+.boot-logo {
+  width: min(74vw, 340px);
+  height: auto;
+  filter: drop-shadow(0 14px 34px rgba(0,0,0,0.75));
+  animation: logoFloat 5.2s ease-in-out infinite;
+}
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0) rotate(-0.4deg); }
+  50%      { transform: translateY(-8px) rotate(0.5deg); }
+}
+.boot-tagline {
+  font-size: 13px;
+  font-style: italic;
+  color: rgba(237,242,247,0.78);
+  line-height: 1.6;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.9);
+}
+
+/* ---- dok tombol ---- */
+.boot-dock {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 24px calc(26px + env(safe-area-inset-bottom));
+}
+.btn-play {
+  width: 100%;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: 4px;
+  color: #201305;
+  padding: 18px 22px;
+  border: none;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, #ffd98a 0%, #e6a94f 55%, #c8863a 100%);
+  box-shadow:
+    0 12px 30px rgba(0,0,0,0.55),
+    0 0 0 1px rgba(255,222,150,0.55) inset,
+    0 2px 0 rgba(255,240,200,0.65) inset;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s;
+  animation: playPulse 2.4s ease-in-out infinite;
+}
+.btn-play:active { transform: translateY(2px) scale(0.99); filter: brightness(0.94); }
+@keyframes playPulse {
+  0%, 100% { box-shadow: 0 12px 30px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,222,150,0.55) inset, 0 0 0 0 rgba(240,190,100,0.35); }
+  50%      { box-shadow: 0 12px 34px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,222,150,0.6) inset, 0 0 26px 4px rgba(240,190,100,0.4); }
+}
+.boot-sub-actions { display: flex; gap: 10px; width: 100%; }
+.boot-sub-actions .btn { flex: 1; font-size: 12px; padding: 11px 12px; letter-spacing: 2px; }
+.boot-warning {
+  font-size: 11px;
+  color: #e0b979;
+  line-height: 1.5;
+  max-width: 380px;
+}
+
+/* ---- overlay loading (boot icon) ---- */
+#boot-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  /* dasar gelap penuh MENDAHULUI foto hero — sementara foto termuat tidak ada
+     celah transparan tempat latar dashboard ikut terlihat bertumpuk */
+  background: var(--deep);
+  background-image: url("assets/branding/loading_hero.png");
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  transition: opacity 0.55s ease, visibility 0.55s;
+}
+#boot-loader::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(90% 70% at 50% 45%, rgba(4,9,15,0.05), rgba(4,9,15,0.68));
+  pointer-events: none;
+}
+#boot-loader.ready { opacity: 0; visibility: hidden; pointer-events: none; }
+#boot-loader > * { position: relative; z-index: 2; }
+.loader-stack { position: relative; width: 148px; height: 148px; }
+.loader-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, #ffd98a, #e6a94f 180deg, rgba(240,196,120,0.06) 78%, transparent 80%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #000 calc(100% - 6px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #000 calc(100% - 6px));
+  animation: ringSpin 1.5s linear infinite;
+  box-shadow: 0 0 24px rgba(240,196,120,0.28);
+}
+@keyframes ringSpin { to { transform: rotate(360deg); } }
+.loader-icon {
+  position: absolute;
+  inset: 21px;
+  animation: iconBoot 1.5s ease-in-out infinite;
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,0.65));
+}
+.loader-icon img { width: 100%; height: 100%; object-fit: contain; }
+@keyframes iconBoot {
+  0%, 100% { transform: translateY(3px) scale(0.96); }
+  50%      { transform: translateY(-4px) scale(1.03); }
+}
+.loader-text {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 7px;
+  color: rgba(240,214,160,0.92);
+  text-shadow: 0 2px 12px rgba(0,0,0,0.9);
+}
+.loader-text span { animation: dotPulse 1.4s ease-in-out infinite; display: inline-block; }
+.loader-text span:nth-child(2) { animation-delay: 0.2s; }
+.loader-text span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotPulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+
+/* ---- dashboard menu (kartu atas / statistik tengah / aksi bawah) ---- */
+.boot-dash {
+  position: relative; z-index: 2;
+  width: 100%; max-width: 560px;
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 6px 18px calc(18px + env(safe-area-inset-bottom));
+  max-height: 64vh; overflow-y: auto;
+  scrollbar-width: none;                      /* pita gulir tidak mengganggu kartu */
+}
+.boot-dash::-webkit-scrollbar { display: none; }
+
+.dash-row { width: 100%; }
+.dash-card {
+  background: rgba(8, 15, 24, 0.82);
+  border: 1px solid rgba(216, 170, 90, 0.22);
+  border-radius: 16px;
+  padding: 12px 14px;
+  text-align: left;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+.dash-card-head { display: flex; align-items: center; gap: 10px; }
+.dash-card-icon img { width: 34px; height: 34px; filter: drop-shadow(0 3px 8px rgba(0,0,0,0.6)); }
+.dash-card-titles { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dash-card-titles b { font-size: 13px; letter-spacing: 1.4px; color: var(--ink); }
+.dash-card-titles .small { color: var(--muted); }
+.dash-run-bar { height: 6px; border-radius: 4px; background: rgba(140, 170, 200, 0.14); margin: 10px 0 6px; overflow: hidden; }
+.dash-run-bar i { display: block; height: 100%; width: 0%; border-radius: 4px; background: linear-gradient(90deg, var(--brass), #ffe3a1); box-shadow: 0 0 8px rgba(216,170,90,0.6); transition: width 0.6s ease; }
+#dash-run-meta { color: var(--muted); }
+.dash-mid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.dash-stat {
+  background: rgba(8, 15, 24, 0.7);
+  border: 1px solid rgba(120, 150, 180, 0.18);
+  border-radius: 12px;
+  padding: 8px 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  backdrop-filter: blur(5px);
+  transition: transform 0.15s ease, border-color 0.2s;
+}
+.dash-stat:hover { transform: translateY(-2px); border-color: rgba(216, 170, 90, 0.45); }
+.dash-stat b { font-family: 'Montserrat', sans-serif; font-size: 20px; font-weight: 800; color: var(--brass); line-height: 1.1; }
+.dash-stat span { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); text-align: center; }
+.dash-actions { display: flex; flex-direction: column; gap: 8px; }
+.dash-menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.dash-menu-btn {
+  min-height: 44px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: rgba(8, 15, 24, 0.78);
+  border: 1px solid rgba(120, 150, 180, 0.26);
+  border-radius: 12px;
+  color: var(--ink);
+  font-size: 12px; font-weight: 700; letter-spacing: 2px;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.2s, background 0.2s;
+  backdrop-filter: blur(5px);
+}
+.dash-menu-btn b { color: var(--brass); font-size: 15px; font-weight: 400; }
+.dash-menu-btn:active { transform: translateY(1px) scale(0.99); }
+.dash-menu-btn:hover { border-color: rgba(216, 170, 90, 0.5); background: rgba(14, 22, 33, 0.9); }
+.dash-version { color: rgba(237, 242, 247, 0.42); letter-spacing: 1px; margin-top: 2px; }
+/* ---- overlay pop kartu (panduan & pengaturan) ---- */
+.menu-pop {
+  position: absolute; inset: 0; z-index: 30;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(4, 9, 15, 0.7);
+  backdrop-filter: blur(3px);
+  pointer-events: auto;
+}
+.menu-card {
+  width: min(92vw, 460px);
+  background: rgba(9, 17, 26, 0.97);
+  border: 1px solid rgba(216, 170, 90, 0.3);
+  border-radius: 16px;
+  padding: 14px 16px 16px;
+  text-align: left;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.65);
+  max-height: 84vh; overflow-y: auto;
+}
+.menu-card.hidden, .menu-pop.hidden { display: none; }
+.menu-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.menu-card-head h3 { font-family: 'Montserrat', sans-serif; font-size: 14px; letter-spacing: 3px; color: var(--brass); text-transform: uppercase; }
+.howto-list { padding-left: 18px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; line-height: 1.55; color: var(--ink); }
+.howto-list b { color: var(--brass); }
+.set-row {
+  width: 100%; min-height: 48px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 14px; margin-bottom: 8px;
+  background: rgba(18, 28, 40, 0.55);
+  border: 1px solid rgba(120, 150, 180, 0.22);
+  border-radius: 12px;
+  color: var(--ink); font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.12s;
+}
+.set-row:hover { border-color: rgba(216, 170, 90, 0.45); background: rgba(22, 33, 46, 0.75); }
+.set-row:active { transform: translateY(1px); }
+.set-row b { font-size: 11px; letter-spacing: 2px; color: var(--brass); }
+.set-row.off b { color: var(--muted); }
+.set-danger:hover { border-color: rgba(216, 80, 63, 0.6); }
+.set-danger b { color: var(--red); }
+.set-note { color: var(--muted); margin-top: 2px; }
+@media (max-width: 480px) {
+  .boot-dash { padding: 4px 12px calc(14px + env(safe-area-inset-bottom)); }
+  .dash-mid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-height: 480px) {
+  .boot-chapters { margin-top: calc(10px + env(safe-area-inset-top)); transform: scale(0.85); }
+  .boot-inner { flex: 0 0 auto; gap: 2px; padding: 0; }
+  .boot-logo { width: min(28vw, 128px); }
+  .boot-tagline { display: none; }
+  .boot-dash { max-height: none; gap: 8px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+  .dash-stat span { font-size: 8px; }
+  /* Layar pendek: tombol menu jadi ikon pojok kanan-atas di luar alur kartu —
+     standar roguelike mobile (⚙ selalu terlihat tanpa menggulir). */
+  .dash-menu-grid {
+    position: fixed; z-index: 26;
+    top: calc(8px + env(safe-area-inset-top));
+    right: calc(10px + env(safe-area-inset-right));
+    width: auto; display: flex; gap: 8px;
+  }
+  .dash-menu-btn { min-height: 40px; height: 40px; padding: 0 12px; font-size: 10px; border-radius: 10px; }
+}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="ui">
+
+  <!-- ================= LAYAR PEMBUKA / DASHBOARD ================= -->
+  <section id="screen-boot">
+    <div class="boot-bg"></div>
+    <div class="boot-vignette"></div>
+
+    <div class="boot-chapters">
+      <span class="chapters-label">Bab Perjalanan</span>
+      <h2 id="chapter-title">Pulau Sepuh</h2>
+      <div class="chapters-dots" id="chapter-dots"></div>
+    </div>
+
+    <div class="boot-inner">
+      <img class="boot-logo" src="assets/branding/logo.png" alt="Driftholm">
+      <p class="boot-tagline">Seberapa jauh aku mau pergi sebelum aku berbalik?</p>
+    </div>
+
+    <!-- ================= DASHBOARD MENU (roguemenu standar: kartu atas, statistik tengah, aksi bawah) ================= -->
+    <div class="boot-dash" id="boot-dash">
+      <!-- ATAS: kartu kondisi pelayaran berjalan -->
+      <div class="dash-row dash-top">
+        <div class="dash-card" id="dash-run">
+          <div class="dash-card-head">
+            <span class="dash-card-icon"><img src="assets/branding/mascot.png" alt=""></span>
+            <div class="dash-card-titles">
+              <b id="dash-run-title">Pelayaran Pertama</b>
+              <span id="dash-run-sub" class="small">Dermaga masih menunggu.</span>
+            </div>
+          </div>
+          <div class="dash-run-bar"><i id="dash-run-bar-fill"></i></div>
+          <p id="dash-run-meta" class="small">Palka I · 0 kayu · 0 solar tersimpan</p>
+        </div>
+      </div>
+
+      <!-- TENGAH: grid kartu statistik lintas-run -->
+      <div class="dash-row dash-mid">
+        <div class="dash-stat"><b id="st-night">0</b><span>Malam terbaik</span></div>
+        <div class="dash-stat"><b id="st-kills">0</b><span>Zombie terbunuh</span></div>
+        <div class="dash-stat"><b id="st-isles">0</b><span>Pulau disurvei</span></div>
+        <div class="dash-stat"><b id="st-deaths">0</b><span>Kematian</span></div>
+      </div>
+
+      <!-- BAWAH: kartu aksi menu standar roguelike -->
+      <div class="dash-row dash-actions">
+        <a href="safe_island_3d.html" class="btn-rebuild-preview" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; text-decoration: none; font-family: 'Montserrat', sans-serif; font-size: 14px; font-weight: 800; letter-spacing: 2px; color: #0284c7; background: rgba(56, 189, 248, 0.15); border: 1.5px solid #38bdf8; border-radius: 14px; padding: 12px 16px; margin-bottom: 8px; box-shadow: 0 4px 15px rgba(56, 189, 248, 0.2); transition: all 0.2s;">🏝️ COBA SAFE ISLAND 2.5D (REBUILD)</a>
+        <button id="btn-boot-start" class="btn-play">▶&nbsp; MAIN</button>
+        <div class="boot-sub-actions">
+          <button id="btn-boot-continue" class="btn btn-primary hidden">LANJUTKAN</button>
+          <button id="btn-boot-new" class="btn hidden">MALAM BARU</button>
+        </div>
+        <div class="dash-menu-grid">
+          <button id="btn-menu-howto" class="dash-menu-btn"><b>⌁</b> CARA MAIN</button>
+          <button id="btn-menu-settings" class="dash-menu-btn"><b>⚙</b> PENGATURAN</button>
+          <button id="btn-menu-journal" class="dash-menu-btn"><b>◈</b> JURNAL</button>
+        </div>
+        <p class="dash-version small">Driftholm · kabar dari dermaga terakhir</p>
+      </div>
+      <p id="boot-warning" class="boot-warning hidden">Gudang &amp; progres refit tetap tersimpan di dermaga. Malam akan dimulai lagi dari awal.</p>
+    </div>
+
+    <!-- Overlay: PANDUAN -->
+    <div id="menu-howto" class="menu-pop hidden">
+      <div class="menu-card">
+        <div class="menu-card-head"><h3>Cara Main</h3><button class="icon-btn" data-pop-close="menu-howto">✕</button></div>
+        <ol class="howto-list">
+          <li>Berjalan dengan <b>WASD / panah / joystick</b> (di ponsel, sentuh kuadran kiri — joystick mengikuti jempol).</li>
+          <li><b>E / tombol AKSI</b> untuk memakai meja, memanen, dan naik kapal. <b>SPASI / tombol SERANG</b> untuk melawan zombie.</li>
+          <li>Berlayar dari peta laut, kuras pulau, dan pulang <b>sebelum air pasang</b> membekap lambungmu.</li>
+          <li>Perbaiki palka di meja refit. Bertahanlah sampai <b>fajar</b> — air turun, kamu dicatat.</li>
+        </ol>
+      </div>
+    </div>
+    <!-- Overlay: PENGATURAN -->
+    <div id="menu-settings" class="menu-pop hidden">
+      <div class="menu-card">
+        <div class="menu-card-head"><h3>Pengaturan</h3><button class="icon-btn" data-pop-close="menu-settings">✕</button></div>
+        <button class="set-row" id="set-music"><span>Musik &amp; ambience</span><b id="set-music-val">NYALA</b></button>
+        <button class="set-row" id="set-motion"><span>Kurangi animasi</span><b id="set-motion-val">MATI</b></button>
+        <button class="set-row set-danger" id="set-wipe"><span>Hapus semua data</span><b id="set-wipe-val">…</b></button>
+        <p class="small set-note">Hapus data menghilangkan save, statistik, dan preferensi — tidak bisa dibatalkan.</p>
+        <div class="set-log">
+          <b>Rekam Perjalanan</b>
+          <p id="set-logout" class="small">…</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="boot-loader">
+      <div class="loader-stack">
+        <div class="loader-ring"></div>
+        <div class="loader-icon"><img src="assets/branding/mascot.png" alt=""></div>
+      </div>
+      <div class="loader-text">MEMUAT<span>.</span><span>.</span><span>.</span></div>
+    </div>
+  </section>
+
+  <!-- ================= FAJAR PERTAMA (ritual satu-dua kali seumur hidup) ================= -->
+  <div id="dawn-ceremony" aria-hidden="true">
+    <div class="dc-bar dc-top"></div>
+    <div class="dc-bar dc-bottom"></div>
+    <div class="dc-text">
+      <span class="dc-label">FAJAR PERTAMA</span>
+      <p>Air turun, langit pulih — dan kamu pulang. Catatan baru masuk ke jurnal.</p>
+    </div>
+  </div>
+
+  <!-- ================= HUD ================= -->
+  <section id="hud">
+    <div id="hud-top">
+      <!-- kartu profil: avatar + nama + nyawa kapal -->
+      <div class="hud-card card-profile">
+        <div class="profile-avatar"><img src="assets/branding/appicon.png" alt="Kapten"></div>
+        <div class="profile-meta">
+          <span class="profile-title">PELAMPUNG</span>
+          <div class="hull-bar"><div id="hull-fill"></div></div>
+          <span id="hull-text" class="mono">100/100</span>
+        </div>
+      </div>
+
+      <!-- kartu resource: 4 ikon + muatan, semua ikon tanpa teks label -->
+      <div class="hud-card card-res">
+        <span class="res-chip" title="Solar"><img src="assets/ui/icon_fuel.png"><b id="res-fuel">0</b></span>
+        <span class="res-chip" title="Kayu"><img src="assets/ui/icon_wood.png"><b id="res-wood">0</b></span>
+        <span class="res-chip" title="Makanan"><img src="assets/ui/icon_food.png"><b id="res-food">0</b></span>
+        <span class="res-chip" title="Obat"><img src="assets/ui/icon_medicine.png"><b id="res-medicine">0</b></span>
+        <span class="res-chip carry" title="Muatan palka"><img src="assets/ui/icon_inventory.png"><b id="hold-text" class="mono">0/10</b></span>
+        <div id="hold-pips" class="hold-pips"></div>
+      </div>
+
+      <!-- kartu koin drif -->
+      <div class="hud-card card-drif" title="Koin drif">
+        <img src="assets/branding/coin_drif.png">
+        <b id="drif-count">0</b>
+      </div>
+
+      <div id="tide-block" class="hud-card card-tide tide-calm hidden">
+        <div id="tide-name">TENANG</div>
+        <div class="tide-bar"><div id="tide-fill"></div></div>
+      </div>
+
+      <button id="btn-pause" class="icon-btn" title="Jeda (P)" style="letter-spacing:-1px;font-weight:900">▮▮</button>
+      <button id="btn-mute" class="icon-btn" title="Suara (M)">♪</button>
+    </div>
+
+    <div id="goal-chip">—</div>
+    <div id="gather-chip" class="hidden"></div>
+    <div id="hint-line" class="hidden"></div>
+    <div id="bank-beat" class="hidden"></div>
+    <div id="toasts"></div>
+
+    <!-- ================= DOCK MENU FOOTER (Navigasi Dermaga Standar Mobile) ================= -->
+    <nav id="harbor-dock" class="harbor-dock hidden" aria-label="Navigasi Dermaga">
+      <div class="dock-bar">
+        <button class="dock-tab" id="dock-btn-chart" data-dock="chart" title="Peta Perairan">
+          <span class="dock-icon"><img src="assets/ui/icon_sail.png" alt=""></span>
+          <span class="dock-label">PETA</span>
+        </button>
+        <button class="dock-tab" id="dock-btn-bench" data-dock="bench" title="Meja Kerja / Refit">
+          <span class="dock-icon"><img src="assets/ui/icon_upgrade.png" alt=""></span>
+          <span class="dock-label">BENGKEL</span>
+          <span class="dock-badge hidden" id="dock-badge-bench"></span>
+        </button>
+        <button class="dock-tab" id="dock-btn-store" data-dock="inventory" title="Gudang & Kapal">
+          <span class="dock-icon"><img src="assets/ui/icon_inventory.png" alt=""></span>
+          <span class="dock-label">GUDANG</span>
+        </button>
+        <button class="dock-tab" id="dock-btn-journal" data-dock="journal" title="Jurnal Catatan">
+          <span class="dock-icon"><img src="assets/environment/note_scrap.png" alt=""></span>
+          <span class="dock-label">JURNAL</span>
+          <span class="dock-badge hidden" id="dock-badge-journal"></span>
+        </button>
+        <button class="dock-tab" id="dock-btn-shop" data-dock="shop" title="Kios Kosmetik">
+          <span class="dock-icon"><img src="assets/branding/coin_drif.png" alt=""></span>
+          <span class="dock-label">KIOS</span>
+        </button>
+      </div>
+    </nav>
+
+    <div id="hud-bottom">
+      <div id="joystick"><div id="joy-knob"></div></div>
+      <div id="hud-actions">
+        <button id="btn-context" class="ctx hidden">AKSI</button>
+        <button id="btn-heal" class="heal hidden">MAKAN</button>
+        <button id="btn-attack" class="atk hidden">SERANG</button>
+      </div>
+    </div>
+
+    <!-- JEDA: selubung pemutar pasif; waktu game beku selama tampil -->
+    <div id="pause-veil" class="hidden">
+      <div class="pause-card">
+        <h2>JEDA</h2>
+        <p class="muted">Laut menunggumu. Pasang pun ikut berhenti.</p>
+        <button id="btn-resume" class="btn btn-primary wide">LANJUT</button>
+      <button id="btn-veil-journal" class="btn wide">JURNAL</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MEJA PETA ================= -->
+  <section id="modal-chart" class="modal hidden">
+    <div class="panel modal-panel">
+      <div class="modal-head">
+        <h2>PETA PERAIRAN</h2>
+        <button id="chart-close" class="icon-btn">✕</button>
+      </div>
+      <div id="chart-bank" class="chips"></div>
+      <div id="chart-map" class="chart-map"></div>
+      <div id="chart-list" class="chart-rows chart-list"></div>
+      <p id="chart-hint" class="hint"></p>
+      <button id="chart-sail" class="btn btn-primary wide">BERLAYAR</button>
+      <p class="fineprint">Jarak dari dermaga adalah ongkosnya. Pulau jauh lebih kaya — dan pasang terus naik selama kau di luar.</p>
+    </div>
+  </section>
+
+  <!-- ================= MEJA KERJA ================= -->
+  <section id="modal-bench" class="modal hidden">
+    <div class="panel modal-panel">
+      <div class="modal-head">
+        <h2 id="bench-title">MEJA KERJA</h2>
+        <button id="bench-close" class="icon-btn">✕</button>
+      </div>
+      <p id="bench-sub" class="fineprint"></p>
+      <div id="bench-bank" class="chips"></div>
+      <div id="bench-rows" class="bench-rows"></div>
+      <p class="fineprint">Gudang di dermaga tidak bisa hilang. Hanya muatan yang masih kau bawa yang bisa hilang.</p>
+    </div>
+  </section>
+
+  <!-- ================= GUDANG & KAPAL ================= -->
+  <section id="modal-inventory" class="modal hidden">
+    <div class="panel modal-panel">
+      <div class="modal-head">
+        <h2>GUDANG &amp; KAPAL</h2>
+        <button id="inv-close" class="icon-btn">✕</button>
+      </div>
+      <div id="inv-resources"></div>
+      <div id="inv-boat"></div>
+      <p class="fineprint">Semakin besar kapal (pasang Palka di meja kerja), semakin banyak resource yang bisa kau bawa dalam satu pelayaran.</p>
+    </div>
+  </section>
+
+  <!-- ================= DEBRIEF ================= -->
+  <section id="modal-shop" class="modal hidden">
+    <div class="panel modal-panel">
+      <div class="modal-head">
+        <div>
+          <h2>KIOS LENTERA & CAT</h2>
+          <p class="fineprint">Warna pelita, aksen antarmuka, tinta peta. Koin drif tidak membeli kekuatan — hanya rasa.</p>
+        </div>
+        <button class="icon-btn" id="shop-close">✕</button>
+      </div>
+      <div class="shop-balance">Koin drif: <b id="shop-drif">0</b> <img src="assets/branding/coin_drif.png" alt=""></div>
+      <div id="shop-rows" class="shop-rows"></div>
+    </div>
+  </section>
+
+  <section id="modal-journal" class="modal hidden">
+    <div class="panel modal-panel">
+      <div class="modal-head">
+        <h2>JURNAL PELAMPUNG</h2>
+        <button class="icon-btn" id="journal-close">✕</button>
+      </div>
+      <div class="journal-meta chips"><span class="res-chip">◧ <b id="journal-count">0 / 0 lembar</b></span></div>
+      <div id="journal-rows" class="journal-rows"></div>
+      <p class="fineprint">Catatan dari pelaut yang tidak pulang. Lembar terombang-ambik di pulau — injak ia.</p>
+    </div>
+  </section>
+
+  <section id="modal-debrief" class="modal hidden">
+    <div class="panel modal-panel debrief">
+      <h2 id="db-title">KAPAL TENGGELAM</h2>
+      <p id="db-cause" class="cause"></p>
+      <div id="db-lost"></div>
+      <div id="db-kept"></div>
+      <p id="db-salvage" class="salvage-line"></p>
+      <div id="db-night" class="night-line"></div>
+      <p id="db-goal" class="goal-line"></p>
+      <p id="db-records" class="records-line small"></p>
+      <button id="db-close" class="btn btn-primary wide">KEMBALI KE DERMAGA</button>
+    </div>
+  </section>
+
+</div>
+
+<noscript><div style="color:#fff;padding:20px">Game ini membutuhkan JavaScript.</div></noscript>
+<script src="js/vendor/three.min.js"></script>
+<script src="js/vendor/GLTFLoader.js"></script>
+<script type="module" src="js/boot.js"></script>
+</body>
+</html>
