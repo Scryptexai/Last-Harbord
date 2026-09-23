@@ -304,16 +304,26 @@ export function updateCharacter3D(dt, p) {
   }
 }
 
-export function drawCharacter3D(ctx, p, sz) {
+export function drawCharacter3D(ctx, p, sz = 72) {
+  // Dalam denah 2D playzone (denah dermaga & pulau), tinggi karakter asli adalah 40-45px
+  // (sz * 0.625). Di offCanvas 3D (256x256), tinggi model adalah 194px, telapak kaki di y = 226px,
+  // dan sumbu tengah x di 129px.
+  // Rumus ini menempatkan telapak kaki tepat di (0,0) titik jangkar tanah dengan tinggi 42-45px,
+  // tersinkronisasi presisi dengan denah dermaga, zombie (34px-62px), dan collision circle (r=13).
+  const s = (sz * 0.625) / 194;
+  const drawW = 256 * s;
+  const drawH = drawW;
+  const drawX = -129 * s;
+  const drawY = -226 * s;
+
   if (isReady && offCanvas) {
-    // Posisi kaki tepat di y=0 (titik jangkar pemain)
-    ctx.drawImage(offCanvas, -sz * 0.67, -sz * 1.05, sz * 1.34, sz * 1.34);
+    ctx.drawImage(offCanvas, drawX, drawY, drawW, drawH);
     return;
   }
 
   // Fallback untuk headless test suite (Node.js) bila ASSETS.player tersedia
   if (typeof ASSETS !== 'undefined' && ASSETS && ASSETS.player) {
-    ctx.drawImage(ASSETS.player, -sz * 0.67, -sz * 1.05, sz * 1.34, sz * 1.34);
+    ctx.drawImage(ASSETS.player, -sz / 2, -sz * 0.92, sz, sz);
     return;
   }
 

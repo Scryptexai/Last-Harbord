@@ -1562,7 +1562,7 @@ function drawPlayer(ctx, L) {
 
   atUpright(ctx, p.x, p.y, () => {
     if (p.invuln > 0 && Math.floor(G.time * 20) % 2 === 0) ctx.globalAlpha = 0.5;
-    const sz = 74;
+    const sz = 72;
     drawCharacter3D(ctx, p, sz);
     ctx.globalAlpha = 1;
   });

@@ -668,8 +668,8 @@ function drawCargo(ctx) {
 function drawPlayer(ctx, p) {
   // bayangan rata di dek
   ctx.fillStyle = 'rgba(0,0,0,0.32)';
-  ctx.beginPath(); ctx.ellipse(p.x, p.y + 3, 12, 5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(p.x, p.y + 3, 11, 4.5, 0, 0, Math.PI * 2); ctx.fill();
   atUpright(ctx, p.x, p.y, () => {
-    drawCharacter3D(ctx, p, 70);
+    drawCharacter3D(ctx, p, 68);
   });
 }
