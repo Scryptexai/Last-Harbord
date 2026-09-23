@@ -8,8 +8,7 @@ const SHEET_SPEC = { zombie_slow: 3, zombie_fast: 3, zombie_tank: 3 };
 const SHEET_DIRS = ['front', 'back', 'side', 'ne', 'se'];
 
 const ASSET_PATHS = {
-  // Characters & Entities (Pemain kini beralih ke 3D GLB model)
-  character_glb: 'character_glb_idle_box_03_run_walk_7.glb',
+  // Characters & Entities (Pemain kini beralih ke 3D GLB model murni tanpa new Image())
   boat_lv1: 'assets/characters/boat_lv1.png',
   boat_lv2: 'assets/characters/boat_lv2.png',
   boat_lv3: 'assets/characters/boat_lv3.png',
