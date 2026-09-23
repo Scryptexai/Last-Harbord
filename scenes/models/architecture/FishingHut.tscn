@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3]
 
-[ext_resource type="PackedScene" path="res://assets/models/architecture/fishing_hut.glb" id="1_model"]
+[ext_resource type="PackedScene" path="res://assets/environment/buildings/fishing_hut.glb" id="1_model"]
 
 [node name="FishingHut" type="StaticBody3D"]
 

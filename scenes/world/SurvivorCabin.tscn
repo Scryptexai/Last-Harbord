@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://b1m7k9v4q2x8"]
 
-[ext_resource type="PackedScene" path="res://assets/models/architecture/survivor_cabin.glb" id="1_model"]
+[ext_resource type="PackedScene" path="res://assets/environment/buildings/survivor_cabin.glb" id="1_model"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_cabin"]
 size = Vector3(5.2, 3.2, 4.4)

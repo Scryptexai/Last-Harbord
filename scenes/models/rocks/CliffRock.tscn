@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3]
 
-[ext_resource type="PackedScene" path="res://assets/models/rocks/cliff_rock.glb" id="1_model"]
+[ext_resource type="PackedScene" path="res://assets/environment/rocks/cliff_rock.glb" id="1_model"]
 
 [node name="CliffRock" type="StaticBody3D"]
 

@@ -1,0 +1,162 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Environment" path="res://scenes/world/DefaultEnv.tres" id="1_env"]
+
+[node name="EnvironmentAssetGallery" type="Node3D"]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, 0.75, -0.433013, 0, 10, 0)
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = ExtResource("1_env")
+
+[ext_resource type="PackedScene" path="res://assets/environment/apocalypse/abandoned_containers.glb" id="2_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/apocalypse/abandoned_vehicle.glb" id="3_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/apocalypse/broken_equipment.glb" id="4_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/apocalypse/broken_fence.glb" id="5_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/boat/survivor_boat.glb" id="6_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/buildings/fishing_hut.glb" id="7_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/buildings/gate.glb" id="8_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/buildings/small_survivor_house.glb" id="9_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/buildings/stairs.glb" id="10_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/buildings/storage_shed.glb" id="11_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/buildings/survivor_cabin.glb" id="12_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/buildings/wooden_fence.glb" id="13_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/buildings/wooden_platform.glb" id="14_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/dock/bollard.glb" id="15_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/dock/dock_extension.glb" id="16_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/dock/fishing_equipment.glb" id="17_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/dock/support_beams.glb" id="18_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/dock/test_dock.glb" id="19_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/dock/wooden_dock.glb" id="20_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/props/barrel.glb" id="21_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/props/campfire.glb" id="22_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/props/debris.glb" id="23_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/props/fishing_net.glb" id="24_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/props/fuel_container.glb" id="25_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/props/lantern.glb" id="26_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/props/rope.glb" id="27_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/props/scrap_metal.glb" id="28_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/props/toolbox.glb" id="29_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/props/water_container.glb" id="30_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/props/wooden_crate.glb" id="31_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/props/wooden_plank.glb" id="32_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/rocks/cliff_rock.glb" id="33_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/rocks/rock_large.glb" id="34_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/rocks/rock_medium.glb" id="35_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/rocks/rock_small.glb" id="36_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/terrain/pipeline_terrain.glb" id="37_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/vegetation/coconut_palm.glb" id="38_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/vegetation/coconut_palm_variation.glb" id="39_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/vegetation/dead_tree.glb" id="40_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/vegetation/fallen_branch.glb" id="41_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/vegetation/small_plants.glb" id="42_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/vegetation/tall_grass.glb" id="43_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/vegetation/tropical_bush.glb" id="44_glb"]
+[ext_resource type="PackedScene" path="res://assets/environment/vegetation/tropical_tree.glb" id="45_glb"]
+
+[node name="APOCALYPSE" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+[node name="abandoned_containers" parent="APOCALYPSE" instance=ExtResource("2_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -10)
+[node name="abandoned_vehicle" parent="APOCALYPSE" instance=ExtResource("3_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, -10)
+[node name="broken_equipment" parent="APOCALYPSE" instance=ExtResource("4_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10)
+[node name="broken_fence" parent="APOCALYPSE" instance=ExtResource("5_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, -10)
+[node name="BOAT" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+[node name="survivor_boat" parent="BOAT" instance=ExtResource("6_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 0)
+[node name="BUILDINGS" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+[node name="fishing_hut" parent="BUILDINGS" instance=ExtResource("7_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 10)
+[node name="gate" parent="BUILDINGS" instance=ExtResource("8_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 10)
+[node name="small_survivor_house" parent="BUILDINGS" instance=ExtResource("9_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10)
+[node name="stairs" parent="BUILDINGS" instance=ExtResource("10_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 10)
+[node name="storage_shed" parent="BUILDINGS" instance=ExtResource("11_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 10)
+[node name="survivor_cabin" parent="BUILDINGS" instance=ExtResource("12_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 14)
+[node name="wooden_fence" parent="BUILDINGS" instance=ExtResource("13_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 14)
+[node name="wooden_platform" parent="BUILDINGS" instance=ExtResource("14_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 14)
+[node name="DOCK" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+[node name="bollard" parent="DOCK" instance=ExtResource("15_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 20)
+[node name="dock_extension" parent="DOCK" instance=ExtResource("16_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 20)
+[node name="fishing_equipment" parent="DOCK" instance=ExtResource("17_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 20)
+[node name="support_beams" parent="DOCK" instance=ExtResource("18_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 20)
+[node name="test_dock" parent="DOCK" instance=ExtResource("19_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 20)
+[node name="wooden_dock" parent="DOCK" instance=ExtResource("20_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 24)
+[node name="PROPS" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+[node name="barrel" parent="PROPS" instance=ExtResource("21_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 30)
+[node name="campfire" parent="PROPS" instance=ExtResource("22_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 30)
+[node name="debris" parent="PROPS" instance=ExtResource("23_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 30)
+[node name="fishing_net" parent="PROPS" instance=ExtResource("24_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 30)
+[node name="fuel_container" parent="PROPS" instance=ExtResource("25_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 30)
+[node name="lantern" parent="PROPS" instance=ExtResource("26_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 34)
+[node name="rope" parent="PROPS" instance=ExtResource("27_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 34)
+[node name="scrap_metal" parent="PROPS" instance=ExtResource("28_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 34)
+[node name="toolbox" parent="PROPS" instance=ExtResource("29_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 34)
+[node name="water_container" parent="PROPS" instance=ExtResource("30_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 34)
+[node name="wooden_crate" parent="PROPS" instance=ExtResource("31_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 38)
+[node name="wooden_plank" parent="PROPS" instance=ExtResource("32_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 38)
+[node name="ROCKS" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+[node name="cliff_rock" parent="ROCKS" instance=ExtResource("33_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 40)
+[node name="rock_large" parent="ROCKS" instance=ExtResource("34_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 40)
+[node name="rock_medium" parent="ROCKS" instance=ExtResource("35_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 40)
+[node name="rock_small" parent="ROCKS" instance=ExtResource("36_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 40)
+[node name="TERRAIN" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+[node name="pipeline_terrain" parent="TERRAIN" instance=ExtResource("37_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 50)
+[node name="VEGETATION" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+[node name="coconut_palm" parent="VEGETATION" instance=ExtResource("38_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 60)
+[node name="coconut_palm_variation" parent="VEGETATION" instance=ExtResource("39_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 60)
+[node name="dead_tree" parent="VEGETATION" instance=ExtResource("40_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 60)
+[node name="fallen_branch" parent="VEGETATION" instance=ExtResource("41_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0, 60)
+[node name="small_plants" parent="VEGETATION" instance=ExtResource("42_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 60)
+[node name="tall_grass" parent="VEGETATION" instance=ExtResource("43_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 64)
+[node name="tropical_bush" parent="VEGETATION" instance=ExtResource("44_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0, 64)
+[node name="tropical_tree" parent="VEGETATION" instance=ExtResource("45_glb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 64)

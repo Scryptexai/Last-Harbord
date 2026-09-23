@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3]
 
-[ext_resource type="PackedScene" path="res://assets/models/vegetation/tropical_bush.glb" id="1_model"]
+[ext_resource type="PackedScene" path="res://assets/environment/vegetation/tropical_bush.glb" id="1_model"]
 
 [node name="TropicalBush" type="StaticBody3D"]
 

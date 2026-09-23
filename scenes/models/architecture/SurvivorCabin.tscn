@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3]
 
-[ext_resource type="PackedScene" path="res://assets/models/architecture/survivor_cabin.glb" id="1_model"]
+[ext_resource type="PackedScene" path="res://assets/environment/buildings/survivor_cabin.glb" id="1_model"]
 
 [node name="SurvivorCabin" type="StaticBody3D"]
 

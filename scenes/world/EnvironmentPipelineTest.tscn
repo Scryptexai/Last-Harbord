@@ -1,7 +1,7 @@
 [gd_scene load_steps=10 format=3 uid="uid://b8m3k7v9q2x5"]
 
 [ext_resource type="Environment" uid="uid://c7m9v1p4k8x2" path="res://scenes/world/PipelineTestEnv.tres" id="1_env"]
-[ext_resource type="PackedScene" path="res://assets/models/terrain/pipeline_terrain.glb" id="2_terrain"]
+[ext_resource type="PackedScene" path="res://assets/environment/terrain/pipeline_terrain.glb" id="2_terrain"]
 [ext_resource type="PackedScene" uid="uid://b1m7k9v4q2x8" path="res://scenes/world/SurvivorCabin.tscn" id="3_cabin"]
 [ext_resource type="PackedScene" uid="uid://d2k4m8n1p9x5" path="res://scenes/world/PalmTree.tscn" id="4_palm"]
 [ext_resource type="PackedScene" uid="uid://cb4k7m9v1p2x" path="res://scenes/world/TropicalTree.tscn" id="5_tropical"]

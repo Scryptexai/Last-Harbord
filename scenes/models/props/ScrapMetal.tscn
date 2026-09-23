@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3]
 
-[ext_resource type="PackedScene" path="res://assets/models/props/scrap_metal.glb" id="1_model"]
+[ext_resource type="PackedScene" path="res://assets/environment/props/scrap_metal.glb" id="1_model"]
 
 [node name="ScrapMetal" type="StaticBody3D"]
 
