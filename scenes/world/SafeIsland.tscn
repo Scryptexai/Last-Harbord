@@ -1,179 +1,430 @@
-[gd_scene load_steps=18 format=3 uid="uid://df8k3m9v2p7x"]
+[gd_scene load_steps=90 format=3]
 
-[ext_resource type="Script" path="res://scripts/world/safe_island.gd" id="1_safe_island"]
-[ext_resource type="Environment" uid="uid://b7v6k2p9q0m1" path="res://scenes/world/DefaultEnv.tres" id="2_env"]
-[ext_resource type="PackedScene" uid="uid://df7h4k8m2p9v" path="res://scenes/player/Player.tscn" id="3_player"]
-[ext_resource type="PackedScene" uid="uid://c8m4n2p6q9v1" path="res://scenes/player/IsometricCamera.tscn" id="4_camera"]
-[ext_resource type="PackedScene" uid="uid://b2k8n4p9q7m5" path="res://scenes/boat/Boat.tscn" id="5_boat"]
-[ext_resource type="PackedScene" uid="uid://b1m7k9v4q2x8" path="res://scenes/world/SurvivorCabin.tscn" id="6_cabin"]
-[ext_resource type="PackedScene" uid="uid://d2k4m8n1p9x5" path="res://scenes/world/PalmTree.tscn" id="7_palm"]
-[ext_resource type="PackedScene" uid="uid://cb4k7m9v1p2x" path="res://scenes/world/PineTree.tscn" id="8_pine"]
-[ext_resource type="PackedScene" uid="uid://df7k3m1p8v9x" path="res://scenes/world/Campfire.tscn" id="9_fire"]
-[ext_resource type="PackedScene" uid="uid://c9v7m2k5p3x8" path="res://scenes/world/SurvivorNPC.tscn" id="10_npc"]
-[ext_resource type="PackedScene" uid="uid://df4m8v2p6q9x" path="res://scenes/ui/HUD.tscn" id="11_hud"]
+[ext_resource type="Script" path="res://scripts/world/safe_island.gd" id="e1"]
+[ext_resource type="Environment" path="res://scenes/world/SafeIslandEnv.tres" id="e2"]
+[ext_resource type="PackedScene" path="res://scenes/player/Player.tscn" id="e3"]
+[ext_resource type="PackedScene" path="res://scenes/player/IsometricCamera.tscn" id="e4"]
+[ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="e5"]
+[ext_resource type="PackedScene" path="res://scenes/boat/Boat.tscn" id="e6"]
+[ext_resource type="Script" path="res://scripts/world/terrain_loader.gd" id="e7"]
+[ext_resource type="Script" path="res://scripts/world/scatter_loader.gd" id="e8"]
+[ext_resource type="PackedScene" path="res://scenes/world/WaterSurface.tscn" id="e9"]
+[ext_resource type="PackedScene" path="res://assets/models/terrain/safe_island_terrain.glb" id="e10"]
+[ext_resource type="Texture2D" path="res://assets/worldgen/safe_shore_mask.png" id="e11"]
+[ext_resource type="Shader" path="res://assets/shaders/terrain_splat.gdshader" id="e12"]
+[ext_resource type="Texture2D" path="res://assets/textures/beach_sand_albedo.png" id="e13"]
+[ext_resource type="Texture2D" path="res://assets/textures/coastal_grass_albedo.png" id="e14"]
+[ext_resource type="Texture2D" path="res://assets/textures/dirt_albedo.png" id="e15"]
+[ext_resource type="Texture2D" path="res://assets/textures/granite_rock_albedo.png" id="e16"]
+[ext_resource type="Texture2D" path="res://assets/textures/beach_sand_normal.png" id="e17"]
+[ext_resource type="Texture2D" path="res://assets/textures/coastal_grass_normal.png" id="e18"]
+[ext_resource type="Texture2D" path="res://assets/textures/dirt_normal.png" id="e19"]
+[ext_resource type="Texture2D" path="res://assets/textures/granite_rock_normal.png" id="e20"]
+[ext_resource type="PackedScene" path="res://scenes/models/architecture/Headquarters.tscn" id="e21"]
+[ext_resource type="PackedScene" path="res://scenes/models/architecture/ShopTradingPost.tscn" id="e22"]
+[ext_resource type="PackedScene" path="res://scenes/models/architecture/WorkshopDetailed.tscn" id="e23"]
+[ext_resource type="PackedScene" path="res://scenes/models/architecture/WarehouseDetailed.tscn" id="e24"]
+[ext_resource type="PackedScene" path="res://scenes/models/architecture/FishingHut.tscn" id="e25"]
+[ext_resource type="PackedScene" path="res://scenes/models/architecture/StorageShed.tscn" id="e26"]
+[ext_resource type="PackedScene" path="res://scenes/models/architecture/PalisadeWall.tscn" id="e27"]
+[ext_resource type="PackedScene" path="res://scenes/models/architecture/GateTower.tscn" id="e28"]
+[ext_resource type="PackedScene" path="res://scenes/models/ruins/RuinedBuilding.tscn" id="e29"]
+[ext_resource type="PackedScene" path="res://scenes/models/props/Campfire.tscn" id="e30"]
+[ext_resource type="PackedScene" path="res://scenes/models/props/Bench.tscn" id="e31"]
+[ext_resource type="PackedScene" path="res://scenes/models/props/LampPost.tscn" id="e32"]
+[ext_resource type="PackedScene" path="res://scenes/models/vegetation/TropicalTree.tscn" id="e33"]
+[ext_resource type="PackedScene" path="res://scenes/models/vegetation/CoconutPalm.tscn" id="e34"]
+[ext_resource type="PackedScene" path="res://scenes/models/vegetation/TropicalTree.tscn" id="e35"]
+[ext_resource type="PackedScene" path="res://scenes/models/props/Barrel.tscn" id="e36"]
+[ext_resource type="PackedScene" path="res://scenes/models/props/WoodenCrate.tscn" id="e37"]
+[ext_resource type="PackedScene" path="res://scenes/models/props/WaterContainer.tscn" id="e38"]
+[ext_resource type="PackedScene" path="res://scenes/models/props/FishingNet.tscn" id="e39"]
+[ext_resource type="PackedScene" path="res://scenes/models/rocks/RockLarge.tscn" id="e40"]
+[ext_resource type="PackedScene" path="res://scenes/models/rocks/CliffRock.tscn" id="e41"]
+[ext_resource type="PackedScene" path="res://scenes/models/boats/SurvivorBoat.tscn" id="e42"]
+[ext_resource type="PackedScene" path="res://scenes/world/SurvivorNPC.tscn" id="e43"]
+[ext_resource type="PackedScene" path="res://scenes/models/architecture/DockDetailed.tscn" id="e44"]
+[ext_resource type="PackedScene" path="res://scenes/models/ruins/RustedCar.tscn" id="e45"]
+[ext_resource type="PackedScene" path="res://scenes/models/vegetation/TropicalBush.tscn" id="e46"]
+[ext_resource type="PackedScene" path="res://scenes/models/rocks/RockSmall.tscn" id="e47"]
+[ext_resource type="PackedScene" path="res://scenes/models/rocks/RockMedium.tscn" id="e48"]
+[ext_resource type="PackedScene" path="res://scenes/models/vegetation/TallGrass.tscn" id="e49"]
+[ext_resource type="PackedScene" path="res://scenes/models/props/WoodenPlank.tscn" id="e50"]
+[ext_resource type="PackedScene" path="res://scenes/models/harbor/WorkingHarbor.tscn" id="e51"]
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ocean"]
-albedo_color = Color(0.035, 0.12, 0.18, 0.94)
-roughness = 0.18
-metallic = 0.35
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sand"]
-albedo_color = Color(0.68, 0.58, 0.42, 1)
-roughness = 0.92
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_grass_soil"]
-albedo_color = Color(0.24, 0.32, 0.2, 1)
-roughness = 0.88
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_path"]
-albedo_color = Color(0.38, 0.28, 0.18, 1)
-roughness = 0.95
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rock_cliff"]
-albedo_color = Color(0.32, 0.33, 0.36, 1)
-roughness = 0.9
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dock_timber"]
-albedo_color = Color(0.36, 0.25, 0.16, 1)
-roughness = 0.85
+[sub_resource type="ShaderMaterial" id="mat_splat"]
+shader = ExtResource("e12")
+shader_parameter/tex_sand = ExtResource("e13")
+shader_parameter/tex_grass = ExtResource("e14")
+shader_parameter/tex_dirt = ExtResource("e15")
+shader_parameter/tex_rock = ExtResource("e16")
+shader_parameter/tex_sand_n = ExtResource("e17")
+shader_parameter/tex_grass_n = ExtResource("e18")
+shader_parameter/tex_dirt_n = ExtResource("e19")
+shader_parameter/tex_rock_n = ExtResource("e20")
+shader_parameter/wet_top = 0.42
 
 [node name="SafeIsland" type="Node3D"]
-script = ExtResource("1_safe_island")
+script = ExtResource("e1")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
-environment = ExtResource("2_env")
+environment = ExtResource("e2")
 
 [node name="SunLight" type="DirectionalLight3D" parent="."]
-transform = Transform3D(0.819152, -0.40558, 0.40558, 0, 0.707107, 0.707107, -0.573576, -0.579228, 0.579228, 0, 24, 0)
-light_color = Color(1, 0.92, 0.82, 1)
-light_energy = 1.35
+transform = Transform3D(1, 0, 0, 0, 0.642788, 0.766044, 0, -0.766044, 0.642788, 0, 30, 0)
 shadow_enabled = true
+shadow_bias = 0.03
+light_color = Color(1, 0.95, 0.86, 1)
+light_energy = 1.6
 
-[node name="OceanWater" type="CSGBox3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.2, 0)
-size = Vector3(180, 0.6, 180)
-material = SubResource("StandardMaterial3D_ocean")
+[node name="TerrainSystem" type="Node3D" parent="."]
+script = ExtResource("e7")
+terrain_scene = ExtResource("e10")
+splat_material = SubResource("mat_splat")
 
-[node name="Terrain" type="Node3D" parent="."]
+[node name="WaterSystem" parent="." instance=ExtResource("e9")]
+shore_mask = ExtResource("e11")
+mask_extent = 132.0
+palette = "safe"
 
-[node name="BeachShore" type="CSGCylinder3D" parent="Terrain"]
-transform = Transform3D(1.2, 0, 0, 0, 1, 0, 0, 0, 0.9, 0, 0.2, 3)
-use_collision = true
-radius = 14.0
-height = 0.6
-sides = 24
-material = SubResource("StandardMaterial3D_sand")
+[node name="Scatter" type="Node3D" parent="."]
+script = ExtResource("e8")
+scatter_json = "res://assets/worldgen/safe_scatter.json"
 
-[node name="VillageTerrace" type="CSGBox3D" parent="Terrain"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.3, -11)
-use_collision = true
-size = Vector3(28, 2.4, 22)
-material = SubResource("StandardMaterial3D_grass_soil")
+[node name="Settlement" type="Node3D" parent="."]
+# 40x40m compound per WORLD_COMPOSITION.md + WORLD_DENSITY_BENCHMARK.md + SCALE_BENCHMARK 1.70m LOCKED
+# Phase 1 Art Direction: premium mobile isometric survival 3D, NOT Roblox/low-poly/primitive/toy
+# HQ north anchor 5.25m H 3.09x player, campfire center 2.75m diam 1.62x, gate south 4.0m H 2.35x, fence 2.10m H 1.23x
 
-[node name="BackHills" type="CSGBox3D" parent="Terrain"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.2, -26)
-use_collision = true
-size = Vector3(32, 4.8, 16)
-material = SubResource("StandardMaterial3D_rock_cliff")
+[node name="Headquarters" parent="Settlement" instance=ExtResource("e21")]
+transform = Transform3D(1.05, 0, 0, 0, 1.05, 0, 0, 0, 1.05, 0, 0.8, -12)
 
-[node name="MainPath" type="CSGBox3D" parent="Terrain"]
-transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 1.1, -4.5)
-use_collision = true
-size = Vector3(3.8, 0.3, 14)
-material = SubResource("StandardMaterial3D_path")
+[node name="CampfireCenter" parent="Settlement" instance=ExtResource("e30")]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0, 0.5, 0)
+
+[node name="Shop" parent="Settlement" instance=ExtResource("e22")]
+transform = Transform3D(0.84, 0, 0, 0, 0.84, 0, 0, 0, 0.84, -6, 0.6, -2)
+
+[node name="Workshop" parent="Settlement" instance=ExtResource("e23")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.6, -2)
+
+[node name="Warehouse" parent="Settlement" instance=ExtResource("e24")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0.5, 4)
+
+[node name="StorageShed" parent="Settlement" instance=ExtResource("e26")]
+transform = Transform3D(0.753, 0, 0, 0, 0.753, 0, 0, 0, 0.753, 8, 0.5, 4)
+
+[node name="FishingHut" parent="Settlement" instance=ExtResource("e25")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 8)
+
+[node name="Bench1" parent="Settlement" instance=ExtResource("e31")]
+transform = Transform3D(1.148, 0, 0, 0, 1.148, 0, 0, 0, 1.148, -2, 0.5, 2)
+[node name="Bench2" parent="Settlement" instance=ExtResource("e31")]
+transform = Transform3D(1.148, 0, 0, 0, 1.148, 0, 0, 0, 1.148, 2, 0.5, 2)
+
+[node name="LampPost1" parent="Settlement" instance=ExtResource("e32")]
+transform = Transform3D(1.136, 0, 0, 0, 1.136, 0, 0, 0, 1.136, 0, 0.5, 3)
+[node name="LampPostGate" parent="Settlement" instance=ExtResource("e32")]
+transform = Transform3D(1.136, 0, 0, 0, 1.136, 0, 0, 0, 1.136, 2, 0.5, 12)
+
+[node name="Barrel1" parent="Settlement" instance=ExtResource("e36")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 0.5, 0)
+[node name="Barrel2" parent="Settlement" instance=ExtResource("e36")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.5, 0.5, 0.8)
+[node name="Barrel3" parent="Settlement" instance=ExtResource("e36")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.5, -1)
+
+[node name="Crate1" parent="Settlement" instance=ExtResource("e37")]
+transform = Transform3D(1.014, 0, 0, 0, 1.014, 0, 0, 0, 1.014, -5, 0.5, -1)
+[node name="Crate2" parent="Settlement" instance=ExtResource("e37")]
+transform = Transform3D(1.014, 0, 0, 0, 1.014, 0, 0, 0, 1.014, 5, 0.5, 0)
+[node name="Crate3" parent="Settlement" instance=ExtResource("e37")]
+transform = Transform3D(1.014, 0, 0, 0, 1.014, 0, 0, 0, 1.014, 4.5, 0.5, 0.8)
+
+[node name="Water1" parent="Settlement" instance=ExtResource("e38")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.5, -3)
+[node name="Net1" parent="Settlement" instance=ExtResource("e39")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.5, 0.5, -2.5)
+[node name="WoodPile" parent="Settlement" instance=ExtResource("e50")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.5, 1)
+
+[node name="Walls" type="Node3D" parent="."]
+# Palisade walls 40x40m perimeter — 2.10m H 1.23x player per SCALE_BENCHMARK, segments 3-4m L
+
+[node name="Wall_N1" parent="Walls" instance=ExtResource("e27")]
+transform = Transform3D(1.166, 0, 0, 0, 1.166, 0, 0, 0, 1.166, -13.5, 0.5, -18)
+[node name="Wall_N2" parent="Walls" instance=ExtResource("e27")]
+transform = Transform3D(1.166, 0, 0, 0, 1.166, 0, 0, 0, 1.166, -4.5, 0.5, -18)
+[node name="Wall_N3" parent="Walls" instance=ExtResource("e27")]
+transform = Transform3D(1.166, 0, 0, 0, 1.166, 0, 0, 0, 1.166, 4.5, 0.5, -18)
+[node name="Wall_N4" parent="Walls" instance=ExtResource("e27")]
+transform = Transform3D(1.166, 0, 0, 0, 1.166, 0, 0, 0, 1.166, 13.5, 0.5, -18)
+
+[node name="Wall_S1" parent="Walls" instance=ExtResource("e27")]
+transform = Transform3D(1.166, 0, 0, 0, 1.166, 0, 0, 0, 1.166, -13.5, 0.5, 18)
+[node name="Wall_S2" parent="Walls" instance=ExtResource("e27")]
+transform = Transform3D(1.166, 0, 0, 0, 1.166, 0, 0, 0, 1.166, 13.5, 0.5, 18)
+
+[node name="Wall_E1" parent="Walls" instance=ExtResource("e27")]
+transform = Transform3D(0, 0, 1.166, 0, 1.166, 0, -1.166, 0, 0, 18, 0.5, -9)
+[node name="Wall_E2" parent="Walls" instance=ExtResource("e27")]
+transform = Transform3D(0, 0, 1.166, 0, 1.166, 0, -1.166, 0, 0, 18, 0.5, 0)
+[node name="Wall_E3" parent="Walls" instance=ExtResource("e27")]
+transform = Transform3D(0, 0, 1.166, 0, 1.166, 0, -1.166, 0, 0, 18, 0.5, 9)
+
+[node name="Wall_W1" parent="Walls" instance=ExtResource("e27")]
+transform = Transform3D(0, 0, 1.166, 0, 1.166, 0, -1.166, 0, 0, -18, 0.5, -9)
+[node name="Wall_W2" parent="Walls" instance=ExtResource("e27")]
+transform = Transform3D(0, 0, 1.166, 0, 1.166, 0, -1.166, 0, 0, -18, 0.5, 0)
+[node name="Wall_W3" parent="Walls" instance=ExtResource("e27")]
+transform = Transform3D(0, 0, 1.166, 0, 1.166, 0, -1.166, 0, 0, -18, 0.5, 9)
+
+[node name="GateTower_Left" parent="Walls" instance=ExtResource("e28")]
+transform = Transform3D(1.142, 0, 0, 0, 1.142, 0, 0, 0, 1.142, -2.5, 0.5, 18)
+[node name="GateTower_Right" parent="Walls" instance=ExtResource("e28")]
+transform = Transform3D(1.142, 0, 0, 0, 1.142, 0, 0, 0, 1.142, 2.5, 0.5, 18)
+
+[node name="Ruins" type="Node3D" parent="."]
+[node name="Ruins_Overgrown" parent="Ruins" instance=ExtResource("e29")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0.5, 32)
+[node name="Ruins_Car" parent="Ruins" instance=ExtResource("e45")]
+transform = Transform3D(0.34202, 0, 0.939693, 0, 1, 0, -0.939693, 0, 0.34202, 16, 0.5, 28)
+[node name="Ruins_Rock" parent="Ruins" instance=ExtResource("e40")]
+transform = Transform3D(0.715, 0, 0, 0, 0.715, 0, 0, 0, 0.715, 20, 0.5, 34)
+
+[node name="Vegetation" type="Node3D" parent="."]
+# Interior small trees 4.5m H 2.65x player sparse 0.003-0.005/m²
+
+[node name="SmallTree1" parent="Vegetation" instance=ExtResource("e33")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, -8, 0.5, -6)
+[node name="SmallTree2" parent="Vegetation" instance=ExtResource("e33")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 8, 0.5, -6)
+[node name="SmallTree3" parent="Vegetation" instance=ExtResource("e33")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, -8, 0.5, 6)
+[node name="SmallTree4" parent="Vegetation" instance=ExtResource("e33")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 8, 0.5, 6)
+[node name="SmallTree5" parent="Vegetation" instance=ExtResource("e33")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 0.5, -10)
+[node name="SmallTree6" parent="Vegetation" instance=ExtResource("e33")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, -10, 0.5, 0)
+
+# Bushes 10+ 0.7m H 0.41x player
+[node name="Bush1" parent="Vegetation" instance=ExtResource("e46")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.5, -3)
+[node name="Bush2" parent="Vegetation" instance=ExtResource("e46")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.5, -3)
+[node name="Bush3" parent="Vegetation" instance=ExtResource("e46")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.5, 3)
+[node name="Bush4" parent="Vegetation" instance=ExtResource("e46")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.5, 3)
+[node name="Bush5" parent="Vegetation" instance=ExtResource("e46")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -4)
+[node name="Bush6" parent="Vegetation" instance=ExtResource("e46")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.5, 2)
+[node name="Bush7" parent="Vegetation" instance=ExtResource("e46")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.5, 2)
+[node name="Bush8" parent="Vegetation" instance=ExtResource("e46")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.5, 5)
+[node name="Bush9" parent="Vegetation" instance=ExtResource("e46")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.5, 5)
+[node name="Bush10" parent="Vegetation" instance=ExtResource("e46")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 6)
+
+[node name="Rocks" type="Node3D" parent="."]
+[node name="RockSmall1" parent="Rocks" instance=ExtResource("e47")]
+transform = Transform3D(0.823, 0, 0, 0, 0.823, 0, 0, 0, 0.823, -2, 0.5, -4)
+[node name="RockSmall2" parent="Rocks" instance=ExtResource("e47")]
+transform = Transform3D(0.823, 0, 0, 0, 0.823, 0, 0, 0, 0.823, 2, 0.5, -5)
+[node name="RockMedium1" parent="Rocks" instance=ExtResource("e48")]
+transform = Transform3D(0.9, 0, 0, 0, 0.9, 0, 0, 0, 0.9, -7, 0.5, 3)
+[node name="RockLarge1" parent="Rocks" instance=ExtResource("e40")]
+transform = Transform3D(0.715, 0, 0, 0, 0.715, 0, 0, 0, 0.715, 7, 0.5, 4)
+
+[node name="Grass" type="Node3D" parent="."]
+[node name="Grass1" parent="Grass" instance=ExtResource("e49")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.5, -1)
+[node name="Grass2" parent="Grass" instance=ExtResource("e49")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.5, -1)
+[node name="Grass3" parent="Grass" instance=ExtResource("e49")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.5, 1)
+[node name="Grass4" parent="Grass" instance=ExtResource("e49")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.5, 1)
+
+[node name="IslandDesign" type="Node3D" parent="."]
+# Premium mobile isometric survival 3D — matang sempurna per Phase 4 + QA 2026-09-26
+# FG: grass/rocks/debris/bushes/resource, MG: player/buildings/fences/workstations/roads/gameplay, BG: forest/large structures/cliffs/fog
+# Every area: landmark/traversal lane/resource cluster/environmental storytelling/visual boundary
+# Buildings belong to compounds/camps/settlements/ruined/resource zones + fences/paths/storage/barrels/crates/debris/veg/lights/utility
+
+[node name="CentralPath" type="Node3D" parent="IslandDesign"]
+# Traversal lane: gate (0,18) -> campfire (0,0) -> headquarters (0,-12) — dirt trail
+
+[node name="PathMarker1" parent="IslandDesign/CentralPath" instance=ExtResource("e48")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 15)
+[node name="PathMarker2" parent="IslandDesign/CentralPath" instance=ExtResource("e48")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 10)
+[node name="PathMarker3" parent="IslandDesign/CentralPath" instance=ExtResource("e48")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 5)
+[node name="PathMarker4" parent="IslandDesign/CentralPath" instance=ExtResource("e47")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -5)
+[node name="PathMarker5" parent="IslandDesign/CentralPath" instance=ExtResource("e47")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -8)
+
+[node name="ResourceClusters" type="Node3D" parent="IslandDesign"]
+# Resource clusters near buildings — environmental storytelling
+
+[node name="WorkshopCluster" type="Node3D" parent="IslandDesign/ResourceClusters"]
+[node name="WoodPile_Workshop" parent="IslandDesign/ResourceClusters/WorkshopCluster" instance=ExtResource("e50")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0.5, -3)
+[node name="Barrel_Workshop1" parent="IslandDesign/ResourceClusters/WorkshopCluster" instance=ExtResource("e36")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 0.5, -2)
+[node name="Crate_Workshop1" parent="IslandDesign/ResourceClusters/WorkshopCluster" instance=ExtResource("e37")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.5, 0.5, -1)
+
+[node name="WarehouseCluster" type="Node3D" parent="IslandDesign/ResourceClusters"]
+[node name="Barrel_Warehouse1" parent="IslandDesign/ResourceClusters/WarehouseCluster" instance=ExtResource("e36")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 0.5, 5)
+[node name="Barrel_Warehouse2" parent="IslandDesign/ResourceClusters/WarehouseCluster" instance=ExtResource("e36")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 0.5, 5.5)
+[node name="Crate_Warehouse1" parent="IslandDesign/ResourceClusters/WarehouseCluster" instance=ExtResource("e37")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.5, 0.5, 4.5)
+
+[node name="FishingCluster" type="Node3D" parent="IslandDesign/ResourceClusters"]
+[node name="Net_Fishing1" parent="IslandDesign/ResourceClusters/FishingCluster" instance=ExtResource("e39")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.5, 9)
+[node name="Barrel_Fishing1" parent="IslandDesign/ResourceClusters/FishingCluster" instance=ExtResource("e36")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.5, 9)
+[node name="Water_Fishing1" parent="IslandDesign/ResourceClusters/FishingCluster" instance=ExtResource("e38")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 10)
+
+[node name="ShopCluster" type="Node3D" parent="IslandDesign/ResourceClusters"]
+[node name="Crate_Shop1" parent="IslandDesign/ResourceClusters/ShopCluster" instance=ExtResource("e37")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0.5, -1)
+[node name="Water_Shop1" parent="IslandDesign/ResourceClusters/ShopCluster" instance=ExtResource("e38")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 0.5, -1.5)
+
+[node name="ForegroundDetails" type="Node3D" parent="IslandDesign"]
+# FG: grass/rocks/debris/bushes/resource — near player spawn and along path
+
+[node name="Grass_FG1" parent="IslandDesign/ForegroundDetails" instance=ExtResource("e49")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 0.5, 3)
+[node name="Grass_FG2" parent="IslandDesign/ForegroundDetails" instance=ExtResource("e49")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0.5, 3)
+[node name="Bush_FG1" parent="IslandDesign/ForegroundDetails" instance=ExtResource("e46")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1, 0.5, 6)
+[node name="Bush_FG2" parent="IslandDesign/ForegroundDetails" instance=ExtResource("e46")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0.5, 6)
+[node name="RockSmall_FG1" parent="IslandDesign/ForegroundDetails" instance=ExtResource("e47")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.5, 7)
+[node name="RockSmall_FG2" parent="IslandDesign/ForegroundDetails" instance=ExtResource("e47")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.5, 7)
+
+[node name="BackgroundDetails" type="Node3D" parent="IslandDesign"]
+# BG: forest/large structures/cliffs/silhouettes/fog — visual boundary
+
+[node name="Cliff_BG1" parent="IslandDesign/BackgroundDetails" instance=ExtResource("e41")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0.5, -20)
+[node name="Cliff_BG2" parent="IslandDesign/BackgroundDetails" instance=ExtResource("e41")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0.5, -20)
+[node name="RockLarge_BG1" parent="IslandDesign/BackgroundDetails" instance=ExtResource("e40")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22, 0.5, 20)
+[node name="RockLarge_BG2" parent="IslandDesign/BackgroundDetails" instance=ExtResource("e40")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 0.5, 20)
+
+[node name="ForestWall" type="Node3D" parent="."]
+# Exterior forest trees 10m H 5.88x player dense 0.02-0.03/m² at 25-35m + fog
+
+[node name="ForestTree1" parent="ForestWall" instance=ExtResource("e35")]
+transform = Transform3D(1.259, 0, 0, 0, 1.259, 0, 0, 0, 1.259, -30, 0.5, -30)
+[node name="ForestTree2" parent="ForestWall" instance=ExtResource("e35")]
+transform = Transform3D(1.259, 0, 0, 0, 1.259, 0, 0, 0, 1.259, 30, 0.5, -30)
+[node name="ForestTree3" parent="ForestWall" instance=ExtResource("e35")]
+transform = Transform3D(1.259, 0, 0, 0, 1.259, 0, 0, 0, 1.259, -30, 0.5, 30)
+[node name="ForestTree4" parent="ForestWall" instance=ExtResource("e35")]
+transform = Transform3D(1.259, 0, 0, 0, 1.259, 0, 0, 0, 1.259, 30, 0.5, 30)
+[node name="ForestTree5" parent="ForestWall" instance=ExtResource("e35")]
+transform = Transform3D(1.259, 0, 0, 0, 1.259, 0, 0, 0, 1.259, 0, 0.5, -35)
+[node name="ForestTree6" parent="ForestWall" instance=ExtResource("e35")]
+
+[node name="BeachPalms" type="Node3D" parent="."]
+[node name="PalmBeach1" parent="BeachPalms" instance=ExtResource("e34")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.5, 26)
+[node name="PalmBeach2" parent="BeachPalms" instance=ExtResource("e34")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0.5, 26)
+[node name="PalmBeach3" parent="BeachPalms" instance=ExtResource("e34")]
+transform = Transform3D(0.9, 0, 0, 0, 0.9, 0, 0, 0, 0.9, -6, 0.5, 28)
+[node name="PalmBeach4" parent="BeachPalms" instance=ExtResource("e34")]
+transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 6, 0.5, 28)
+[node name="PalmBeach5" parent="BeachPalms" instance=ExtResource("e34")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 32)
+[node name="PalmBeach6" parent="BeachPalms" instance=ExtResource("e34")]
+transform = Transform3D(0.85, 0, 0, 0, 0.85, 0, 0, 0, 0.85, -14, 0.5, 30)
+[node name="PalmBeach7" parent="BeachPalms" instance=ExtResource("e34")]
+transform = Transform3D(0.95, 0, 0, 0, 0.95, 0, 0, 0, 0.95, 14, 0.5, 30)
+# Beach edge palms — natural placement at sand-ocean interface, NOT on sand pile, per QA
+# Ocean at y -0.5, beach edge z ~28-32, palms at treeline edge
+
+transform = Transform3D(1.259, 0, 0, 0, 1.259, 0, 0, 0, 1.259, 0, 0.5, 35)
+
+[node name="Dock" type="Node3D" parent="."]
+
+[node name="DockNavigation" type="NavigationRegion3D" parent="Dock"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 30)
+# Walkable pier navigation — ensures character can walk on pier per QA
+
+[node name="NavigationMeshInstance" type="NavigationRegion3D" parent="Dock/DockNavigation"]
+# Placeholder for baked navmesh — pier walkable area 12x20m at beach edge
+
+[node name="DockDetailed" parent="Dock" instance=ExtResource("e44")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 30)
+
+[node name="HarborMain" parent="Dock" instance=ExtResource("e51")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0.0, 30)
+
+[node name="HarborWest" parent="Dock" instance=ExtResource("e51")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0.0, 30)
+
+[node name="HarborPierExt" parent="Dock" instance=ExtResource("e51")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.0, 38)
+
+[node name="PierNavigation" type="NavigationRegion3D" parent="Dock"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 30)
+# Navigation for walkable pier — character bisa berjalan di atas dermaga per QA
+
+[node name="NavMesh_Pier" type="CSGBox3D" parent="Dock/PierNavigation"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+size = Vector3(24, 0.2, 16)
+use_collision = false
+material = null
+
+[node name="NavMesh_Pier_Water" type="CSGBox3D" parent="Dock/PierNavigation"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 8)
+size = Vector3(12, 0.2, 8)
+use_collision = false
+material = null
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 30)
 
 [node name="Village" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, -11)
-
-[node name="Campfire" parent="Village" instance=ExtResource("9_fire")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 1.5)
-
-[node name="ClinicCabin" parent="Village" instance=ExtResource("6_cabin")]
-transform = Transform3D(0.939693, 0, 0.34202, 0, 1, 0, -0.34202, 0, 0.939693, -7.5, 0, -2)
-
-[node name="WorkshopCabin" parent="Village" instance=ExtResource("6_cabin")]
-transform = Transform3D(0.939693, 0, -0.34202, 0, 1, 0, 0.34202, 0, 0.939693, 7.5, 0, -1.5)
-
-[node name="ElderCabin" parent="Village" instance=ExtResource("6_cabin")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, -9.5)
-
-[node name="NPC_Manager" parent="Village" instance=ExtResource("10_npc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8, 0, 0.5)
+[node name="NPC1" parent="Village" instance=ExtResource("e43")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.2, 0.5, -8)
 npc_name = "Paman Jamil"
 role = "Pengelola Gudang Komunitas"
-
-[node name="NPC_Fisherman" parent="Village" instance=ExtResource("10_npc")]
-transform = Transform3D(0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866025, -3.8, 0, 2.0)
+[node name="NPC2" parent="Village" instance=ExtResource("e43")]
+transform = Transform3D(0.766044, 0, 0.642788, 0, 1, 0, -0.642788, 0, 0.766044, -2.0, 0.5, -1.0)
 npc_name = "Pak Hasan"
 role = "Nelayan Tua"
-
-[node name="NPC_Medic" parent="Village" instance=ExtResource("10_npc")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.2, 0, -0.5)
+[node name="NPC3" parent="Village" instance=ExtResource("e43")]
+transform = Transform3D(0.173648, 0, 0.984808, 0, 1, 0, -0.984808, 0, 0.173648, -1.0, 0.5, -2.0)
 npc_name = "Dokter Sari"
 role = "Tenaga Medis"
 
-[node name="Foliage" type="Node3D" parent="."]
+[node name="Boat" parent="." instance=ExtResource("e6")]
+transform = Transform3D(0.965926, 0, 0.258819, 0, 1, 0, -0.258819, 0, 0.965926, 1.5, -0.5, 34)
 
-[node name="Palm1" parent="Foliage" instance=ExtResource("7_palm")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6.5, 0.4, 2.5)
+[node name="Player" parent="." instance=ExtResource("e3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 4)
 
-[node name="Palm2" parent="Foliage" instance=ExtResource("7_palm")]
-transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, 6.8, 0.35, 1.5)
+[node name="IsometricCamera" parent="." instance=ExtResource("e4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 4)
 
-[node name="Pine1" parent="Foliage" instance=ExtResource("8_pine")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 4.0, -22)
-
-[node name="Pine2" parent="Foliage" instance=ExtResource("8_pine")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.8, -28)
-
-[node name="Pine3" parent="Foliage" instance=ExtResource("8_pine")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 4.2, -23)
-
-[node name="Dock" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 6.0)
-
-[node name="Boardwalk" type="CSGBox3D" parent="Dock"]
-use_collision = true
-size = Vector3(3.0, 0.25, 8.5)
-material = SubResource("StandardMaterial3D_dock_timber")
-
-[node name="Piling1" type="CSGCylinder3D" parent="Dock"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.3, -0.9, -3.0)
-radius = 0.16
-height = 2.4
-material = SubResource("StandardMaterial3D_dock_timber")
-
-[node name="Piling2" type="CSGCylinder3D" parent="Dock"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3, -0.9, -3.0)
-radius = 0.16
-height = 2.4
-material = SubResource("StandardMaterial3D_dock_timber")
-
-[node name="Piling3" type="CSGCylinder3D" parent="Dock"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.3, -0.9, 3.0)
-radius = 0.16
-height = 2.4
-material = SubResource("StandardMaterial3D_dock_timber")
-
-[node name="Piling4" type="CSGCylinder3D" parent="Dock"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3, -0.9, 3.0)
-radius = 0.16
-height = 2.4
-material = SubResource("StandardMaterial3D_dock_timber")
-
-[node name="DockLantern" type="OmniLight3D" parent="Dock"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.3, 2.2, 2.0)
-light_color = Color(1, 0.72, 0.38, 1)
-light_energy = 2.2
-omni_range = 10.0
-
-[node name="Boat" parent="Dock" instance=ExtResource("5_boat")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.8, -0.3, 1.6)
-
-[node name="Player" parent="." instance=ExtResource("3_player")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, -4)
-
-[node name="IsometricCamera" parent="." instance=ExtResource("4_camera")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, -4)
-
-[node name="HUD" parent="." instance=ExtResource("11_hud")]
+[node name="HUD" parent="." instance=ExtResource("e5")]

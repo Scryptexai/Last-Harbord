@@ -1,13 +1,17 @@
 [gd_scene load_steps=2 format=3 uid="uid://c8m4n2p6q9v1"]
 
-[ext_resource type="Script" path="res://scripts/systems/camera_controller.gd" id="1_cam_ctrl"]
+[ext_resource type="Script" path="res://scripts/systems/isometric_camera.gd" id="1_cam_ctrl"]
 
 [node name="IsometricCamera" type="Node3D"]
 script = ExtResource("1_cam_ctrl")
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 9.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 current = true
-fov = 44.0
-near = 0.2
-far = 120.0
+projection = 1
+size = 28.0
+near = 0.1
+far = 150.0
+# LOCKED Phase 5 QA 2026-09-26 — Ortho 52° pitch 40° yaw size 28 enlarged 24→28 camera terlalu dekat fix — premium mobile isometric survival 3D
+# Player 1.70m 2.8% screen HQ 5.25m 9.3% visible 80m diameter walls parallel roof 70% top 30% side perbesarkan lagi
+# Previous 38°/18°/42°/14.5m REJECTED per CAMERA_COMPARISON.md, 24 size enlarged to 28 per QA 2026-09-26

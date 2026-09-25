@@ -1,0 +1,34 @@
+[gd_scene load_steps=5 format=3 uid="uid://harbor_working_12m"]
+
+[ext_resource type="PackedScene" path="res://assets/environment/harbor/scenes/working_harbor.glb" id="1_model"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_quay"]
+size = Vector3(8, 0.5, 4)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_pier_main"]
+size = Vector3(12, 0.5, 12)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_pier_ext"]
+size = Vector3(3, 0.5, 8)
+
+[node name="WorkingHarbor" type="StaticBody3D"]
+collision_layer = 1
+collision_mask = 0
+
+[node name="Visual" parent="." instance=ExtResource("1_model")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+# Main quay collision — FIX tenggelam: deck at ground level y0.25 top 0.5 walkable, not 0.85 high
+[node name="CollisionQuay" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+shape = SubResource("BoxShape3D_quay")
+
+# Full harbor deck collision — FIX tenggelam: 12x12m walkable at ground y0.25 top 0.5, character bisa jalan di atas dermaga tidak tenggelam
+[node name="CollisionPierMain" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+shape = SubResource("BoxShape3D_pier_main")
+
+# Additional pier extension collision — walkable at ground level
+[node name="CollisionPierExt" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 6)
+shape = SubResource("BoxShape3D_pier_ext")

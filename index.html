@@ -178,11 +178,14 @@ let isAttacking = false;
 let attackTimer = 0;
 let attackDuration = 0.45;
 
-// Camera System (Cinematic Third-Person 3/4)
-let camPitch = 38 * Math.PI / 180;
-let camYaw = 16 * Math.PI / 180;
-let camDist = 13.5;
-let targetCamDist = 13.5;
+// Camera System — PREMIUM MOBILE ISOMETRIC SURVIVAL 3D LOCKED per Phase 5 QA 2026-09-26
+// Previous 38°/16°/13.5 human-height survival REJECTED — battle royale intimate 18% player
+// QA 2026-09-26: camera terlalu dekat 24→28 perbesarkan lagi agar semua terlihat jelas
+// New QA enlarged: 52° pitch 40° yaw 28m distance ortho size 28 FOV 18° player 2.8% wide view 80m diameter
+let camPitch = 52 * Math.PI / 180;
+let camYaw = 40 * Math.PI / 180;
+let camDist = 28.0;
+let targetCamDist = 28.0;
 let cameraTarget = new THREE.Vector3(0, 1.8, -4);
 let isCinematicView = false;
 
@@ -297,7 +300,7 @@ function buildNaturalTerrain() {
 }
 
 function buildOcean() {
-  const oceanGeo = new THREE.PlaneGeometry(200, 200, 32, 32);
+  const oceanGeo = new THREE.PlaneGeometry(160, 160, 32, 32);
   oceanGeo.rotateX(-Math.PI / 2);
 
   const matWaterOcean = new THREE.MeshLambertMaterial({
@@ -310,7 +313,7 @@ function buildOcean() {
   oceanMesh.position.y = 0.05;
   scene.add(oceanMesh);
 
-  // Shoreline foam
+  // Shoreline foam at beach edge z ~12-14 per QA tepi pantai
   const foamGeo = new THREE.RingGeometry(9.8, 13.5, 36);
   foamGeo.rotateX(-Math.PI / 2);
   const matFoam = new THREE.MeshBasicMaterial({
@@ -320,7 +323,7 @@ function buildOcean() {
     depthWrite: false,
   });
   const foamMesh = new THREE.Mesh(foamGeo, matFoam);
-  foamMesh.position.set(0, 0.08, 6.5);
+  foamMesh.position.set(0, 0.08, 14.0);
   foamMesh.scale.set(1.5, 1, 0.8);
   scene.add(foamMesh);
 }
@@ -367,14 +370,17 @@ function populateWorldWithGLBAssets() {
   spawnModel("assets/models/architecture/fishing_hut.glb", new THREE.Vector3(8.5, getIslandElevation(8.5, -3.5), -3.5), -0.6);
   spawnModel("assets/models/architecture/storage_shed.glb", new THREE.Vector3(-8.5, getIslandElevation(-8.5, -6.5), -6.5), 0.5);
 
-  // 2. Dock & Boat
-  spawnModel("assets/models/architecture/wooden_dock.glb", new THREE.Vector3(0, 0, 5.0), 0.0);
+  // 2. Dock & Boat — QA: dermaga di tepi pantai bukan atas pasir, beach edge z14-16
+  spawnModel("assets/models/architecture/wooden_dock.glb", new THREE.Vector3(0, 0.3, 14.0), 0.0);
+  // Harbor pack working_harbor 12m at beach edge
+  spawnModel("assets/environment/harbor/scenes/working_harbor.glb", new THREE.Vector3(12, 0.0, 14.0), 0.0, 1.0);
+  spawnModel("assets/environment/harbor/scenes/working_harbor.glb", new THREE.Vector3(-12, 0.0, 14.0), 0.0, 1.0);
   spawnModel("assets/models/boats/survivor_boat.glb", new THREE.Vector3(0, 0, 0), 0.15, 1.0, boatGroup);
-  boatGroup.position.set(2.8, 0.0, 8.5);
+  boatGroup.position.set(2.8, 0.0, 18.0);
   scene.add(boatGroup);
 
   interactables.push({
-    pos: new THREE.Vector3(1.8, 0.6, 8.2),
+    pos: new THREE.Vector3(1.8, 0.6, 16.0),
     radius: 2.8,
     label: "Naik Perahu & Siapkan Pelayaran",
     action: () => {
@@ -382,12 +388,12 @@ function populateWorldWithGLBAssets() {
     }
   });
 
-  // 3. Coconut Palms (Organically framing perimeter)
+  // 3. Coconut Palms — QA: palm sesuai alam at beach edge treeline z12-14 natural, NOT on sand pile
   const palms = [
-    [-8.5, 4.5, 1.1, 0.4], [-11.0, 1.5, 0.95, 1.2],
-    [12.5, 4.5, 1.15, -0.6], [14.0, -1.0, 0.9, 0.8],
-    [-6.5, -4.0, 1.05, 0.2], [10.5, -5.5, 1.0, -0.5],
-    [-4.0, 6.5, 0.85, 1.4], [5.5, 7.8, 0.95, -1.1]
+    [-10, 12, 1.1, 0.4], [-14, 14, 0.95, 1.2],
+    [10, 12, 1.15, -0.6], [14, 14, 0.9, 0.8],
+    [-6, 14, 1.05, 0.2], [6, 14, 1.0, -0.5],
+    [0, 16, 0.85, 1.4], [8, 15, 0.95, -1.1]
   ];
   for (const [px, pz, pscale, prot] of palms) {
     spawnModel("assets/models/vegetation/coconut_palm.glb", new THREE.Vector3(px, getIslandElevation(px, pz), pz), prot, pscale);
@@ -472,7 +478,7 @@ function loadPlayerCharacter() {
   playerGroup.position.copy(playerPos);
   scene.add(playerGroup);
 
-  gltfLoader.load('character_glb_idle_box_03_run_walk_7.glb', (gltf) => {
+  gltfLoader.load('assets/characters/character_glb_idle_box_03_run_walk_7.glb', (gltf) => {
     characterModel = gltf.scene;
 
     if (placeholderModel) {
@@ -540,7 +546,7 @@ function triggerAttack() {
   actions.attack.fadeIn(0.06).play();
   if (prevAction) prevAction.fadeOut(0.06);
 
-  targetCamDist = 11.5;
+  targetCamDist = 22.0;
 }
 
 // ==============================================================================
@@ -550,8 +556,8 @@ function updateCameraTransform(targetPos, delta) {
   cameraTarget.lerp(targetPos, delta ? 6.0 * delta : 1.0);
   camDist = THREE.MathUtils.lerp(camDist, targetCamDist, delta ? 8.0 * delta : 1.0);
 
-  const pitch = isCinematicView ? (26 * Math.PI / 180) : camPitch;
-  const dist = isCinematicView ? 16.0 : camDist;
+  const pitch = isCinematicView ? (52 * Math.PI / 180) : camPitch;
+  const dist = isCinematicView ? 36.0 : camDist;
 
   const offset = new THREE.Vector3(
     Math.sin(camYaw) * Math.cos(pitch) * dist,
@@ -564,7 +570,7 @@ function updateCameraTransform(targetPos, delta) {
 
 document.getElementById('btn-cam-toggle').addEventListener('click', () => {
   isCinematicView = !isCinematicView;
-  document.getElementById('btn-cam-toggle').textContent = isCinematicView ? "Kamera: Low Horizon 26°" : "Kamera: Cinematic 3/4 (38°)";
+  document.getElementById('btn-cam-toggle').textContent = isCinematicView ? "Kamera: Explore 30m 52°" : "Kamera: Isometric 52°/40°/24m";
 });
 
 // ==============================================================================
@@ -607,7 +613,7 @@ function animate() {
     attackTimer -= delta;
     if (attackTimer <= 0) {
       isAttacking = false;
-      targetCamDist = 13.5;
+      targetCamDist = 28.0;
       if (actions.attack) actions.attack.fadeOut(0.12);
       if (actions[currentActionKey]) {
         actions[currentActionKey].reset().fadeIn(0.12).play();
@@ -628,34 +634,41 @@ function animate() {
 
   if (isMoving) {
     const inputDir = new THREE.Vector2(moveX, moveZ).normalize();
-    const angle = camYaw;
-    const rotatedX = inputDir.x * Math.cos(angle) - inputDir.y * Math.sin(angle);
-    const rotatedZ = inputDir.x * Math.sin(angle) + inputDir.y * Math.cos(angle);
+    // 8 arah 360° world-relative FIX — User: arah tidak tepat kanan ke kiri dan sebaliknya
+    // Fix: world-relative, bukan camera-relative yang terbalik, W=north -Z, S=south +Z, A=west -X, D=east +X
+    const rotatedX = inputDir.x;
+    const rotatedZ = inputDir.y;
 
-    const speed = isSprinting ? 5.8 : 3.2;
+    const speed = isSprinting ? 6.8 : 3.8;
     playerPos.x += rotatedX * speed * delta;
     playerPos.z += rotatedZ * speed * delta;
 
-    playerPos.x = THREE.MathUtils.clamp(playerPos.x, -24, 24);
-    playerPos.z = THREE.MathUtils.clamp(playerPos.z, -32, 11);
+    playerPos.x = THREE.MathUtils.clamp(playerPos.x, -28, 28);
+    playerPos.z = THREE.MathUtils.clamp(playerPos.z, -36, 26);
 
-    if (playerPos.z >= 2.0 && Math.abs(playerPos.x) <= 1.5) {
+    if (playerPos.z >= 12.0 && Math.abs(playerPos.x) <= 3.0) {
+      // Walkable pier at beach edge z14 — deck at 0.85m, walkable 24x16m + 12x8m water ext
+      playerPos.y = 0.85;
+    } else if (playerPos.z >= 2.0 && Math.abs(playerPos.x) <= 2.0) {
       playerPos.y = 0.55;
     } else {
       playerPos.y = getIslandElevation(playerPos.x, playerPos.z);
     }
 
+    // 8 arah 360° — turn speed 20 for snappy 360° rotation
     const targetAngle = Math.atan2(rotatedX, rotatedZ);
     let diff = targetAngle - playerFacing;
     while (diff > Math.PI) diff -= Math.PI * 2;
     while (diff < -Math.PI) diff += Math.PI * 2;
-    playerFacing += diff * 12.0 * delta;
+    playerFacing += diff * 20.0 * delta;
 
     if (!isAttacking) {
       switchAnimation(isSprinting ? 'run' : 'walk');
     }
   } else {
-    if (playerPos.z >= 2.0 && Math.abs(playerPos.x) <= 1.5) {
+    if (playerPos.z >= 12.0 && Math.abs(playerPos.x) <= 2.0) {
+      playerPos.y = 0.85;
+    } else if (playerPos.z >= 2.0 && Math.abs(playerPos.x) <= 1.5) {
       playerPos.y = 0.55;
     } else {
       playerPos.y = getIslandElevation(playerPos.x, playerPos.z);
@@ -713,7 +726,7 @@ window.addEventListener('DOMContentLoaded', () => {
   scene.background = new THREE.Color(0x8ec5fc);
   scene.fog = new THREE.FogExp2(0xa1c4fd, 0.009);
 
-  camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.5, 160);
+  camera = new THREE.PerspectiveCamera(18, window.innerWidth / window.innerHeight, 0.1, 150);
 
   const hemi = new THREE.HemisphereLight(0xbbe1fa, 0x5a4a35, 1.15);
   scene.add(hemi);

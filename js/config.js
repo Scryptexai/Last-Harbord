@@ -6,16 +6,16 @@ export const CFG = {
 
   // KAMERA — proyeksi miring 3/4, bukan pandangan atas.
   // TILT = cos sudut kamera terhadap tanah (1 = tampak atas, 0.5 = sangat miring).
-  //   0.66 ~ 49 derajat, 0.62 ~ 52 derajat, 0.50 ~ 60 derajat (proyeksi dimetrik 2:1,
-  //   standar pandangan 3/4 ala Zelda/Stardew — tanah "meresap" ke belakang, bukan peta).
-  // Semua sprite memakai atUpright(), jadi benda berdiri tetap tegak; yang berubah saat
-  // TILT diturunkan adalah seberapa gepeng TANAH dan seberapa terasa "melihat ke depan".
+  //   0.66 ~ 49 derajat, 0.62 ~ 52 derajat (setara kamera aksi mobile), 0.55 ~ 57 derajat.
+  // Batas bawah praktis 0.55: di bawah itu tanah mulai kehilangan bentuk dan benda
+  // berdiri mulai terasa seperti potongan kertas. Semua sprite memakai atUpright(),
+  // jadi yang berubah saat TILT diturunkan hanyalah seberapa gepeng TANAH di layar.
   CAM: {
-    TILT: 0.40,        // ~66 derajat dari datar: foreshortening jelas terlihat, bukan tampak atas
-    LIFT: 0.10,        // kamera mengangkat fokus: pemain duduk di bawah-tengah (lebih banyak dunia di depan)
-    PERSP: 0.00090,    // perubahan ukuran per px kedalaman (paralaks kuat: depan besar, belakang kecil)
-    PERSP_MIN: 0.78,
-    PERSP_MAX: 1.32,
+    TILT: 0.62,        // ~52 derajat dari datar: cukup miring untuk terasa sinematik
+    LIFT: 0.08,        // kamera mengangkat fokus: pemain duduk di bawah-tengah
+    PERSP: 0.00034,    // perubahan ukuran per px kedalaman (paralaks)
+    PERSP_MIN: 0.86,
+    PERSP_MAX: 1.16,
   },
 
   BOAT: {

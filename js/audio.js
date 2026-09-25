@@ -19,7 +19,6 @@ let gullTimer = 0;
 let aSeed = 0x51ed2701;
 function arand() { aSeed = (aSeed * 1664525 + 1013904223) >>> 0; return aSeed / 4294967296; }
 let lastPlay = 0;
-let lastGain = 1;   // pengali volume sesaat (dipakai sfx untuk atenuasi jarak)
 
 function ac() {
   if (ctx) return ctx;
@@ -63,7 +62,7 @@ function tone({ f = 440, f2 = null, dur = 0.12, type = 'sine', gain = 0.08, at =
   o.frequency.setValueAtTime(f, t0);
   if (f2) o.frequency.exponentialRampToValueAtTime(Math.max(20, f2), t0 + dur);
   g.gain.setValueAtTime(0.0001, t0);
-  g.gain.exponentialRampToValueAtTime(gain * lastGain, t0 + attack);
+  g.gain.exponentialRampToValueAtTime(gain, t0 + attack);
   g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
   o.connect(g); g.connect(master);
   o.start(t0); o.stop(t0 + dur + 0.02);
@@ -85,7 +84,7 @@ function noise({ dur = 0.15, gain = 0.09, f = 900, f2 = null, q = 1, at = 0, typ
   if (f2) flt.frequency.exponentialRampToValueAtTime(Math.max(40, f2), t0 + dur);
   flt.Q.value = q;
   const g = c.createGain();
-  g.gain.setValueAtTime(gain * lastGain, t0);
+  g.gain.setValueAtTime(gain, t0);
   g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
   src.connect(flt); flt.connect(g); g.connect(master);
   src.start(t0); src.stop(t0 + dur + 0.02);
@@ -118,7 +117,7 @@ const SFX = {
   newGoal: () => { tone({ f: 520, dur: 0.14, type: 'triangle', gain: 0.08 }); tone({ f: 780, dur: 0.22, type: 'triangle', gain: 0.07, at: 0.13 }); },
 };
 
-export function sfx(name, arg, gainMul) {
+export function sfx(name, arg) {
   if (!SFX[name]) return;
   // throttle ringan supaya suara tidak menumpuk jadi bising
   const now = (typeof performance !== 'undefined' ? performance.now() : 0);
@@ -126,69 +125,7 @@ export function sfx(name, arg, gainMul) {
     if (now - lastPlay < 24) return;
     lastPlay = now;
   }
-  lastGain = typeof gainMul === 'number' ? Math.max(0, Math.min(1.5, gainMul)) : 1;
   try { SFX[name](arg); } catch (e) { /* audio opsional */ }
-  lastGain = 1;
-}
-
-// Haptik getar untuk layar sentuh — feedback di tangan, bukan cuma di telinga.
-// Diperlakukan sebagai bonus: kalau perangkat tidak mendukung, tidak terjadi apa-apa.
-export function haptic(pattern = 8) {
-  try {
-    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(pattern);
-  } catch (e) { /* opsional */ }
-}
-
-// ---------- music bed: satu drone rendah yang bernapas mengikuti pasang ----------
-// Bukan lagu: dua nada rendah yang intervalnya melebar dari konsonan (tenang) menuju
-// tritone (pasang tinggi) — ketegangan terdengar, bukan diumumkan. Sangat pelan, di
-// bawah semua SFX. Ini "musik" yang dulu tidak ada (lihat Appendix E.7).
-let music = null;
-
-function ensureMusic() {
-  const c = ac();
-  if (!c || music) return;
-  music = {
-    gain: c.createGain(),
-    filter: c.createBiquadFilter(),
-    o1: c.createOscillator(),
-    o2: c.createOscillator(),
-    lfo: c.createOscillator(),
-    lfoGain: c.createGain(),
-  };
-  music.gain.gain.value = 0;
-  music.filter.type = 'lowpass';
-  music.filter.frequency.value = 200;
-  music.filter.Q.value = 0.6;
-  music.o1.type = 'sine';
-  music.o2.type = 'sine';
-  music.o1.frequency.value = 65.4;
-  music.o2.frequency.value = 98.1;
-  music.lfo.type = 'sine';
-  music.lfo.frequency.value = 0.08;
-  music.lfoGain.gain.value = 3.5;
-  music.lfo.connect(music.lfoGain);
-  music.lfoGain.connect(music.o1.frequency);
-  music.o1.connect(music.filter);
-  music.o2.connect(music.filter);
-  music.filter.connect(music.gain);
-  music.gain.connect(master);
-  music.o1.start(); music.o2.start(); music.lfo.start();
-}
-
-// tint = tideTint() 0..1. Dipanggil tiap frame dari main.js.
-export function updateMusic(tint) {
-  const c = ac();
-  if (!c) return;
-  ensureMusic();
-  if (G.muted || !music) { if (music) music.gain.gain.value = 0; return; }
-  const t = c.currentTime;
-  const root = 65.4 - 17 * tint;             // C2 turun ke ~G1: makin rendah makin gelap
-  const ratio = 1.5 - 0.086 * tint;          // perfect fifth -> tritone: makin sumbang
-  music.o1.frequency.setTargetAtTime(root, t, 1.8);
-  music.o2.frequency.setTargetAtTime(root * ratio, t, 1.8);
-  music.filter.frequency.setTargetAtTime(180 + 150 * tint, t, 1.8);
-  music.gain.gain.setTargetAtTime(G.muted ? 0 : (0.045 - 0.014 * tint), t, 1.8);
 }
 
 // ---------- ambience ----------

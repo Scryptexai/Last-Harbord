@@ -3,22 +3,18 @@ import { CFG } from './config.js';
 import { G } from './state.js';
 import { loadGame, saveGame, clearSave } from './save.js';
 import { initInput, getMove, input, pressContext, releaseContext, pressAttack, clearQueued } from './input.js';
-import { initUI, showScreen, openModal, closeModal, isModalOpen, toast, updateHUD, renderDebrief, renderChart, renderBench, showHint, refreshIfOpen, setPaused } from './ui.js';
+import { initUI, showScreen, openModal, closeModal, isModalOpen, toast, updateHUD, renderDebrief, renderChart, renderBench, showHint, refreshIfOpen } from './ui.js';
 import { createBoat, updateBoat, drawBoat, drawLanternPool, maxHP, speedMult, boatTier } from './boat.js';
-import { generateWorld, nearestIsland, drawSea, drawOceanBackground, drawRain, HARBOR, harborDist, survey, islandRemaining, islandTotalRemaining, islandById } from './world.js';
+import { generateWorld, nearestIsland, drawSea, drawOceanBackground, HARBOR, harborDist, survey, islandRemaining, islandTotalRemaining, islandById } from './world.js';
 import { enterIsland, updateLand, drawLand, tryAttack, contextAction, landContext, atExtract, playerWorldPos } from './land.js';
 import { enterHarbor, updateHarbor, drawHarbor, harborContext } from './harbor.js';
 import { addCarried, bankCarried, carriedLoad, emptyBag, RES_TYPES, dropCarried } from './inventory.js';
 import { buyNext, nextRung, canBuyNext, goalLabel, isMaxed, capacity } from './refit.js';
-import { resetTide, updateTide, tidePhase, tideTint, seaDrainRate } from './tide.js';
-import { bumpDeath, nightDone } from './stats.js';
-import { addNote } from './notes.js';
-import { markRun, markDawn, markDeath, trackPlay, flush, markShopOpen } from './analytics.js';
-import { loadAssets, ASSETS } from './assets.js';
-import { initCharacter3D } from './character3d.js';
-import { sfx, haptic, initAudio, setAmbience, tickAmbience, updateMusic, setMuted } from './audio.js';
+import { resetTide, updateTide, tidePhase, seaDrainRate } from './tide.js';
+import { loadAssets } from './assets.js';
+import { sfx, initAudio, setAmbience, tickAmbience, setMuted } from './audio.js';
 import { fx, updateFx, timeScale, shakeOffset, drawFxScreen, resetFx, addFlash, addShake, ring, flushGulls, returnGulls } from './fx.js';
-import { clamp, dist, lerp, fmtTime } from './util.js';
+import { clamp, dist, fmtTime } from './util.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
@@ -44,10 +40,7 @@ function tip(key, text, ms = 5200) {
 
 // =================== Aksi ===================
 
-let __runCounted = false;
-
 function beginRun() {
-  try { markRun(); } catch (e) { /* noop */ }
   const first = G.totalRuns === 0;
   G.totalRuns++;
   G.runActive = true;
@@ -71,9 +64,6 @@ function beginRun() {
 
 function pickTarget(id) {
   G.target = islandById(id);
-  refreshIfOpen();             // daftar peta menyegarkan — panah chart-first langsung hilang
-  // tandai perairan ini disurvei — pulau yang diketuk di peta jadi "dikenal"
-  if (G.target) G.surveyed[G.target.id] = true;
   if (H.onModalClosed) { /* peta tetap terbuka */ }
 }
 
@@ -120,7 +110,6 @@ function backToBoat() {
   G.nearIsland = nearestIsland(G.boat.x, G.boat.y);
   setAmbience('sea');
   sfx('board');
-  haptic(20);
   addFlash(0.25);
   showScreen('sea');
   if (carriedLoad() >= capacity()) {
@@ -147,7 +136,6 @@ function moorHarbor() {
 
   if (total > 0) {
     sfx('bank');
-    haptic([22, 40, 30, 60, 40]);
     addFlash(0.3);
     showBankBeat(moved);
     if (canBuyNext()) {
@@ -171,18 +159,6 @@ function showBankBeat(cargo) {
   requestAnimationFrame(() => el.classList.add('show'));
   clearTimeout(el._t);
   el._t = setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.classList.add('hidden'), 400); }, 1500);
-}
-
-// Kematian bukan hard-cut: 0.8s slow-mo dulu (waktu berjalan 1/4 kecepatan, guncangan,
-// suara tenggelam), baru debrief. Ini memberi "framing" kematian — momen, bukan popup.
-function beginDeath(cause) {
-  if (G.dying) return;
-  G.dying = { t: 0.8, cause };
-  try { bumpDeath((G.tide && G.tide.night) || 0); } catch (e) { /* noop */ }
-  try { markDeath(); flush(); } catch (e) { /* noop */ }
-  addShake(0.5);
-  sfx('death');
-  haptic([60, 60, 120]);
 }
 
 function die(cause) {
@@ -222,6 +198,7 @@ function die(cause) {
   G.target = null;
   G.pendingDeath = false;
 
+  sfx('death');
   resetFx();
   saveGame();
   enterHarbor();
@@ -235,10 +212,8 @@ function newGame() {
   clearSave();
   G.refit = 0;
   G.hull = maxHP();
-  G.deepHull = maxHP();          // kapal baru: tanpa riwayat kerusakan
   G.banked = emptyBag();
   G.carried = emptyBag();
-  G.drif = 0;
   G.totalRuns = 0;
   G.salvages = [];
   G.surveyed = {};
@@ -358,8 +333,6 @@ function doContext() {
     case 'board': backToBoat(); break;
     case 'chart': openModal('chart'); break;
     case 'bench': openModal('bench'); break;
-    case 'store': openModal('inventory'); break;
-    case 'shop': openModal('shop'); try { markShopOpen(); } catch (e) { /* noop */ } break;
     case 'sail': {
       if (!G.target) { openModal('chart'); toast('Pilih tujuan dulu di meja peta.'); }
       else { sfx('board'); beginRun(); }
@@ -398,11 +371,10 @@ function updateSea(dt) {
   const drain = seaDrainRate(Math.min(ni.dist, harborDist() - HARBOR.r));
   if (drain > 0) {
     G.hull -= drain * dt;
-    if (G.hull < G.deepHull) G.deepHull = G.hull;   // riwayat kerusakan (tambalan tetap terlihat)
     if (Math.random() < dt * 1.4) { sfx('crack'); addShake(0.12); }
     if (G.hull <= 0) {
       G.hull = 0;
-      beginDeath('Lambung tidak kuat menahan pasang di laut terbuka.');
+      die('Lambung tidak kuat menahan pasang di laut terbuka.');
       return;
     }
   }
@@ -438,54 +410,23 @@ function updateLandState(dt) {
     G.cam.x += (p.x - G.cam.x) * Math.min(1, dt * 6);
     G.cam.y += (p.y - G.cam.y) * Math.min(1, dt * 6);
   }
-  // reveal pendaratan: kamera MENDekat (zoom lebar -> main) sambil BERPUTAR lurus
-  // (sweep rot -> 0) selama ~1.5s. Ease-out: cepat di awal, halus saat tiba.
-  if (G.camReveal > 0) {
-    G.camReveal = Math.max(0, G.camReveal - dt);
-    const k = 1 - G.camReveal / 1.5;
-    const ease = 1 - Math.pow(1 - Math.min(1, k), 3);
-    G.cam.zoom = lerp(CFG.LAND.ZOOM * 0.58, CFG.LAND.ZOOM, ease);
-    G.cam.rot = 0.20 * (1 - ease);
-    if (G.camReveal <= 0) G.cam.rot = 0;
-  }
   flushSave();
 
   if (G.pendingDeath) {
     G.pendingDeath = false;
-    beginDeath('Kau kalah di daratan. Kapal menunggu, tapi kau tidak sampai.');
+    die('Kau kalah di daratan. Kapal menunggu, tapi kau tidak sampai.');
   }
 }
 
 function update(dt) {
-  // JEDA total: tidak ada waktu, tidak ada pasang, tidak ada zombie bergerak.
-  // Render tetap dipanggil oleh loop, jadi layar membeku pada frame terakhir.
-  if (G.paused) return;
-  __playAcc += dt;                       // jam bermain (analytics Fase 0)
-  if (__playAcc >= 5) { const sec = Math.round(__playAcc); __playAcc = 0; try { trackPlay(sec); } catch (e) { /* noop */ } }
   const icon = getMove();
   G.time += dt;
 
   // hit-stop: satu-satunya tempat waktu boleh berhenti
   const ts = timeScale();
-  let d = dt * ts;
-
-  // kematian: slow-mo 0.8s dulu, lalu debrief — waktu bermain melambat, jam nyata jalan
-  if (G.dying) {
-    G.dying.t -= dt;
-    d *= 0.25;
-    if (G.dying.t <= 0) {
-      const cause = G.dying.cause;
-      G.dying = null;
-      die(cause);
-      return;
-    }
-  }
+  const d = dt * ts;
 
   updateFx(dt);
-
-  // music bed mengikuti pasang — di dermaga pun malam yang datang terdengar
-  updateMusic(G.state === 'sea' || G.state === 'land' || G.state === 'harbor'
-    ? tideTint() : 0);
 
   if (G.state === 'sea' && fx.vignetteTarget) fx.vignetteTarget = 0;
 
@@ -512,16 +453,6 @@ function update(dt) {
     // FAJAR: malam habis. Air turun, langit sembuh, camar kembali. Tidak ada teks:
     // yang berubah adalah dunia, dan yang dibaca pemain adalah "aku masih hidup".
     if (G.tide && G.tide.justDawned) {
-      try { nightDone(G.tide.night || 0); } catch (e) { /* noop */ }
-      try { markDawn(); } catch (e) { /* noop */ }
-      // FAJAR PERTAMA (seumur hidup): ritual penutup — selamatan msing dunia.
-      try {
-        if (!localStorage.getItem('lh_dawn1')) {
-          localStorage.setItem('lh_dawn1', String(Date.now()));
-          addNote('n-dawn1');
-          dawnCeremony();
-        }
-      } catch (e) { /* noop */ }
       sfx('gull');
       addFlash(0.22);
       const w = G.state === 'land' && G.land ? G.land.player : G.boat;
@@ -563,8 +494,6 @@ function render() {
     else if (G.state === 'land') drawLand(ctx, vw, vh);
     else drawHarbor(ctx, vw, vh);
     ctx.restore();
-    // cuaca (hujan + kabut) hidup di atas dunia — satu bahasa dengan pasang, bukan UI
-    if (G.state === 'sea' || G.state === 'land') drawRain(ctx, vw, vh);
   } else {
     drawOceanBackground(ctx, vw, vh, 0, 0);
   }
@@ -575,21 +504,6 @@ function render() {
 }
 
 // =================== Handlers UI ===================
-
-let __playAcc = 0;
-
-
-// Letterbox singkat yang membayar malam pertamamu: bisa dilewati dengan gesture.
-function dawnCeremony() {
-  const el = document.getElementById('dawn-ceremony');
-  if (!el) return;
-  el.classList.add('show');
-  let done = false;
-  const bye = () => { if (done) return; done = true; el.classList.remove('show'); window.removeEventListener('keydown', bye); window.removeEventListener('pointerdown', bye); };
-  window.addEventListener('keydown', bye);
-  window.addEventListener('pointerdown', bye);
-  setTimeout(bye, 3400);
-}
 
 const H = {
   onContextDown: () => pressContext(),
@@ -608,42 +522,13 @@ const H = {
   onBuy: () => buyRefit(),
   onHeal: () => useHeal(),
   onModalClosed: () => clearQueued(),
-  // JEDA: waktu game, pasang, zombie — semua membeku sampai LANJUT.
-  onPause: (v) => {
-    if (G.paused === v) return;
-    G.paused = v;
-    setPaused(v);
-    sfx('click');
-  },
 };
-
-// Hook inspeksi konsol / test E2E (UI tidak memakai ini; aman diabaikan pemain).
-if (typeof window !== 'undefined') {
-  window.__drift = {
-    G,
-    ASSETS,
-    openChart: () => openModal('chart'),
-    pickTarget,
-    beginRun,
-    enterIsland: (idx) => enterIslandFlow(G.islands[idx]),
-  };
-}
 
 // =================== Bootstrap & loop ===================
 
 async function boot() {
   resize();
-  // Tunggu aset 2D DAN model 3D benar-benar siap sebelum masuk ke dalam game
-  await Promise.all([
-    loadAssets(),
-    initCharacter3D((pct) => {
-      const loader = document.getElementById('boot-loader');
-      if (loader) {
-        const txt = loader.querySelector('.loader-text');
-        if (txt && pct > 0) txt.innerHTML = `MEMUAT KARAKTER ${pct}%<span>.</span><span>.</span>`;
-      }
-    }),
-  ]);
+  await loadAssets();
   resetTide();                 // default; loadGame() boleh menimpa jam malam ini
   const loaded = loadGame();
   if (!G.worldSeed) G.worldSeed = (Math.random() * 1e9) >>> 0;
@@ -652,7 +537,7 @@ async function boot() {
   if (!(G.hull > 0)) G.hull = maxHP();
   G.hull = Math.min(G.hull, maxHP());
 
-  initInput({ mute: () => H.onMute(), escape: () => closeModal(), pause: () => H.onPause(!G.paused) });
+  initInput({ mute: () => H.onMute(), escape: () => closeModal() });
   input.onGesture = () => initAudio();
   initUI(H);
 
@@ -685,18 +570,4 @@ async function boot() {
   requestAnimationFrame(frame);
 }
 
-// ---------- Titik masuk eksplisit ----------
-// boot() tidak lagi dijalankan otomatis saat modul dimuat di browser. Ia diekspor
-// sebagai startGame() dan dipanggil oleh js/boot.js setelah tombol mulai ditekan.
-// Seluruh isi boot() TIDAK berubah — hanya titik pemicunya yang pindah dari
-// "otomatis saat load" menjadi "dipanggil setelah tombol mulai ditekan".
-export async function startGame() {
-  await boot();
-}
-
-// Test headless (mis. tests/integration.test.mjs) mengimpor main.js secara langsung
-// tanpa boot.js, sehingga flag ini tidak tersetel dan game tetap boot otomatis —
-// alur lama tetap utuh di sana.
-if (!(typeof window !== 'undefined' && window.__LAST_HARBOR_BOOT__)) {
-  startGame();
-}
+boot();

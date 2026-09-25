@@ -184,35 +184,22 @@ export function drawFxWorld(ctx, drawIcon) {
   }
 }
 
-// Indikator arah: busur tipis + tanda cakar yang mengembang sebentar di sekitar
-// pemain — jelas arahnya tanpa menutup layar dengan segitiga merah raksasa.
+// Indikator arah: busur di tepi layar, bukan kotak merah penuh.
 export function drawFxScreen(ctx, vw, vh, camAngle = 0) {
   const cx = vw / 2, cy = vh / 2;
   for (const a of fx.arcs) {
     const k = a.t / a.dur;
-    const alpha = (1 - k) * 0.8 * a.strength;
-    const half = 0.5;                                   // lebar busur (rad)
-    const r0 = 44 + k * 26;                             // mengembang halus dari dekat pemain
+    const alpha = (1 - k) * 0.85 * a.strength;
+    const rad = Math.min(vw, vh) * (0.34 + k * 0.1);
     const ang = a.angle - camAngle - Math.PI / 2;
     ctx.save();
     ctx.translate(cx, cy);
     ctx.rotate(ang);
-    ctx.lineCap = 'round';
-    // busur utama arah datangnya serangan (merah cerah, pudar keluar)
-    ctx.strokeStyle = `rgba(255,74,60,${alpha.toFixed(3)})`;
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(0, 0, r0, -Math.PI / 2 - half, -Math.PI / 2 + half);
-    ctx.stroke();
-    // tulang ikan (chevron) menunjuk ke arah ancaman
-    ctx.strokeStyle = `rgba(255,150,125,${(alpha * 0.85).toFixed(3)})`;
-    ctx.lineWidth = 2.5;
-    const tip = r0 + 12;
-    ctx.beginPath();
-    ctx.moveTo(-9, -(tip - 9));
-    ctx.lineTo(0, -tip);
-    ctx.lineTo(9, -(tip - 9));
-    ctx.stroke();
+    const grad = ctx.createLinearGradient(0, -rad, 0, -rad + 90);
+    grad.addColorStop(0, 'rgba(255,60,50,0)');
+    grad.addColorStop(1, `rgba(255,60,50,${alpha})`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(-140, -rad, 280, 90);
     ctx.restore();
   }
 

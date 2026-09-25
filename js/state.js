@@ -16,19 +16,14 @@ export const G = {
   nearIsland: null,     // { island, dist }
   fishing: null,        // { t, dur }
   anchored: false,
-  cam: { x: 0, y: 0, zoom: 1, rot: 0 },
+  cam: { x: 0, y: 0, zoom: 1 },
   target: null,         // pulau yang dipilih di peta -> jadi penunjuk arah
 
   // ---- dipersist ke localStorage ----
   refit: 0,             // jumlah tingkat refit yang selesai (0..6) = progresi tunggal
   hull: 100,            // hull = nyawa. Dipakai bersama perahu & karakter darat.
-  deepHull: 100,        // hull TERDALAM yang pernah dicapai (riwayat kerusakan). Dipakai
-                        // untuk menggambar tambalan: bekas kerusakan tetap terlihat
-                        // walau sudah diperbaiki (kapal "punya sejarah").
   carried: emptyBag(),  // hasil run yang belum dibongkar (BISA HILANG)
   banked: emptyBag(),   // gudang di dermaga (AMAN)
-  drif: 0,
-  notes: [],           // jurnal pelampung: id lembar yang sudah ditemukan              // koin drif: didapat tiap muatan dibongkar ke dermaga
   totalRuns: 0,
   salvages: [],         // [{ islandId, x, y, cargo }] pelampung bekas kematian
   surveyed: {},         // islandId -> true (sudah pernah dipijak / terlihat dekat)
@@ -39,8 +34,6 @@ export const G = {
   hurtFlash: 0,
   hurtDir: null,        // { angle, t } indikator arah serangan
   pendingDeath: false,
-  dying: null,          // { t, cause } slow-mo kematian sebelum debrief
-  camReveal: 0,         // >0 = shot pembuka pendaratan (zoom menyusut ke main)
   deathInfo: null,
   saveDirty: false,
   bankBeat: 0,          // 0..1 animasi pembongkaran muatan

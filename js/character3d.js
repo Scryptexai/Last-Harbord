@@ -82,9 +82,10 @@ export function initCharacter3D(onProgress, retryCount = 0) {
 
       scene = new THREE.Scene();
 
-      // Kamera top-down ~35° mencocokkan kemiringan kamera 2D (CFG.CAM.TILT = 0.40)
-      camera = new THREE.PerspectiveCamera(34, 1, 0.1, 50);
-      camera.position.set(0, 1.62, 2.15);
+      // Kamera isometric 52° pitch 40° yaw — premium mobile isometric survival 3D QA 2026-09-25
+      // Previous 35°/0.40 REJECTED, new 52°/0.615 locked, FOV 18° long perspective
+      camera = new THREE.PerspectiveCamera(18, 1, 0.1, 50);
+      camera.position.set(0, 1.85, 2.45);
       camera.lookAt(0, 0.50, 0);
 
       // Pencahayaan harmonis dengan palet maritim malam Last Harbor:
@@ -109,7 +110,7 @@ export function initCharacter3D(onProgress, retryCount = 0) {
 
       // Muat langsung model GLB karakter
       const loader = new LoaderClass();
-      const modelUrl = 'character_glb_idle_box_03_run_walk_7.glb';
+      const modelUrl = 'assets/characters/character_glb_idle_box_03_run_walk_7.glb';
 
       loader.load(
         modelUrl,

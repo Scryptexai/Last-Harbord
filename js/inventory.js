@@ -1,7 +1,6 @@
 // ============ Inventory: DIBAGI DUA ============
 // carried = hasil run yang masih di tangan. Hanya jadi milikmu setelah dibongkar di kapal.
 // banked  = gudang di dermaga. Tidak bisa hilang, dipakai untuk refit.
-import { markDrifEarned } from './analytics.js';
 import { G } from './state.js';
 import { capacity } from './refit.js';
 
@@ -34,18 +33,13 @@ export function addBanked(type, qty = 1) {
   G.banked[type] = (G.banked[type] || 0) + qty;
 }
 
-// Bongkar muatan: carried -> banked. Ini momen "selamat" tiap run — dan tiap unit
-// yang selamat sampai dermaga ditekek jadi satu koin drif.
+// Bongkar muatan: carried -> banked. Ini momen "selamat" tiap run.
 export function bankCarried() {
   const moved = { ...G.carried };
-  let total = 0;
   for (const t of RES_TYPES) {
-    total += G.carried[t] || 0;
     G.banked[t] = (G.banked[t] || 0) + (G.carried[t] || 0);
     G.carried[t] = 0;
   }
-  G.drif = (G.drif || 0) + total;
-  try { markDrifEarned(total); } catch (e) { /* noop */ }
   return moved;
 }
 

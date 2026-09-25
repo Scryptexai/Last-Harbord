@@ -18,13 +18,11 @@ export function saveGame() {
       worldSeed: G.worldSeed >>> 0,
       refit: Math.min(CFG.REFIT.length, int(G.refit)),
       hull: Math.max(0, Math.round(G.hull)),
-      deepHull: Math.max(0, Math.round(G.deepHull)),
       banked: {
         fuel: int(G.banked.fuel), wood: int(G.banked.wood),
         food: int(G.banked.food), medicine: int(G.banked.medicine),
       },
       totalRuns: int(G.totalRuns),
-      drif: int(G.drif),
       salvages: (G.salvages || []).slice(0, 12).map((s) => ({
         islandId: int(s.islandId), x: +s.x || 0, y: +s.y || 0,
         cargo: {
@@ -36,7 +34,6 @@ export function saveGame() {
       nights: int(G.tide && G.tide.night),
       surveyed: Object.keys(G.surveyed || {}).map((k) => int(k)),
       tabbed: G.tabbed || {},
-      notes: (G.notes || []).slice(0, 40),
       muted: !!G.muted,
     };
     localStorage.setItem(CFG.SAVE_KEY, JSON.stringify(data));
@@ -54,12 +51,10 @@ export function loadGame() {
     G.worldSeed = (d.worldSeed >>> 0) || 1;
     G.refit = Math.min(CFG.REFIT.length, int(d.refit));
     G.hull = Math.max(1, Math.round(+d.hull || 100));
-    G.deepHull = Math.max(0, Math.round(+d.deepHull || G.hull));
     const b = d.banked || {};
     G.banked = { fuel: int(b.fuel), wood: int(b.wood), food: int(b.food), medicine: int(b.medicine) };
     G.carried = emptyBag(); // selalu mulai dengan tangan kosong
     G.totalRuns = int(d.totalRuns);
-    G.drif = int(d.drif);
     // Malam lanjut dari tempat ia berhenti, bukan dari nol: dermaga membekukan jam,
     // dan menutup game bukan cara memutar waktu ke belakang.
     resetTide();
@@ -88,7 +83,6 @@ export function loadGame() {
       }
     }
     G.tabbed = tk;
-    G.notes = Array.isArray(d.notes) ? d.notes.filter((x) => typeof x === 'string').slice(0, 40) : [];
     G.muted = !!d.muted;
     return true;
   } catch (e) {

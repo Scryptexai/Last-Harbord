@@ -1,0 +1,20 @@
+[gd_scene load_steps=4 format=3]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_water"]
+size = Vector2(160, 160)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_water"]
+albedo_color = Color(0.035, 0.12, 0.18, 0.94)
+roughness = 0.18
+metallic = 0.35
+transparency = 1
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_water"]
+# Simple water material placeholder
+
+[node name="WaterSurface" type="Node3D"]
+
+[node name="OceanPlane" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+mesh = SubResource("PlaneMesh_water")
+surface_material_override/0 = SubResource("StandardMaterial3D_water")

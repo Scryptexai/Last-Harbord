@@ -1,18 +1,12 @@
 // ============ Asset Loader ============
 export const ASSETS = {};
 
-// Karakter arah + animasi (diproduksi dari strip 5 arah × 3 frame). Frame 0 = diam,
-// frame 1..n = siklus langkah. 'side' menghadap kanan (di-cermin untuk kiri);
-// 'ne'/'se' diagonal, di-cermin untuk NW/SW.
-const SHEET_SPEC = { zombie_slow: 3, zombie_fast: 3, zombie_tank: 3 };
-const SHEET_DIRS = ['front', 'back', 'side', 'ne', 'se'];
-
 const ASSET_PATHS = {
-  // Characters & Entities (Pemain kini beralih ke 3D GLB model murni tanpa new Image())
+  // Characters & Entities
   boat_lv1: 'assets/characters/boat_lv1.png',
   boat_lv2: 'assets/characters/boat_lv2.png',
   boat_lv3: 'assets/characters/boat_lv3.png',
-  npc_keeper: 'assets/characters/npc_keeper.png',
+  player: 'assets/characters/player.png',
   zombie_slow: 'assets/characters/zombie_slow.png',
   zombie_fast: 'assets/characters/zombie_fast.png',
   zombie_tank: 'assets/characters/zombie_tank.png',
@@ -20,21 +14,7 @@ const ASSET_PATHS = {
   // Environment
   island: 'assets/environment/island.png',
   tree: 'assets/environment/tree.png',
-  tree2: 'assets/environment/tree2.png',
-  tree3: 'assets/environment/tree3.png',
   rock: 'assets/environment/rock.png',
-  bush: 'assets/environment/bush.png',
-  salvage_buoy: 'assets/environment/salvage_buoy.png',
-  stall_flair: 'assets/props/stall_flair.png',
-  note_scrap: 'assets/environment/note_scrap.png',
-  // Bentuk pulau per flavor (tampilan atas) + siluet pulau jauh di laut/horizon.
-  isle_quiet: 'assets/environment/isle_quiet.png',
-  isle_reef: 'assets/environment/isle_reef.png',
-  isle_wreck: 'assets/environment/isle_wreck.png',
-  isle_ash: 'assets/environment/isle_ash.png',
-  isle_ruins: 'assets/environment/isle_ruins.png',
-  isle_sea1: 'assets/environment/isle_sea1.png',
-  isle_sea2: 'assets/environment/isle_sea2.png',
   ocean_bg: 'assets/environment/ocean_bg.png',
   wave_pattern: 'assets/environment/wave_pattern.png',
   land_bg: 'assets/environment/land_bg.png',
@@ -44,10 +24,6 @@ const ASSET_PATHS = {
   wood: 'assets/resources/wood.png',
   food: 'assets/resources/food.png',
   medicine: 'assets/resources/medicine.png',
-
-  // Art peta perkamen + dekor
-  bg_parchment: 'assets/ui/bg_parchment.png',
-  compass: 'assets/ui/compass.png',
 
   // UI Icons
   icon_sail: 'assets/ui/icon_sail.png',
@@ -71,35 +47,22 @@ const ASSET_PATHS = {
 
 export function loadAssets() {
   const entries = Object.entries(ASSET_PATHS);
-  // tambahkan frame sheet karakter ke dalam daftar muatan yang sama
-  const sheetPaths = [];
-  ASSETS.sheets = {};
-  for (const [name, n] of Object.entries(SHEET_SPEC)) {
-    ASSETS.sheets[name] = { front: [], back: [], side: [], ne: [], se: [] };
-    for (const dir of SHEET_DIRS) {
-      for (let f = 0; f < n; f++) {
-        sheetPaths.push({ name, dir, f, src: `assets/characters/${name}_${dir}_${f}.png` });
-      }
-    }
-  }
-
-  const total = entries.length + sheetPaths.length;
-  return new Promise((res) => {
-    if (total === 0) return res(ASSETS);
-    let doneCount = 0;
-    const finish = () => { if (++doneCount === total) res(ASSETS); };
-
-    for (const [key, src] of entries) {
+  let loaded = 0;
+  return new Promise((resolve) => {
+    if (entries.length === 0) return resolve();
+    entries.forEach(([key, src]) => {
       const img = new Image();
       img.src = src;
-      img.onload = () => { ASSETS[key] = img; finish(); };
-      img.onerror = () => { console.warn(`Failed to load asset: ${src}`); finish(); };
-    }
-    for (const sp of sheetPaths) {
-      const img = new Image();
-      img.src = sp.src;
-      img.onload = () => { ASSETS.sheets[sp.name][sp.dir][sp.f] = img; finish(); };
-      img.onerror = () => { console.warn(`Failed to load sheet frame: ${sp.src}`); finish(); };
-    }
+      img.onload = () => {
+        ASSETS[key] = img;
+        loaded++;
+        if (loaded === entries.length) resolve(ASSETS);
+      };
+      img.onerror = () => {
+        console.warn(`Failed to load asset: ${src}`);
+        loaded++;
+        if (loaded === entries.length) resolve(ASSETS);
+      };
+    });
   });
 }

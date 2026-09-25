@@ -54,8 +54,7 @@ export function buyNext() {
   for (const [t, n] of Object.entries(rung.cost)) G.banked[t] -= n;
   G.refit++;
   // Lambung baru = perbaikan penuh. Ini hadiah nyata, bukan cuma angka.
-  // Riwayat kerusakan (tambalan) ikut terhapus: lambungnya benar-benar baru.
-  if (rung.track === 'hull') { G.hull = maxHP(); G.deepHull = maxHP(); }
+  if (rung.track === 'hull') G.hull = maxHP();
   return rung;
 }
 
